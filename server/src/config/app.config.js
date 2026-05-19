@@ -1,11 +1,11 @@
 const { v4: uuidV4 } = require("uuid");
+
 class AppConfig {
 	#appName = "SoniqStream";
 
 	#port = process.env.NODE_ENV === "production" ? process.env.PORT : 3500;
-	// #port = process.env.NODE_ENV === "production" ? process.env.PORT : 3500;
 	#client_base_url = "https://zecco-music-app.vercel.app/";
-	#client_dev_url = `http://localhost:5173/`;
+	#client_dev_url = "http://localhost:5173/";
 
 	get base() {
 		return process.env.NODE_ENV === "production"
@@ -22,10 +22,10 @@ class AppConfig {
 	}
 
 	get client() {
-		// return process.env.NODE_ENV === "production"
-		// 	? this.#client_base_url
-		// 	: this.#client_dev_url;
-		return this.#client_base_url ?? this.#client_dev_url;
+		// Correctly toggles between production and local development, fixing the private syntax error
+		return process.env.NODE_ENV === "production"
+			? this.#client_base_url
+			: this.#client_dev_url;
 	}
 
 	date() {
