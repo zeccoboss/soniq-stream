@@ -198,7 +198,7 @@ export const HomePage = async (ctx) => {
 					}),
 				]);
 
-			console.log(discoverResult);
+			// console.log(discoverResult);
 
 			// ── Explore Feed ────────────────────────────────
 			if (exploreResult.status === "fulfilled") {

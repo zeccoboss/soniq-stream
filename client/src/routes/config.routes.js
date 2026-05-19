@@ -18,20 +18,36 @@
 //    The module is not loaded until the user first visits.
 // ============================================================
 
+// ── Regular pages ────────────────────────────────────────────
+import { HomePage } from "@zecco/pages/Home/HomePage.js";
+import { LibraryPage } from "@zecco/pages/Library/LibraryPage.js";
+import { SearchPage } from "@zecco/pages/Search/SearchPage.js";
+import { UploadPage } from "@zecco/pages/Upload/UploadPage.js";
+import { SettingsPage } from "@zecco/pages/Settings/SettingsPage.js";
+import { ProfilePage } from "@zecco/pages/Profile/ProfilePage.js";
+
+// ── Auth pages (outlet: "root") ──────────────────────────────
+import { LoginPage } from "@zecco/pages/Login/LoginPage.js";
+import { RegisterPage } from "@zecco/pages/Register/RegisterPage.js";
+import { PasswordPage } from "@zecco/pages/Password/PasswordPage.js";
+import { VerificationPage } from "@zecco/pages/Verification/VerificationPage.js";
+import { mobileScreen } from "@zecco/core/screen-break-points";
+
 export const routes = [
 	// ── Public pages — rendered into <main> ──────────────────
+
 	{
 		path: "/",
-		component: import("@zecco/pages/Home/HomePage.js"),
+		component: HomePage,
 		// outlet: "main" is the default — no need to specify
 	},
 	{
 		path: "/search",
-		component: import("@zecco/pages/Search/SearchPage.js"),
+		component: SearchPage,
 	},
 	{
 		path: "/library",
-		component: import("@zecco/pages/Library/LibraryPage.js"),
+		component: LibraryPage,
 		guard: "auth",
 	},
 
@@ -39,18 +55,18 @@ export const routes = [
 
 	{
 		path: "/uploads",
-		component: import("@zecco/pages/Upload/UploadPage.js"),
+		component: UploadPage,
 		guard: "auth",
 	},
 	{
 		path: "/settings",
-		component: import("@zecco/pages/Settings/SettingsPage.js"),
+		component: SettingsPage,
 		guard: "auth",
 	},
 	{
 		// /profile/zeccoboss → ctx.params.username = "zeccoboss"
 		path: "/profile",
-		component: import("@zecco/pages/Profile/ProfilePage.js"),
+		component: ProfilePage,
 		guard: "auth",
 	},
 
@@ -61,27 +77,27 @@ export const routes = [
 
 	{
 		path: "/auth/login",
-		component: import("@zecco/pages/Login/LoginPage.js"),
+		component: LoginPage,
 		outlet: "root",
 	},
 	{
 		// Register is a single page that manages its own 3-step flow
 		// internally — no child routes needed.
 		path: "/auth/register",
-		component: import("@zecco/pages/Register/RegisterPage.js"),
+		component: RegisterPage,
 		outlet: "root",
 	},
 	{
 		// Forgot password — manages its own 5-step flow internally.
 		path: "/auth/forgot-password",
-		component: import("@zecco/pages/Password/PasswordPage.js"),
+		component: PasswordPage,
 		outlet: "root",
 	},
 	{
 		// Shared verification page — handles both email verify
 		// and password reset tokens via ?type=register|reset query param.
 		path: "/auth/verify-reset",
-		component: import("@zecco/pages/Verification/VerificationPage.js"),
+		component: VerificationPage,
 		outlet: "root",
 	},
 
@@ -89,8 +105,15 @@ export const routes = [
 		// Shared verification page — handles both email verify
 		// and password reset tokens via ?type=register|reset query param.
 		path: "/auth/verify",
-		component: import("@zecco/pages/Verification/VerificationPage.js"),
+		component: VerificationPage,
 		outlet: "root",
+	},
+	{
+		path: "/player",
+		outlet: () => (mobileScreen.matches ? "root" : "main"),
+		lazy: true,
+		component: () =>
+			import("@zecco/pages/Player/PlayerPage.js").then((mod) => mod.default),
 	},
 
 	// ── Lazy-loaded pages ────────────────────────────────────

@@ -272,10 +272,18 @@ export class Router {
 
 	async #render(stack, ctx) {
 		const leaf = stack.at(-1);
-		const outletName = leaf.outlet ?? "main";
+
+		// ── Resolve raw outlet value ─────────────────────────────
+		let outletName = leaf.outlet ?? "main";
+
+		// If the configuration passed a function, execute it right now on navigation
+		if (typeof outletName === "function") {
+			outletName = outletName(ctx);
+		}
 
 		// ── 1. LAYOUT & OUTLET SYNC ──────────────────────────────
 		if (outletName !== "root") {
+			// ... rest of your layout builder logic stays exactly the same ...
 			const mainOutlet = this.#outlets.get("main");
 			const rootOutlet = this.#outlets.get("root");
 

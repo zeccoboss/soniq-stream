@@ -13,6 +13,7 @@ import { store } from "./store/store";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import "./styles/base.css";
 import "./styles/media.css";
+import { networkHandler } from "./core/network-handler";
 
 const bootstrap = async () => {
 	// Determine the initial screen size based on the defined media queries
@@ -27,6 +28,7 @@ const bootstrap = async () => {
 
 	// Initialize the application state store
 	store.init();
+	networkHandler.init(); // Initialize network status monitoring and event handling
 
 	// ── For middleware initialization and start up ───────────────────────────────────
 	applyMiddleware();

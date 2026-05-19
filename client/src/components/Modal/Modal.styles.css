@@ -1,0 +1,244 @@
+/* ══════════════════════════════════════
+   MODAL — Overlay-based dialog
+   Injected into #app-overlay at runtime
+   Overlay dim handled by existing overlay
+   styles — we only style the modal card
+══════════════════════════════════════ */
+
+/* ── Overlay visible state ── */
+/* The overlay element already exists in the DOM from buildLayout.
+   We just toggle --visible to show/hide it */
+.overlay--visible {
+	display: flex !important;
+	align-items: center;
+	justify-content: center;
+	padding: 20px;
+}
+
+/* ── Modal card ── */
+.modal {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+	gap: 16px;
+	width: 100%;
+	max-width: 400px;
+	padding: 32px 28px;
+	background: var(--bg-light);
+	border: 1px solid var(--glass-border);
+	border-radius: var(--radius-xl);
+	box-shadow:
+		0 24px 60px rgba(0, 0, 0, 0.5),
+		0 4px 16px rgba(0, 0, 0, 0.3);
+	position: relative;
+	z-index: 1;
+	animation: modal-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+	will-change: transform, opacity;
+}
+
+@keyframes modal-in {
+	from {
+		transform: scale(0.92) translateY(12px);
+		opacity: 0;
+	}
+	to {
+		transform: scale(1) translateY(0);
+		opacity: 1;
+	}
+}
+
+/* Exit animation — added by hideModal() */
+.modal--out {
+	animation: modal-out 0.2s cubic-bezier(0.4, 0, 1, 1) both;
+}
+@keyframes modal-out {
+	from {
+		transform: scale(1) translateY(0);
+		opacity: 1;
+	}
+	to {
+		transform: scale(0.94) translateY(8px);
+		opacity: 0;
+	}
+}
+
+/* ══════════════════════════════════════
+   ICON WRAP
+   Coloured circle per type
+══════════════════════════════════════ */
+.modal-icon-wrap {
+	width: 60px;
+	height: 60px;
+	border-radius: 50%;
+	display: grid;
+	place-items: center;
+	font-size: 1.5rem;
+	flex-shrink: 0;
+	margin-bottom: 2px;
+}
+
+.modal-icon-wrap--default {
+	background: var(--glass);
+	border: 1px solid var(--glass-border);
+	color: var(--text-2);
+}
+.modal-icon-wrap--info {
+	background: hsla(213, 80%, 58%, 0.1);
+	border: 1px solid hsla(213, 80%, 58%, 0.2);
+	color: hsl(213, 80%, 68%);
+}
+.modal-icon-wrap--success {
+	background: rgba(74, 222, 128, 0.1);
+	border: 1px solid rgba(74, 222, 128, 0.22);
+	color: var(--success);
+}
+.modal-icon-wrap--warning {
+	background: hsla(45, 90%, 55%, 0.1);
+	border: 1px solid hsla(45, 90%, 55%, 0.22);
+	color: var(--warning);
+}
+.modal-icon-wrap--danger {
+	background: rgba(255, 74, 74, 0.08);
+	border: 1px solid rgba(255, 74, 74, 0.2);
+	color: var(--error);
+}
+
+/* ══════════════════════════════════════
+   BODY
+══════════════════════════════════════ */
+.modal-body {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	width: 100%;
+}
+
+.modal-title {
+	font-family: var(--font-head);
+	font-size: 0.95rem;
+	font-weight: 800;
+	color: var(--text-1);
+	letter-spacing: -0.2px;
+	line-height: 1.2;
+}
+
+.modal-message {
+	font-size: 0.66rem;
+	color: var(--text-3);
+	line-height: 1.65;
+	max-width: 320px;
+	margin: 0 auto;
+}
+
+/* ══════════════════════════════════════
+   ACTIONS
+══════════════════════════════════════ */
+.modal-actions {
+	display: flex;
+	gap: 8px;
+	width: 100%;
+	margin-top: 4px;
+}
+
+/* Cancel — ghost */
+.modal-btn-cancel {
+	flex: 1;
+	padding: 10px 16px;
+	border-radius: 50px;
+	background: var(--glass);
+	border: 1px solid var(--glass-border);
+	color: var(--text-1);
+	font-size: 0.68rem;
+	font-weight: 500;
+	font-family: var(--font-body);
+	cursor: pointer;
+	transition: background 0.15s;
+}
+.modal-btn-cancel:hover {
+	background: var(--glass-hover);
+}
+
+/* Confirm — accent colour per type */
+.modal-btn-confirm {
+	flex: 1;
+	padding: 10px 16px;
+	border-radius: 50px;
+	border: none;
+	color: white;
+	font-size: 0.68rem;
+	font-weight: 700;
+	font-family: var(--font-body);
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	transition:
+		opacity 0.15s,
+		transform 0.15s;
+}
+.modal-btn-confirm:hover:not(:disabled) {
+	opacity: 0.88;
+	transform: translateY(-1px);
+}
+.modal-btn-confirm:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+	transform: none;
+}
+
+/* Type-specific confirm colours */
+.modal-btn-confirm--default {
+	background: var(--accent);
+}
+.modal-btn-confirm--info {
+	background: var(--accent);
+}
+.modal-btn-confirm--success {
+	background: var(--success);
+}
+.modal-btn-confirm--warning {
+	background: var(--warning);
+	color: hsl(228, 22%, 9%);
+}
+.modal-btn-confirm--danger {
+	background: var(--error);
+}
+
+/* Spinner inside confirm button while loading */
+.modal-spinner {
+	animation: modal-spin 0.9s linear infinite;
+	flex-shrink: 0;
+}
+@keyframes modal-spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+/* ── Single button (no cancel, just OK) ── */
+.modal-actions:has(.modal-btn-confirm:only-child) .modal-btn-confirm {
+	flex: 0 0 auto;
+	min-width: 120px;
+	margin: 0 auto;
+}
+
+/* ══════════════════════════════════════
+   MOBILE
+══════════════════════════════════════ */
+@media (max-width: 480px) {
+	.modal {
+		padding: 28px 20px;
+		border-radius: var(--radius-lg);
+		max-width: 100%;
+	}
+	.modal-actions {
+		flex-direction: column-reverse; /* confirm on top on mobile */
+	}
+	.modal-btn-cancel,
+	.modal-btn-confirm {
+		flex: none;
+		width: 100%;
+	}
+}

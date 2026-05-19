@@ -10,7 +10,14 @@ class AppConfig {
 	}
 
 	get PROTECTED_ROUTES() {
-		return ["/uploads", "/dashboard", "/profile", "/settings", "/admin"];
+		return [
+			"/uploads",
+			"/dashboard",
+			"/profile",
+			"/settings",
+			"/admin",
+			"/library",
+		];
 	}
 
 	get API_BASE_URL() {

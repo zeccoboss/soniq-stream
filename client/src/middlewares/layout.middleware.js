@@ -10,13 +10,17 @@ export const layoutSwitcher = async (ctx, next) => {
 	const root = getTag("#app");
 
 	// 1. Determine the target outlet
-	// We check the router match first. If null, we assume "root" (404 state).
 	const match = router.match(ctx.path);
 	let outlet = "root";
 
 	if (match) {
 		const leaf = match.stack.at(-1);
 		outlet = leaf?.outlet ?? "main";
+
+		// ── FIX: Resolve the callback if it's a dynamic function ──
+		if (typeof outlet === "function") {
+			outlet = outlet(ctx);
+		}
 	}
 
 	// 2. Clean up previous layout states

@@ -33,7 +33,7 @@ export const VerificationMobile = async ({
 	// ── State factories ──────────────────────────────────────
 
 	const verifyingState = () =>
-		buildNode(`
+		`
 			<div class="verify-mob-card" data-content="verifying">
 				<div class="verify-spinner-wrap">
 					<svg class="verify-spinner" width="36" height="36" viewBox="0 0 24 24" fill="none">
@@ -44,11 +44,11 @@ export const VerificationMobile = async ({
 				<h2 class="verify-title">Verifying your link</h2>
 				<p class="verify-sub">Hang tight — this only takes a second.</p>
 			</div>
-		`);
+		`;
 
 	const successState = () => {
 		const isReset = type === "reset";
-		return buildNode(`
+		return `
 			<div class="verify-mob-card" data-content="success">
 				<div class="verify-success-ring ${isReset ? "verify-success-ring--purple" : ""}">
 					<i class="bi ${isReset ? "bi-shield-check" : "bi-envelope-check"}"></i>
@@ -68,11 +68,11 @@ export const VerificationMobile = async ({
 					This tab will close automatically
 				</div>
 			</div>
-		`);
+		`;
 	};
 
 	const errorState = () =>
-		buildNode(`
+		`
 			<div class="verify-mob-card" data-content="error">
 				<div class="verify-error-icon">
 					<i class="bi bi-exclamation-triangle-fill"></i>
@@ -96,7 +96,7 @@ export const VerificationMobile = async ({
 					</button>
 				</div>
 			</div>
-		`);
+		`;
 
 	// ── Pick state view ──────────────────────────────────────
 	const getStateView = (s) => {

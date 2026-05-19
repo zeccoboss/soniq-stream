@@ -171,6 +171,7 @@ a {
 	/* background-image: linear-gradient(var(--bg-gradient)); */
 	position: relative;
 	scroll-behavior: smooth;
+	transition: filter 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 /* The default "App" state with your grid */
@@ -190,6 +191,45 @@ a {
 	grid-template-columns: 1fr;
 	grid-template-rows: 1fr;
 	height: 100vh;
+}
+
+/* Spotify aesthetic: Gray out and subtly blur the content layout */
+#app.app-offline {
+	filter: grayscale(0.3) blur(1.5px);
+	pointer-events: none; /* Block all interactions when offline */
+}
+
+/* Optional: Elegant floating capsule toast warning at the bottom center of the interface */
+#app.app-offline::after {
+	content: "Offline Mode";
+	position: fixed;
+	bottom: calc(
+		var(--player-height, 90px) + 20px
+	); /* Keeps it cleanly above your audio player bar */
+	left: 50%;
+	transform: translateX(-50%);
+	background: rgba(255, 77, 77, 0.95);
+	color: #fff;
+	padding: 8px 16px;
+	border-radius: 20px;
+	font-weight: 600;
+	font-size: 13px;
+	letter-spacing: 0.5px;
+	z-index: 9999;
+	box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+	backdrop-filter: blur(4px);
+	animation: slideUpFade 0.3s ease forwards;
+}
+
+@keyframes slideUpFade {
+	from {
+		transform: translate(-50%, 10px);
+		opacity: 0;
+	}
+	to {
+		transform: translate(-50%, 0);
+		opacity: 1;
+	}
 }
 
 /* ══════════════════════════════════════

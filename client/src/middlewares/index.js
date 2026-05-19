@@ -2,7 +2,6 @@
 import { getTag } from "@zecco/helpers/dom-helper.js";
 import { routes } from "@zecco/routes/config.routes";
 import { readFromLocalStorage } from "@zecco/services/storage/local-storage.js";
-import { networkGuard } from "./network.middleware";
 import { authRedirect } from "./auth.middleware";
 import { loadingIndicator } from "./loading.middleware";
 import { titleUpdater } from "./title.middleware";
@@ -22,7 +21,6 @@ export const applyMiddleware = () => {
 		.addOutlet("root", getTag("#app")) // Set root outlet for rendering pages
 		.register(routes) // Register routes from config
 		.setNotFound(notFound) // Handle unmatched routes with a 404 page
-		.use(networkGuard) // Global guard to check network status before route changes
 		.setAuthChecker(() => readFromLocalStorage("user")) // Simple auth check for protected routes
 		.setLayoutBuilder(() => buildLayout(getCurrentScreen()))
 		.use(activeLinkSwitcher) // Middleware to switch active link in navigation based on current route

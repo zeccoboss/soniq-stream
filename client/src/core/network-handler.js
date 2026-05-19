@@ -1,5 +1,4 @@
 import { emit } from "@zecco/events/network-events.js";
-// import {store} from "@zecco/store/store.js";
 
 export const NETWORK_STATUS = Object.freeze({
 	ONLINE: "online",
@@ -12,25 +11,29 @@ class NetworkHandler {
 			? NETWORK_STATUS.ONLINE
 			: NETWORK_STATUS.OFFLINE;
 
+		// FIXED: Bind handlers explicitly so removeEventListener works seamlessly
+		this.setOnline = this.setOnline.bind(this);
+		this.setOffline = this.setOffline.bind(this);
+
 		this.init();
 	}
 
 	init() {
-		window.addEventListener("online", () => this.setOnline());
-		window.addEventListener("offline", () => this.setOffline());
+		// Clean up previous instances perfectly before rebinding
+		window.removeEventListener("online", this.setOnline);
+		window.removeEventListener("offline", this.setOffline);
+
+		window.addEventListener("online", this.setOnline);
+		window.addEventListener("offline", this.setOffline);
 	}
 
 	setOnline() {
 		this.status = NETWORK_STATUS.ONLINE;
-
-		// store.setNetworkState(this.status);
 		emit("NETWORK_ONLINE", { status: this.status });
 	}
 
 	setOffline() {
 		this.status = NETWORK_STATUS.OFFLINE;
-
-		// setNetworkState(this.status);
 		emit("NETWORK_OFFLINE", { status: this.status });
 	}
 
@@ -39,4 +42,6 @@ class NetworkHandler {
 	}
 }
 
-export const networkHandler = new NetworkHandler();
+const networkHandler = new NetworkHandler();
+
+export { networkHandler };

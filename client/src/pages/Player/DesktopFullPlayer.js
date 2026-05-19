@@ -1,7 +1,7 @@
 import { buildNode } from "@zecco/utils/dom/build-node";
 import CreateElement from "@zecco/utils/dom/create-element";
-import "./DesktopFullPlayer.css";
 import defaultCover from "@zecco/assets/images/track-cover.png";
+import "./DesktopFullPlayer.css";
 
 const DesktopFullPlayer = () => {
 	const page = new CreateElement("section");
@@ -176,7 +176,7 @@ const DesktopFullPlayer = () => {
 				<!-- Up next list -->
 				<div class="dfp-queue-list" id="dfp-queue-list">
 					<p class="dfp-queue-section-label dfp-queue-next-label">Up Next</p>
-					<!-- queue items injected by track-service / render util -->
+					<!-- queue items injected by audio-service / render util -->
 					<div class="dfp-queue-empty" id="dfp-queue-empty">
 						<i class="bi bi-music-note-list"></i>
 						<span>Nothing up next</span>
