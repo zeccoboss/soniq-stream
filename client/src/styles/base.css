@@ -200,12 +200,12 @@ a {
 }
 
 /* Optional: Elegant floating capsule toast warning at the bottom center of the interface */
-#app.app-offline::after {
+/* #app.app-offline::after {
 	content: "Offline Mode";
 	position: fixed;
 	bottom: calc(
 		var(--player-height, 90px) + 20px
-	); /* Keeps it cleanly above your audio player bar */
+	);
 	left: 50%;
 	transform: translateX(-50%);
 	background: rgba(255, 77, 77, 0.95);
@@ -219,7 +219,7 @@ a {
 	box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
 	backdrop-filter: blur(4px);
 	animation: slideUpFade 0.3s ease forwards;
-}
+} */
 
 @keyframes slideUpFade {
 	from {
