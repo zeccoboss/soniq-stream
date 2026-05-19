@@ -192,8 +192,6 @@ a {
 	grid-template-rows: 1fr;
 	height: 100vh;
 }
-
-/* Spotify aesthetic: Gray out and subtly blur the content layout */
 #app.app-offline {
 	filter: grayscale(0.3) blur(1.5px);
 	pointer-events: none; /* Block all interactions when offline */
