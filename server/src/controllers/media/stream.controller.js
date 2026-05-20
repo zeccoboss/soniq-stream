@@ -1,5 +1,5 @@
 const TrackModel = require("../../models/track.model");
-const { getPresignedUrl, BUCKETS } = require("../../services/minio.service");
+const { getPresignedUrl, BUCKETS } = require("../../services/s3.service");
 
 const streamTrack = async (req, res) => {
 	try {

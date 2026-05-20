@@ -3,7 +3,8 @@ const { v4: uuidV4 } = require("uuid");
 class AppConfig {
 	#appName = "SoniqStream";
 
-	#port = process.env.NODE_ENV === "production" ? process.env.PORT : 3500;
+	#port =
+		process.env.NODE_ENV === "production" ? (process.env.PORT ?? 3500) : 3500;
 	#client_base_url = "https://zecco-music-app.vercel.app/";
 	#client_dev_url = "http://localhost:5173/";
 

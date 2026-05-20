@@ -1,16 +1,17 @@
-// services/meta-manager.service.js
 const { selectCover, parseBuffer } = require("music-metadata");
 const { v4: uuidv4 } = require("uuid");
-const { storeTrack, storeTrackCover } = require("../services/minio.service");
+const { storeTrack, storeTrackCover } = require("../services/s3.service");
 const ImageModel = require("../models/image.model");
 const TrackModel = require("../models/track.model");
 const sharp = require("sharp");
 const appConfig = require("../config/app.config");
-// ── Private helpers (plain functions — no class state needed) ──────────────────
+
+const isProduction = process.env.NODE_ENV === "production";
+
+// ── Private helpers ──────────────────────────────────────────────────────────
 
 /**
  * Generate a unique name with a human-readable timestamp prefix.
- * Called at upload time so the date is always fresh.
  */
 const generateUniqueName = (prefix) => {
 	const now = new Date();
@@ -20,18 +21,13 @@ const generateUniqueName = (prefix) => {
 };
 
 /**
- * Upload the cover art embedded in track metadata to MinIO,
+ * Upload the cover art embedded in track metadata to Cloudinary/S3,
  * then create and return an ImageModel record.
- *
- * @param {import("mongoose").Types.ObjectId} user
- * @param {object} common  - metadata.common from music-metadata
- * @returns {Promise<import("mongoose").Types.ObjectId|null>}
  */
 const processTrackCover = async (user, common) => {
 	const cover = selectCover(common.picture);
 	if (!cover?.data) return null;
 
-	// cover.data is a raw Buffer — sharp can read it directly
 	let dimensions = { width: 0, height: 0 };
 	try {
 		const meta = await sharp(cover.data).metadata();
@@ -51,6 +47,18 @@ const processTrackCover = async (user, common) => {
 	const storedKey = await storeTrackCover(cover);
 	if (!storedKey) return null;
 
+	// Determine DB payload structure based on whether it's a Cloudinary URL or MinIO key
+	const isCloudinaryUrl =
+		storedKey.startsWith("http://") || storedKey.startsWith("https://");
+
+	const storagePayload = {
+		key: isCloudinaryUrl ? `soniq_stream/covers/${coverName}` : storedKey,
+		baseUrl: isCloudinaryUrl
+			? storedKey
+			: process.env.MINIO_ENDPOINT || "http://127.0.0.1:9000",
+		type: isProduction ? "cloudinary" : "s3",
+	};
+
 	try {
 		const image = await ImageModel.create({
 			uuid: uuidv4(),
@@ -59,12 +67,8 @@ const processTrackCover = async (user, common) => {
 			category: "cover",
 			format: cover.format ?? "image/jpeg",
 			size: Buffer.byteLength(cover.data),
-			dimensions, // real values from sharp, not zeros
-			storage: {
-				key: storedKey,
-				baseUrl: process.env.MINIO_ENDPOINT,
-				type: "s3",
-			},
+			dimensions,
+			storage: storagePayload,
 		});
 		return image._id;
 	} catch (err) {
@@ -75,15 +79,14 @@ const processTrackCover = async (user, common) => {
 
 /**
  * Shape raw music-metadata output into a clean TrackModel payload.
- *
- * @param {Express.Multer.File} file
- * @param {string}              trackKey   - MinIO key returned from storeTrack
- * @param {string|null}         coverId    - ImageModel _id or null
- * @param {object}              metadata   - Full music-metadata result
- * @returns {object}
  */
 const buildTrackPayload = (file, trackKey, coverId, metadata) => {
 	const { common, format } = metadata;
+
+	// Track endpoint switches between Backblaze API and local MinIO link
+	const trackBaseUrl = isProduction
+		? process.env.B2_ENDPOINT
+		: process.env.MINIO_ENDPOINT || "http://127.0.0.1:9000";
 
 	return {
 		uuid: uuidv4(),
@@ -106,7 +109,7 @@ const buildTrackPayload = (file, trackKey, coverId, metadata) => {
 		videoId: null,
 		storage: {
 			key: trackKey,
-			baseUrl: process.env.MINIO_ENDPOINT,
+			baseUrl: trackBaseUrl,
 			type: "s3",
 		},
 	};
@@ -116,10 +119,6 @@ const buildTrackPayload = (file, trackKey, coverId, metadata) => {
 
 /**
  * Full pipeline: parse → upload cover → upload track → save to DB.
- *
- * @param {import("mongoose").Types.ObjectId} userId
- * @param {Express.Multer.File}               file    - Multer memory-storage file
- * @returns {Promise<import("mongoose").Document|null>}
  */
 const processTrack = async (userId, file) => {
 	if (!file || typeof file !== "object") {
@@ -139,12 +138,12 @@ const processTrack = async (userId, file) => {
 	// ── 2. Upload cover art (non-blocking if absent) ───────────────────────────
 	const coverId = await processTrackCover(userId, metadata.common);
 
-	// ── 3. Upload track to MinIO ───────────────────────────────────────────────
+	// ── 3. Upload track to S3/B2 ───────────────────────────────────────────────
 	const trackName = generateUniqueName("Track");
 	const trackKey = await storeTrack(file, trackName);
 
 	if (!trackKey) {
-		console.error("[MetaManager] Track upload to MinIO failed — aborting");
+		console.error("[MetaManager] Track upload to S3 failed — aborting");
 		return null;
 	}
 
@@ -152,7 +151,6 @@ const processTrack = async (userId, file) => {
 	const payload = buildTrackPayload(file, trackKey, coverId, metadata);
 
 	try {
-		// user attached separately — keeps buildTrackPayload pure/testable
 		const track = await TrackModel.create({ ...payload, user: userId });
 		return track;
 	} catch (err) {

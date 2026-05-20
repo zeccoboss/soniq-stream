@@ -23,7 +23,7 @@ router.patch("/", verifyJWT, upload.single("image"), updateImage);
  * TODO: PROFILE AVATAR
  * Logic:
  * 1. Process via handle-images.helpers (crop 200x200).
- * 2. Upload buffer to MinIO 'avatars' bucket.
+ * 2. Upload buffer to S3 'avatars' bucket.
  * 3. Update 'avatarUrl' in MongoDB Atlas for current user (req.user.id).
  */
 // router.patch("/avatar", verifyJWT, upload.single("image"), updateUserAvatar);
@@ -32,7 +32,7 @@ router.patch("/", verifyJWT, upload.single("image"), updateImage);
  * TODO: TRACK COVERS
  * Logic:
  * 1. Ensure image is high-res square (500x500).
- * 2. Upload to 'covers' bucket in MinIO.
+ * 2. Upload to 'covers' bucket in S3.
  * 3. Return the URL so it can be saved in the Track document.
  */
 // router.post("/track-cover", verifyJWT, upload.single("image"), uploadTrackCover);

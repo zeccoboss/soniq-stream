@@ -1472,3 +1472,9 @@ f87e9164-b5ac-4471-9c69-d9de2b2c29eb	19052026	03:00:59	/api/v1/feeds/discover?li
 a3857c82-bde7-480c-909f-096b69ed89e2	19052026	03:11:48	/api/v1/feeds/explore?limit=10&signal=%5Bobject+AbortSignal%5D	GET	http://localhost:5173
 f271d6e2-9256-4c6d-8b48-29dc4e9fd6a3	19052026	03:11:48	/api/v1/feeds/discover?limit=10&signal=%5Bobject+AbortSignal%5D	GET	http://localhost:5173
 a7d5413b-fa06-4b35-bbc0-ef97c1ba10f8	19052026	03:11:48	/api/v1/feeds/for-you?signal=%5Bobject+AbortSignal%5D	GET	http://localhost:5173
+377fd1d1-37cb-4f7d-a8b9-0a1d52d54704	20052026	12:54:38	/api/v1/auth/login	POST	undefined
+bce2f36c-3263-4828-b983-de8d98489974	20052026	12:55:20	/api/v1/tracks/uploads	POST	undefined
+401b3624-1a56-4af3-acaa-a71a14a7e134	20052026	13:07:20	/api/v1/tracks/uploads	POST	undefined
+3b89e4d9-8b07-4f0f-8f3e-9d22bbc17116	20052026	13:15:47	/api/v1/tracks/uploads	POST	undefined
+ef79d28e-736c-40fe-8245-f5b849d5de2c	20052026	13:15:59	/api/v1/auth/login	POST	undefined
+adc7c70d-357a-416a-94cb-e4284a0b0450	20052026	13:16:50	/api/v1/tracks/uploads	POST	undefined

@@ -7,7 +7,7 @@ const {
 	storeImage,
 	deleteObject,
 	BUCKETS,
-} = require("../../services/minio.service");
+} = require("../../services/s3.service");
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 const VALID_TYPES = ["avatar", "cover"];
@@ -19,7 +19,7 @@ const USER_IMAGE_FIELD = {
 };
 
 /**
- * Delete an existing image record from MinIO + DB.
+ * Delete an existing image record from S3 + DB.
  * Silent on failure — a failed cleanup should never block a new upload.
  */
 const cleanupOldImage = async (imageId) => {
@@ -68,11 +68,11 @@ async function updateImage(req, res) {
 			});
 		}
 
-		// ── Generate a stable unique name for MinIO key ────────────────────────
+		// ── Generate a stable unique name for S3 key ────────────────────────
 		const uuid = uuidv4();
 		const uniqueName = `${type}-${userId}-${uuid}`;
 
-		// ── Upload new image to MinIO ───────────────────────────────────────────
+		// ── Upload new image to S3 ───────────────────────────────────────────
 		const storedKey = await storeImage(file, uniqueName);
 		if (!storedKey) {
 			return res.status(500).json({
@@ -103,7 +103,7 @@ async function updateImage(req, res) {
 			dimensions: { width: meta.width, height: meta.height },
 			storage: {
 				key: storedKey,
-				baseUrl: process.env.MINIO_ENDPOINT,
+				baseUrl: process.env.S3_ENDPOINT,
 				type: "s3",
 			},
 		});
@@ -111,7 +111,7 @@ async function updateImage(req, res) {
 		// ── Update user reference ──────────────────────────────────────────────
 		await UserModel.findByIdAndUpdate(userId, { [userField]: newImage._id });
 
-		// ── Delete old image from MinIO + DB (after new one is safely saved) ───
+		// ── Delete old image from S3 + DB (after new one is safely saved) ───
 		await cleanupOldImage(oldImageId);
 
 		return res.status(200).json({

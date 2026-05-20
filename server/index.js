@@ -7,7 +7,6 @@ const { logger } = require("./src/middlewares/event-handler.middleware");
 const { errorLogger } = require("./src/middlewares/error-handler.middleware");
 const { initAdmin } = require("./src/core/init-admin.core");
 const cookieParser = require("cookie-parser");
-const verifyJWT = require("./src/middlewares/verify-jwt.middleware");
 const { credentials } = require("./src/middlewares/credentials.middleware");
 const { connectDB } = require("./src/config/db.config");
 const mongoose = require("mongoose");

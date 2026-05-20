@@ -1,6 +1,6 @@
 const { v4: uuidv4 } = require("uuid");
 const { processTrack } = require("../../metadata/meta-manager.metadata");
-const { deleteObject, BUCKETS } = require("../../services/minio.service");
+const { deleteObject, BUCKETS } = require("../../services/s3.service");
 const TrackModel = require("../../models/track.model");
 const ImageModel = require("../../models/image.model");
 const Track = require("../../models/track.model");
@@ -278,7 +278,7 @@ const updateTrack = async (req, res) => {
 };
 
 // ── DELETE /api/media/track/:id ────────────────────────────────────────────────
-// Hard delete: removes track from MinIO, cover image from MinIO + ImageModel, then TrackModel
+// Hard delete: removes track from S3, cover image from S3 + ImageModel, then TrackModel
 const deleteTrack = async (req, res) => {
 	try {
 		const track = await TrackModel.findOne({ uuid: req.params.uuid });
@@ -294,7 +294,7 @@ const deleteTrack = async (req, res) => {
 			return res.status(403).json({ success: false, message: "Forbidden" });
 		}
 
-		// ── 1. Delete track file from MinIO ────────────────────────────────────
+		// ── 1. Delete track file from S3 ────────────────────────────────────
 		await deleteObject({ bucket: BUCKETS.tracks, key: track.storage.key });
 
 		// ── 2. Delete cover art if it exists ──────────────────────────────────

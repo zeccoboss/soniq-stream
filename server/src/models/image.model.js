@@ -26,7 +26,11 @@ const ImageSchema = new Schema(
 		storage: {
 			key: { type: String, required: true },
 			baseUrl: { type: String, required: true },
-			type: { type: String, required: true, enum: ["s3", "local"] },
+			type: {
+				type: String,
+				required: true,
+				enum: ["s3", "local", "cloudinary"],
+			},
 		},
 
 		format: { type: String, default: "image/jpeg", required: true },

@@ -58,7 +58,7 @@ const deleteTrackAsAdmin = async (req, res) => {
 			$pull: { uploadsTracksId: track._id },
 		});
 
-		// Note: You should also trigger your MinIO/S3 delete logic here
+		// Note: You should also trigger your S3/S3 delete logic here
 		res.json({
 			success: true,
 			message: "Track permanently removed by Admin",
