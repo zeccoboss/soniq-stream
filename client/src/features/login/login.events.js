@@ -27,18 +27,6 @@ export const loginEvents = (root, { render }) => {
 				? "bi bi-eye-slash"
 				: "bi bi-eye";
 		}
-
-		// // Check for GitHub button click
-		// const githubBtn = e.target.closest("#login-github-btn");
-		// if (githubBtn) {
-		// 	location.href = `${appConfig.API_BASE_URL}/oauth/github_blank`;
-		// }
-
-		// // Check for Google button click
-		// const googleBtn = e.target.closest("#login-google-btn");
-		// if (googleBtn) {
-		// 	location.href = `${appConfig.API_BASE_URL}/oauth/google`;
-		// }
 	});
 
 	// 3. Form Submission
@@ -46,11 +34,11 @@ export const loginEvents = (root, { render }) => {
 		"#login-submit-btn, #login-mob-submit-btn",
 	);
 	submitBtn?.addEventListener("click", async () => {
-		const email = root.querySelector("#login-email").value;
-		const password = root.querySelector("#login-pwd").value;
+		const identifier = root.querySelector("#login-identifier").value.trim();
+		const password = root.querySelector("#login-pwd").value.trim();
 
 		// Use the component's built-in error state instead of a toast
-		if (!email || !password) {
+		if (!identifier || !password) {
 			root.dispatchEvent(
 				new CustomEvent("login-error", {
 					detail: "Please fill in all fields",
@@ -62,7 +50,7 @@ export const loginEvents = (root, { render }) => {
 		root.dispatchEvent(new CustomEvent("login-loading"));
 
 		try {
-			const response = await authService.login({ email, password });
+			const response = await authService.login({ identifier, password });
 
 			store.setAuth(response.data.user, response.data.token);
 			clearLoginDraft();

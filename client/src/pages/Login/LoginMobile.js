@@ -78,7 +78,7 @@ export const LoginMobile = async ({
 						<label class="login-label" for="login-mob-email">Email address</label>
 						<input
 							class="login-input ${state === "error" ? "login-input--error" : ""}"
-							id="login-mob-email"
+							id="login-identifier"
 							type="email"
 							placeholder="ada@example.com"
 							autocomplete="email"
@@ -95,7 +95,7 @@ export const LoginMobile = async ({
 						<div class="login-input-eye-wrap">
 							<input
 								class="login-input ${state === "error" ? "login-input--error" : ""}"
-								id="login-mob-pwd"
+								id="login-pwd"
 								type="password"
 								placeholder="Enter your password"
 								autocomplete="current-password"

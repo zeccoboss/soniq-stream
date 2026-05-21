@@ -61,7 +61,7 @@ export const registerEvents = (
 
 				// SECURITY: Never save passwords to sessionStorage
 				if (key && e.target.type !== "password") {
-					saveDraft({ [key]: e.target.value });
+					saveDraft({ [key]: e.target.value.trim() });
 				}
 			}, 300),
 		);
@@ -114,7 +114,7 @@ export const registerEvents = (
 
 		// Password Strength Meter
 		pwdInput?.addEventListener("input", (e) => {
-			const val = e.target.value;
+			const val = e.target.value.trim();
 			let score = 0;
 
 			if (val.length >= 8) score++;
@@ -160,8 +160,8 @@ export const registerEvents = (
 		backBtn?.addEventListener("click", () => goToStep(1));
 
 		nextBtn?.addEventListener("click", () => {
-			const pwd = pwdInput.value;
-			const confirm = confirmInput.value;
+			const pwd = pwdInput.value.trim();
+			const confirm = confirmInput.value.trim();
 
 			if (pwd.length < 8)
 				return showError("Password must be at least 8 characters.");
@@ -191,7 +191,7 @@ export const registerEvents = (
 		selects.forEach((select) => {
 			select.addEventListener("change", (e) => {
 				const key = getKeyFromId(e.target.id);
-				if (key) saveDraft({ [key]: e.target.value });
+				if (key) saveDraft({ [key]: e.target.value.trim() });
 			});
 		});
 
@@ -236,13 +236,10 @@ export const registerEvents = (
 				submitBtn.disabled = true;
 
 				// Fire off API request
-				// await authService.register(draft); // TODO: uncomment when API is ready
-
-				// Simulate API delay for demo purposes
-				await new Promise((res) => setTimeout(res, 1500));
+				await authService.register(draft);
 
 				// Clear memory & storage
-				// clearDraft(); // TODO: uncomment when API is ready
+				clearDraft();
 
 				// Show Verification Modal
 				showModal({

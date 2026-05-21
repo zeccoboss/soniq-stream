@@ -92,10 +92,10 @@ export const LoginDesktop = async ({
 					<div class="login-form" id="login-form">
 
 						<div class="login-field">
-							<label class="login-label" for="login-email">Email address</label>
+							<label class="login-label" for="login-identifier">Email address</label>
 							<input
 								class="login-input ${state === "error" ? "login-input--error" : ""}"
-								id="login-email"
+								id="login-identifier"
 								type="email"
 								placeholder="ada@example.com"
 								autocomplete="email"
