@@ -20,8 +20,6 @@ const generateUniqueName = (prefix) => {
 	return `${appConfig.appName}-${prefix}-${uuidV4()}-${date}-${time}`;
 };
 
-console.log(generateUniqueName("Test")); // Example usage
-
 /**
  * Upload the cover art embedded in track metadata to Cloudinary/S3,
  * then create and return an ImageModel record.
