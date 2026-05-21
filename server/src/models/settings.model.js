@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
-const { v4: uuidv4 } = require("uuid");
+const { v4: uuidV4 } = require("uuid");
 
 const SettingsSchema = new Schema(
 	{
@@ -14,7 +14,7 @@ const SettingsSchema = new Schema(
 			type: String,
 			required: true,
 			unique: true,
-			default: () => uuidv4(),
+			default: () => uuidV4(),
 		},
 		// ── Appearance ──
 		theme: {

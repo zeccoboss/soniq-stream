@@ -13,8 +13,18 @@ export const ENDPOINTS = {
 		REGISTER: "/auth/register",
 		LOGOUT: "/auth/logout",
 		REFRESH: "/auth/refresh",
-		VERIFY: "/auth/verify",
-		ME: "/auth/me",
+		VERIFY_TOKEN: "/auth/verify",
+		FORGOT_PASSWORD: "/auth/forgot-password",
+	},
+
+	// ==================================================
+	// OAuth
+	// ==================================================
+
+	OAUTH: {
+		GOOGLE: "/oauth/google",
+		FACEBOOK: "/oauth/facebook",
+		GITHUB: "/oauth/github",
 	},
 
 	// ==================================================
@@ -28,8 +38,12 @@ export const ENDPOINTS = {
 		TOP_TRACKS: "/tracks/top-tracks",
 		POPULAR: "/tracks/popular",
 		SEARCH: "/tracks/search",
+		UPLOAD: "/tracks/uploads",
 		LIKE: (trackId) => `/tracks/${trackId}/like`,
 		STREAM: (trackId) => `/tracks/${trackId}/stream`,
+		METADATA: (trackId) => `/tracks/${trackId}/metadata`,
+		COMMENT: (trackId) => `/tracks/${trackId}/comment`,
+		SHARE: (trackId) => `/tracks/${trackId}/share`,
 	},
 
 	// ==================================================
@@ -89,5 +103,17 @@ export const ENDPOINTS = {
 		DISCOVER: "feeds/discover",
 		EXPLORE: "/feeds/explore",
 		FOR_YOU: "/feeds/for-you",
+	},
+
+	// ==================================================
+	// Me (User-specific)
+	// ==================================================
+
+	ME: {
+		BASE: "/me",
+		SETTINGS: "/me/settings",
+		LIBRARY: "/me/library",
+		SEARCHES: "/me/searches",
+		PLAYER: "/me/player",
 	},
 };

@@ -1,6 +1,7 @@
 import CreateElement from "@zecco/utils/dom/create-element";
 import { buildNode } from "@zecco/utils/dom/build-node.js";
 import "./Register.styles.css";
+import { appConfig } from "@zecco/config/app.config";
 
 /**
  * RegisterMobile — Mobile register view
@@ -49,12 +50,12 @@ export const RegisterMobile = async ({
 			<p class="reg-sub">Join the community. Share your sound.</p>
 
 			<div class="reg-oauth">
-				<button class="reg-oauth-btn" id="reg-mob-google-btn" type="button">
+				<a href="${appConfig.API_BASE_URL}/oauth/google" class="reg-oauth-btn" id="reg-mob-google-btn">
 					<i class="bi bi-google"></i> Continue with Google
-				</button>
-				<button class="reg-oauth-btn" id="reg-mob-github-btn" type="button">
+				</a>
+				<a href="${appConfig.API_BASE_URL}/oauth/github" class="reg-oauth-btn" id="reg-mob-github-btn">
 					<i class="bi bi-github"></i> Continue with GitHub
-				</button>
+				</a>
 			</div>
 
 			<div class="reg-divider">

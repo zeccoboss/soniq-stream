@@ -12,8 +12,6 @@ const {
 router.use(verifyJWT);
 
 router.get("/", meController.getMe); // Standard profile fetch
-
-router.get("/", meController.getMe); // Get user profile with populated images and settings
 router.get("/settings", meController.getSettings); // Get or create user settings
 
 // Update user settings (theme, notifications, etc.)

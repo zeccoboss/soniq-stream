@@ -1,5 +1,5 @@
 const { selectCover, parseBuffer } = require("music-metadata");
-const { v4: uuidv4 } = require("uuid");
+const { v4: uuidV4 } = require("uuid");
 const { storeTrack, storeTrackCover } = require("../services/s3.service");
 const ImageModel = require("../models/image.model");
 const TrackModel = require("../models/track.model");
@@ -17,8 +17,10 @@ const generateUniqueName = (prefix) => {
 	const now = new Date();
 	const date = now.toDateString().replace(/ /g, "-");
 	const time = now.toTimeString().slice(0, 8).replace(/:/g, "-");
-	return `${appConfig.appName}-${prefix}-${uuidv4()}-${date}-${time}`;
+	return `${appConfig.appName}-${prefix}-${uuidV4()}-${date}-${time}`;
 };
+
+console.log(generateUniqueName("Test")); // Example usage
 
 /**
  * Upload the cover art embedded in track metadata to Cloudinary/S3,
@@ -61,7 +63,7 @@ const processTrackCover = async (user, common) => {
 
 	try {
 		const image = await ImageModel.create({
-			uuid: uuidv4(),
+			uuid: uuidV4(),
 			user,
 			name: coverName,
 			category: "cover",
@@ -89,7 +91,7 @@ const buildTrackPayload = (file, trackKey, coverId, metadata) => {
 		: process.env.MINIO_ENDPOINT || "http://127.0.0.1:9000";
 
 	return {
-		uuid: uuidv4(),
+		uuid: uuidV4(),
 		size: String(file.size),
 		name: file.originalname ?? null,
 		artist: common.artist ?? null,

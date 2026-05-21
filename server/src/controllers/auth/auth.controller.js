@@ -1,7 +1,7 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const crypto = require("node:crypto");
-const { v4: uuidv4 } = require("uuid");
+const { v4: uuidV4 } = require("uuid");
 const { rolesList } = require("../../config/roles-list.config");
 const { sendVerificationMail } = require("../../helpers/mailer.helper");
 const UserModel = require("../../models/user.model");
@@ -12,9 +12,19 @@ const {
 
 const handleRegister = async (req, res) => {
 	try {
-		const { username, email, password } = req.body;
+		const {
+			firstName,
+			lastName,
+			username,
+			email,
+			password,
+			dob,
+			gender,
+			country,
+			genres,
+			termsAccepted,
+		} = req.body;
 
-		// Zod handles required field validation — just check email uniqueness
 		const existingEmail = await UserModel.findOne({ email });
 		if (existingEmail) {
 			return res
@@ -22,7 +32,6 @@ const handleRegister = async (req, res) => {
 				.json({ success: false, message: "Email already exists" });
 		}
 
-		// Check if email exists from OAuth — offer to link instead
 		const oauthUser = await UserModel.findOne({
 			email,
 			authProviders: { $in: ["google", "github"] },
@@ -31,7 +40,7 @@ const handleRegister = async (req, res) => {
 			return res.status(409).json({
 				success: false,
 				message:
-					"This email is linked to a Google or GitHub account. Please sign in with OAuth.",
+					"This email is linked to OAuth. Please sign in with Google or GitHub.",
 			});
 		}
 
@@ -42,22 +51,26 @@ const handleRegister = async (req, res) => {
 			.digest("hex");
 
 		const user = await UserModel.create({
-			uuid: uuidv4(),
+			uuid: uuidV4(),
+			firstName,
+			lastName,
 			username,
 			email,
 			password: await bcrypt.hash(password, 10),
 			roles: [rolesList.User],
 			verified: false,
 			authProviders: ["local"],
-			avatar: null,
-			cover: null,
+			dob,
+			gender,
+			country,
+			genres,
+			termsAccepted,
 			verificationToken: hashedToken,
 			verificationTokenExpiry: Date.now() + 3600000,
 			lastUserVerificationSentAt: Date.now(),
 		});
 
-		const info = await sendVerificationMail(user.email, token);
-		console.log("[USER_MAILER]:", info.accepted);
+		await sendVerificationMail(user.email, token);
 
 		return res.status(201).json({
 			success: true,

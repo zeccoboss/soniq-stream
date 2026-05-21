@@ -1,5 +1,5 @@
 const bcrypt = require("bcrypt");
-const { v4: uuidv4 } = require("uuid");
+const { v4: uuidV4 } = require("uuid");
 const UserModel = require("../../models/user.model");
 const { rolesList } = require("../../config/roles-list.config");
 const {
@@ -124,7 +124,18 @@ const getUserProfile = async (req, res) => {
 // ── POST /users ────────────────────────────────────────────────────────────────
 const createUser = async (req, res) => {
 	try {
-		const { username, fullname, email, password } = req.body;
+		const {
+			firstName,
+			lastName,
+			username,
+			email,
+			password,
+			dob,
+			gender,
+			country,
+			genres,
+			termsAccepted,
+		} = req.body;
 
 		const existingEmail = await UserModel.findOne({ email });
 		if (existingEmail) {
@@ -134,16 +145,22 @@ const createUser = async (req, res) => {
 		}
 
 		const user = await UserModel.create({
-			uuid: uuidv4(),
+			uuid: uuidV4(),
+			firstName,
+			lastName,
 			username,
-			fullname,
 			email,
 			password: await bcrypt.hash(password, 10),
 			roles: [rolesList.User],
 			verified: true,
 			authProviders: ["local"],
+			dob,
+			gender,
+			country,
+			genres,
+			termsAccepted,
 			avatar: null,
-			cover: null,
+			banner: null, // Fixed: schema uses 'banner', not 'cover'
 		});
 
 		return res.status(201).json({

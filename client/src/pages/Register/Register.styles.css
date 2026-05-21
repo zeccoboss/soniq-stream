@@ -730,3 +730,13 @@
 		padding: 40px 20px 32px;
 	}
 }
+
+@keyframes spin {
+	100% {
+		transform: rotate(360deg);
+	}
+}
+.spin {
+	display: inline-block;
+	animation: spin 1s linear infinite;
+}

@@ -1,5 +1,5 @@
 const sharp = require("sharp");
-const { v4: uuidv4 } = require("uuid");
+const { v4: uuidV4 } = require("uuid");
 
 const ImageModel = require("../../models/image.model");
 const UserModel = require("../../models/user.model");
@@ -69,7 +69,7 @@ async function updateImage(req, res) {
 		}
 
 		// ── Generate a stable unique name for S3 key ────────────────────────
-		const uuid = uuidv4();
+		const uuid = uuidV4();
 		const uniqueName = `${type}-${userId}-${uuid}`;
 
 		// ── Upload new image to S3 ───────────────────────────────────────────

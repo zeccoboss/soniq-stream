@@ -53,8 +53,6 @@ app.use(errorLogger);
 
 // Start server after successful DB connection
 mongoose.connection.once("open", () => {
-	console.log("Connected to mongoDB");
-
 	// TODO: In production, consider moving seeding to a separate script or admin-only endpoint to avoid unintended data resets. For development/testing, this is fine. And only run this once.
 	// seedTracks(); // Seed tracks after DB connection is established
 

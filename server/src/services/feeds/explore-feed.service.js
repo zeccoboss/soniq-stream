@@ -6,6 +6,7 @@ const {
 	toTrackCard,
 	toArtistCard,
 } = require("../../helpers/feed-transformers.helper");
+const { rolesList } = require("../../config/roles-list.config");
 
 const IMAGE_POPULATE = {
 	path: "cover",
@@ -43,10 +44,10 @@ const getExploreFeed = async () => {
 	];
 
 	const [trendingArtists, newThisWeek, trendingTracks] = await Promise.all([
-		UserModel.find({})
+		UserModel.find({ verified: true })
 			.sort({ uploadsCount: -1 })
 			.limit(10)
-			.select("username username uploadsCount avatar")
+			.select("username uuid uploadsCount avatar")
 			.populate(AVATAR_POPULATE)
 			.lean({ virtuals: true }),
 

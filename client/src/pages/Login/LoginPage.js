@@ -1,55 +1,52 @@
+// client/src/pages/Login/LoginPage.js
 import { mobileScreen } from "@zecco/core/screen-break-points";
 import { LoginDesktop } from "./LoginDesktop";
 import { LoginMobile } from "./LoginMobile";
+import { loginEvents } from "@zecco/features/login/login.events.js";
+import { readFromSessionStorage } from "@zecco/services/storage/session-storage.js";
 
-/**
- * LoginPage — Main login router component
- * Renders into "root" outlet (full viewport)
- * Handles responsive switching between desktop (brand + form) and mobile (form only)
- *
- * @async
- * @param {Object} ctx - Router context
- * @returns {Promise<Element>} The login page element with __onUnmount lifecycle
- */
 export const LoginPage = async (ctx) => {
 	const root = document.createElement("div");
 	root.className = "login-page-root";
 
-	let state = "form"; // form | loading | error
+	// ── Internal State ─────────────────────────────────────────
+	let state = "idle"; // idle | loading | error
+	let error = "";
+	// Pull existing draft from storage
+	const draft = readFromSessionStorage("login_draft") || {};
 	let isMounted = true;
-	let controller = null; // For request cancellation
+	const controller = null;
 
-	/**
-	 * Render the appropriate UI based on screen size
-	 */
-	const renderView = async () => {
+	// ── Render Logic ──────────────────────────────────────────
+	const render = async () => {
 		if (!isMounted) return;
+		const UI = mobileScreen.matches ? LoginMobile : LoginDesktop;
 
-		const isMobile = mobileScreen.matches;
-		const UIComponent = isMobile ? LoginMobile : LoginDesktop;
-
-		// Call async component
-		const view = await UIComponent({
-			state,
-			ctx,
-		});
-
-		if (!isMounted) return;
-
-		// Replace DOM
+		const view = await UI({ state, error, draft, ctx });
 		root.replaceChildren(view);
+
+		// Wire events (passing helpers for the orchestrator to use)
+		loginEvents(root, { render });
 	};
 
-	// ── Initial render ──
-	await renderView();
+	// ── Internal Event Listeners ──────────────────────────────
+	root.addEventListener("login-loading", (e) => {
+		state = "loading";
+		render();
+	});
 
-	// ── Lifecycle cleanup ──
+	root.addEventListener("login-error", (e) => {
+		state = "error";
+		error = e.detail;
+		render();
+	});
+
+	await render();
+
 	root.__onUnmount = () => {
 		isMounted = false;
-		controller?.abort(); // Cancel in-flight requests
+		controller?.abort();
 	};
 
 	return root;
 };
-
-export default LoginPage;

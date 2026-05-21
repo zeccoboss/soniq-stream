@@ -1,6 +1,7 @@
 import CreateElement from "@zecco/utils/dom/create-element";
 import { buildNode } from "@zecco/utils/dom/build-node.js";
 import "./Login.styles.css";
+import { appConfig } from "@zecco/config/app.config";
 
 /**
  * LoginMobile — Mobile login view
@@ -54,14 +55,14 @@ export const LoginMobile = async ({
 
 				<!-- OAuth -->
 				<div class="login-oauth">
-					<button class="login-oauth-btn" id="login-mob-google-btn" type="button"
+					<a href="${appConfig.API_BASE_URL}/oauth/google" class="login-oauth-btn" id="login-mob-google-btn" type="button"
 						${state === "loading" ? "disabled" : ""}>
 						<i class="bi bi-google"></i> Continue with Google
-					</button>
-					<button class="login-oauth-btn" id="login-mob-github-btn" type="button"
+					</a>
+					<a href="${appConfig.API_BASE_URL}/oauth/github" class="login-oauth-btn" id="login-mob-github-btn" type="button"
 						${state === "loading" ? "disabled" : ""}>
 						<i class="bi bi-github"></i> Continue with GitHub
-					</button>
+					</a>
 				</div>
 
 				<div class="login-divider">

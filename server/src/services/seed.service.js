@@ -1,4 +1,4 @@
-const { v4: uuidv4 } = require("uuid");
+const { v4: uuidV4 } = require("uuid");
 const mongoose = require("mongoose");
 const TrackModel = require("../models/track.model");
 
@@ -66,7 +66,7 @@ const seedTracks = async () => {
 			const playCount = Math.floor(Math.random() * 10000) + playBias;
 
 			return {
-				uuid: uuidv4(),
+				uuid: uuidV4(),
 				title: `Track ${i + 1}`,
 				name: `track_${i + 1}.mp3`,
 				artist: artist,

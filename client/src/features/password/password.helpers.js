@@ -1,17 +1,19 @@
-// client/src/features/register/register.helpers.js
+// client/src/features/password/password.helpers.js
 import {
 	readFromSessionStorage,
-	removeFromSessionStorage,
 	writeToSessionStorage,
+	removeFromSessionStorage,
 } from "@zecco/services/storage/session-storage.js";
 
-const DRAFT_KEY = "login_draft";
+const DRAFT_KEY = "pwd_draft";
 
-export const saveLoginDraft = (updates) => {
+export const savePwdDraft = (updates) => {
 	const current = readFromSessionStorage(DRAFT_KEY) || {};
 	writeToSessionStorage(DRAFT_KEY, { ...current, ...updates });
 };
 
-export const clearLoginDraft = () => {
+export const clearPwdDraft = () => {
 	removeFromSessionStorage(DRAFT_KEY);
+	removeFromSessionStorage("pwd_prev_step");
+	removeFromSessionStorage("pwd_token");
 };

@@ -1,5 +1,5 @@
-import { BaseService } from "./base.service.js";
-import { ENDPOINTS } from "./endpoints.js";
+import { BaseService } from "./base.service";
+import { ENDPOINTS } from "./endpoints";
 
 class AudioService extends BaseService {
 	// FEEDS (UI-level)

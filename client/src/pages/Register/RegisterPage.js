@@ -1,3 +1,5 @@
+/** biome-ignore-all assist/source/organizeImports: <No need for strict> */
+
 import { mobileScreen } from "@zecco/core/screen-break-points.js";
 import { RegisterDesktop } from "./RegisterDesktop.js";
 import { RegisterMobile } from "./RegisterMobile.js";

@@ -1,4 +1,4 @@
-const { v4: uuidv4 } = require("uuid");
+const { v4: uuidV4 } = require("uuid");
 const { processTrack } = require("../../metadata/meta-manager.metadata");
 const { deleteObject, BUCKETS } = require("../../services/s3.service");
 const TrackModel = require("../../models/track.model");

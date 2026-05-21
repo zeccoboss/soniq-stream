@@ -2,6 +2,9 @@ const { S3Client } = require("@aws-sdk/client-s3");
 
 function getS3Config() {
 	const isProduction = process.env.NODE_ENV === "production";
+	console.log(
+		`[S3 Config] Initializing S3 Client in ${isProduction ? "production" : "development"} mode...`,
+	);
 
 	if (isProduction) {
 		// Production Configuration (Backblaze B2)

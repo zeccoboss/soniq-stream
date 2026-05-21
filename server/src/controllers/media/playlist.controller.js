@@ -1,6 +1,6 @@
 const Playlist = require("../../models/playlist.model");
 const Image = require("../../models/image.model");
-const { v4: uuidv4 } = require("uuid");
+const { v4: uuidV4 } = require("uuid");
 
 /**
  * @desc    Create a new playlist with an automatic default cover record
@@ -15,7 +15,7 @@ const createPlaylist = async (req, res) => {
 		// This allows you to update the physical file later without changing IDs
 		const defaultCover = await Image.create({
 			user: userId,
-			uuid: uuidv4(),
+			uuid: uuidV4(),
 			name: `${name} Cover`,
 			category: "cover",
 			dimensions: { width: 500, height: 500 }, // Standard cover size
@@ -32,7 +32,7 @@ const createPlaylist = async (req, res) => {
 		// 2. Create the Playlist and link the new Image ID
 		const newPlaylist = await Playlist.create({
 			user: userId,
-			uuid: uuidv4(),
+			uuid: uuidV4(),
 			name,
 			description,
 			visibility: visibility || "public",

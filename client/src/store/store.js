@@ -9,33 +9,35 @@ class AppStore {
 	#user = null;
 	#token = null;
 
-	// ── Player ────────────────────────────────────────────────────────
+	// ── Player State ──────────────────────────────────────────────────
 	#currentTrack = null; // { id, title, artist, coverUrl, streamUrl, duration }
-	#originalQueue = []; // untouched order
-	#queue = []; // active queue (shuffled or original)
+	#originalQueue = []; // Untouched order
+	#queue = []; // Active queue (shuffled or sequential)
 	#queueIndex = 0;
 	#isShuffle = false;
 	#repeatMode = "none"; // "none" | "one" | "all"
 	#volume = 1; // 0.0 – 1.0
 
-	// ── track Engine ──────────────────────────────────────────────────
-	#trackContext = null;
-	#sourceNode = null; // trackBufferSourceNode — recreated each play
-	#gainNode = null; // Controls volume
-	#trackBuffer = null; // Decoded track data
-	#startedAt = 0; // AudioContext.currentTime when playback started
-	#pausedAt = 0; // How far into the track we paused
+	// ── Audio Engine Nodes & Buffers ──────────────────────────────────
+	#audioCtx = null;
+	#sourceNode = null; // Recreated on every play/resume iteration
+	#gainNode = null; // Controls volume mapping
+	#analyserNode = null; // Groundwork hook for future visualizer canvas
+	#trackBuffer = null; // RAW Decoded PCM track data in memory
+	#prevTrackBuffer = null; // 1-track lookback cache for instant replay
+	#prevTrackId = null; // Maps the cached buffer to a track ID
+	#startedAt = 0; // AudioContext.currentTime marker when source started
+	#pausedAt = 0; // Temporal offset into the track when paused
 	#isPlaying = false;
 
-	// ── UI ────────────────────────────────────────────────────────────
-	#activePage = "home"; // "home" | "search" | "library" | "upload" | "settings" | "profile"
-	// #activeFormPage = null; // "login" | "register" | "forgotPassword" | "verification" | null
+	// ── UI State ──────────────────────────────────────────────────────
+	#activePage = "home"; // "home" | "search" | "library" | "upload" | "settings" | "profile" | "auth/login" | "auth/register" | etc.
 	#overlayOpen = false;
 	#isLoading = false;
 	#deepLinkTrackId = null;
 
 	// ═════════════════════════════════════════════════════════════════
-	// AUTH
+	// AUTHENTICATION
 	// ═════════════════════════════════════════════════════════════════
 
 	get user() {
@@ -56,6 +58,9 @@ class AppStore {
 			isAdmin: data.isAdmin ?? false,
 			...data,
 		};
+
+		// Persisting only essential user info in localStorage for session restoration; sensitive data should be avoided
+		writeToLocalStorage("user", this.#user);
 	}
 
 	updateUser(fields) {
@@ -77,15 +82,24 @@ class AppStore {
 			return;
 		}
 		this.#token = value;
-		writeToLocalStorage(`token`, value);
+		writeToLocalStorage("token", value);
 	}
 
 	get isLoggedIn() {
 		return !!this.#token;
 	}
 
+	setAuth(user, token) {
+		this.user = user;
+		this.token = token;
+	}
+
+	get isAuthenticated() {
+		return !!this.#token || !!readFromLocalStorage("token");
+	}
+
 	// ═════════════════════════════════════════════════════════════════
-	// PLAYER
+	// PLAYER GETTERS & SETTERS
 	// ═════════════════════════════════════════════════════════════════
 
 	get currentTrack() {
@@ -118,19 +132,28 @@ class AppStore {
 			return;
 		}
 		this.#volume = Math.min(1, Math.max(0, value));
-		// Apply to track engine immediately if active
-		if (this.#gainNode) {
-			this.#gainNode.gain.value = this.#volume;
+		if (this.#gainNode && this.#audioCtx) {
+			// Using exponential/linear standard AudioParam ramp instead of direct mutation
+			this.#gainNode.gain.setValueAtTime(
+				this.#volume,
+				this.#audioCtx.currentTime,
+			);
 		}
 	}
 
-	// Computed from track context — not a stored value
-	get progress() {
-		if (!this.#trackContext || !this.#isPlaying) return this.#pausedAt;
-		return this.#trackContext.currentTime - this.#startedAt + this.#pausedAt;
+	get analyserNode() {
+		return this.#analyserNode;
 	}
 
-	// Load a single track and clear the queue
+	get progress() {
+		if (!this.#audioCtx || !this.#isPlaying) return this.#pausedAt;
+		return this.#audioCtx.currentTime - this.#startedAt + this.#pausedAt;
+	}
+
+	// ═════════════════════════════════════════════════════════════════
+	// PLAYER CONTROL FLOW
+	// ═════════════════════════════════════════════════════════════════
+
 	async loadTrack(track) {
 		if (!track?.id) {
 			console.error("[Store]: Invalid track object.");
@@ -142,7 +165,6 @@ class AppStore {
 		await this.#prepare(track);
 	}
 
-	// Load a full queue, optionally start at a given index
 	async loadQueue(tracks = [], startIndex = 0) {
 		if (!tracks.length) {
 			console.error("[Store]: Cannot load an empty queue.");
@@ -157,67 +179,82 @@ class AppStore {
 	async nextTrack() {
 		if (!this.#queue.length) return;
 
-		let next;
+		let nextIndex;
 		if (this.#queueIndex < this.#queue.length - 1) {
-			next = this.#queueIndex + 1;
+			nextIndex = this.#queueIndex + 1;
 		} else if (this.#repeatMode === "all") {
-			next = 0;
+			nextIndex = 0;
 		} else {
-			this.#isPlaying = false; // end of queue
+			// End of the queue reached natively, stop pipeline
+			this.pause();
+			this.#pausedAt = 0;
+			this.#rotateAudioCache();
 			return;
 		}
 
-		this.#queueIndex = next;
-		await this.#prepare(this.#queue[next]);
+		this.#queueIndex = nextIndex;
+		await this.#prepare(this.#queue[nextIndex]);
 	}
 
 	async prevTrack() {
 		if (!this.#queue.length) return;
 
-		// If more than 3 seconds in, restart current track
+		// If user is more than 3 seconds in, restart the track naturally
 		if (this.progress > 3) {
 			this.#pausedAt = 0;
-			this.#sourceNode?.stop();
-			this.#isPlaying = false;
-			this.play();
+			if (this.#isPlaying) {
+				this.pause();
+				this.play();
+			}
 			return;
 		}
 
-		const prev = this.#queueIndex > 0 ? this.#queueIndex - 1 : 0;
-		this.#queueIndex = prev;
-		await this.#prepare(this.#queue[prev]);
+		const prevIndex = this.#queueIndex > 0 ? this.#queueIndex - 1 : 0;
+		this.#queueIndex = prevIndex;
+		await this.#prepare(this.#queue[prevIndex]);
 	}
 
 	play() {
 		if (!this.#trackBuffer || this.#isPlaying) return;
 
-		// Resume suspended context (browser autoplay policy)
-		if (this.#trackContext.state === "suspended") {
-			this.#trackContext.resume();
-		}
+		this.#ensureAudioContext();
 
-		this.#sourceNode = this.#trackContext.createBufferSource();
+		// Create a clean node instance (AudioBufferSourceNodes are strictly single-use)
+		this.#sourceNode = this.#audioCtx.createBufferSource();
 		this.#sourceNode.buffer = this.#trackBuffer;
-		this.#sourceNode.connect(this.#gainNode);
 
-		// Handle repeat one
+		// Connect the node graph: Source -> Analyser -> Gain -> Output
+		this.#sourceNode.connect(this.#analyserNode);
 		this.#sourceNode.loop = this.#repeatMode === "one";
 
-		this.#sourceNode.start(0, this.#pausedAt);
-		this.#startedAt = this.#trackContext.currentTime;
+		// Safeguard against seeking out-of-bounds metrics
+		const offset = Math.min(this.#pausedAt, this.#trackBuffer.duration);
+		this.#sourceNode.start(0, offset);
+
+		this.#startedAt = this.#audioCtx.currentTime;
 		this.#isPlaying = true;
 
-		// Auto advance when track ends naturally
+		// Attach modern event termination handler safely
 		this.#sourceNode.onended = () => {
-			if (this.#isPlaying) this.nextTrack();
+			if (this.#isPlaying) {
+				this.nextTrack();
+			}
 		};
 	}
 
 	pause() {
 		if (!this.#isPlaying) return;
-		this.#pausedAt += this.#trackContext.currentTime - this.#startedAt;
-		this.#sourceNode?.stop();
+
+		this.#pausedAt += this.#audioCtx.currentTime - this.#startedAt;
 		this.#isPlaying = false;
+
+		if (this.#sourceNode) {
+			// CRITICAL: Sever link immediately before stopping node to bypass manual stop traps
+			this.#sourceNode.onended = null;
+			this.#sourceNode.stop();
+			this.#sourceNode.disconnect();
+			this.#sourceNode = null;
+		}
 	}
 
 	togglePlay() {
@@ -227,12 +264,13 @@ class AppStore {
 	toggleShuffle() {
 		this.#isShuffle = !this.#isShuffle;
 
+		// When toggling shuffle, we need to reconstruct the active queue while keeping the current track in place
 		if (this.#isShuffle) {
-			// Keep current track at index 0, shuffle the rest
 			const rest = this.#originalQueue.filter(
 				(t) => t.id !== this.#currentTrack.id,
 			);
-			// Fisher-Yates shuffle
+
+			// Fisher-Yates validation mapping
 			for (let i = rest.length - 1; i > 0; i--) {
 				const j = Math.floor(Math.random() * (i + 1));
 				[rest[i], rest[j]] = [rest[j], rest[i]];
@@ -240,7 +278,6 @@ class AppStore {
 			this.#queue = [this.#currentTrack, ...rest];
 			this.#queueIndex = 0;
 		} else {
-			// Restore original, find current track position
 			this.#queue = [...this.#originalQueue];
 			this.#queueIndex = this.#originalQueue.findIndex(
 				(t) => t.id === this.#currentTrack.id,
@@ -253,57 +290,148 @@ class AppStore {
 		const next = (modes.indexOf(this.#repeatMode) + 1) % modes.length;
 		this.#repeatMode = modes[next];
 
-		// Apply repeat one to active source node immediately if playing
 		if (this.#sourceNode) {
 			this.#sourceNode.loop = this.#repeatMode === "one";
 		}
 	}
 
-	// Seek to a specific second in the track
 	seekTo(seconds) {
 		if (!this.#trackBuffer) return;
 		const wasPlaying = this.#isPlaying;
 
-		this.#sourceNode?.stop();
-		this.#isPlaying = false;
-		this.#pausedAt = Math.min(seconds, this.#trackBuffer.duration);
+		this.pause();
+		this.#pausedAt = Math.min(
+			Math.max(0, seconds),
+			this.#trackBuffer.duration,
+		);
 
-		if (wasPlaying) this.play();
+		if (wasPlaying) {
+			this.play();
+		}
 	}
 
 	clearPlayer() {
-		this.#sourceNode?.stop();
+		this.pause();
+		this.#rotateAudioCache();
+
+		// Wipe all memory caches explicitly
 		this.#trackBuffer = null;
+		this.#prevTrackBuffer = null;
+		this.#prevTrackId = null;
+
 		this.#currentTrack = null;
 		this.#originalQueue = [];
 		this.#queue = [];
 		this.#queueIndex = 0;
-		this.#isPlaying = false;
 		this.#pausedAt = 0;
 		this.#startedAt = 0;
 	}
 
 	// ═════════════════════════════════════════════════════════════════
-	// track ENGINE (private)
+	// PRIVATE ENGINE & RECYCLING ARCHITECTURE
 	// ═════════════════════════════════════════════════════════════════
 
-	async #prepare(trackId) {
-		// 1. Ask your backend for a presigned URL
-		const res = await fetch(`/api/media/track/${trackId}/stream`, {
-			headers: { Authorization: `Bearer ${token}` },
-		});
-		const { data } = await res.json();
+	#ensureAudioContext() {
+		if (!this.#audioCtx) {
+			this.#audioCtx = new (
+				window.AudioContext || window.webkitAudioContext
+			)();
 
-		// 2. Fetch the actual track directly from MinIO
-		const trackRes = await fetch(data.streamUrl);
-		const arrayBuffer = await trackRes.arrayBuffer();
+			// Establish standard baseline structure
+			this.#analyserNode = this.#audioCtx.createAnalyser();
+			this.#gainNode = this.#audioCtx.createGain();
 
-		// 3. Decode and store
-		this.#trackBuffer = await this.#trackContext.decodetrackData(arrayBuffer);
+			this.#analyserNode.connect(this.#gainNode);
+			this.#gainNode.connect(this.#audioCtx.destination);
+
+			this.#gainNode.gain.value = this.#volume;
+		}
+
+		if (this.#audioCtx.state === "suspended") {
+			this.#audioCtx.resume();
+		}
+	}
+
+	/**
+	 * Stops active playback and rotates the current track into the previous cache slot.
+	 * The old cached track is naturally garbage-collected.
+	 */
+	#rotateAudioCache() {
+		if (this.#sourceNode) {
+			this.#sourceNode.onended = null;
+			this.#sourceNode.disconnect();
+			this.#sourceNode = null;
+		}
+
+		// Move current buffer to the previous cache slot
+		if (this.#trackBuffer && this.#currentTrack) {
+			this.#prevTrackBuffer = this.#trackBuffer;
+			this.#prevTrackId = this.#currentTrack.id;
+		}
+
+		// Clear active slot ready for new download
+		this.#trackBuffer = null;
+	}
+
+	async #prepare(track) {
+		this.#isLoading = true;
+		this.#ensureAudioContext();
+		this.pause();
+
+		// 1. INSTANT PLAY CACHE HIT: Is the requested track our cached previous track?
+		if (track.id === this.#prevTrackId && this.#prevTrackBuffer) {
+			console.log(
+				"[Store]: Track found in memory cache. Playing instantly.",
+			);
+
+			// Swap the active and previous caches so the user can bounce back and forth seamlessly
+			const tempBuffer = this.#trackBuffer;
+			const tempId = this.#currentTrack?.id;
+
+			this.#trackBuffer = this.#prevTrackBuffer;
+			this.#currentTrack = track;
+
+			// The song we just left becomes the new "previous"
+			this.#prevTrackBuffer = tempBuffer;
+			this.#prevTrackId = tempId || null;
+
+			this.#pausedAt = 0;
+			this.#isLoading = false;
+			this.play();
+			return; // Exit early, bypass network fetch completely!
+		}
+
+		// 2. CACHE MISS: Rotate the current track to history, then download the new one
+		this.#rotateAudioCache();
+		this.#pausedAt = 0;
+		this.#currentTrack = track;
+
+		try {
+			// Fetch presigned stream configuration endpoint
+			const res = await fetch(`/api/media/track/${track.id}/stream`, {
+				headers: { Authorization: `Bearer ${this.#token}` },
+			});
+			const { data } = await res.json();
+
+			// Extract the file as binary data
+			const trackRes = await fetch(data.streamUrl);
+			const arrayBuffer = await trackRes.arrayBuffer();
+
+			// Decode the binary data into raw audio frames asynchronously
+			this.#trackBuffer = await this.#audioCtx.decodeAudioData(arrayBuffer);
+
+			this.#isLoading = false;
+
+			// Fire playback immediately upon buffer completion
+			this.play();
+		} catch (error) {
+			this.#isLoading = false;
+			console.error("[Store Audio Engine Error]:", error);
+		}
 	}
 
 	// ═════════════════════════════════════════════════════════════════
-	// UI
+	// UI MANAGEMENT
 	// ═════════════════════════════════════════════════════════════════
 
 	get activePage() {
@@ -317,20 +445,6 @@ class AppStore {
 		}
 		this.#activePage = page;
 	}
-
-	// get activeFormPage() {
-	// 	return this.#activeFormPage;
-	// }
-
-	// openFormPage(name) {
-	// 	this.#activeFormPage = name;
-	// 	this.#overlayOpen = true;
-	// }
-
-	// closeFormPage() {
-	// 	this.#activeFormPage = null;
-	// 	this.#overlayOpen = false;
-	// }
 
 	get overlayOpen() {
 		return this.#overlayOpen;
@@ -368,7 +482,7 @@ class AppStore {
 	}
 
 	// ═════════════════════════════════════════════════════════════════
-	// RESET
+	// TEARDOWN LIFECYCLES
 	// ═════════════════════════════════════════════════════════════════
 
 	clearAuth() {
@@ -381,23 +495,19 @@ class AppStore {
 		this.clearAuth();
 		this.clearPlayer();
 		this.#activePage = "home";
-		// this.#activeFormPage = null;
 		this.#overlayOpen = false;
 		this.#isLoading = false;
 		this.#deepLinkTrackId = null;
 	}
-
-	// ═════════════════════════════════════════════════════════════════
-	// INIT
-	// ═════════════════════════════════════════════════════════════════
 
 	init() {
 		const token = readFromLocalStorage("token");
 		if (token) this.#token = token;
 
 		const trackId = this.captureDeepLink();
-		if (trackId)
+		if (trackId) {
 			console.log(`[Store]: Deep link track detected → ${trackId}`);
+		}
 	}
 }
 

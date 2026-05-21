@@ -1,7 +1,11 @@
 import { mobileScreen } from "@zecco/core/screen-break-points.js";
 import { PasswordDesktop } from "./PasswordDesktop.js";
 import { PasswordMobile } from "./PasswordMobile.js";
-import { passwordEvents } from "@zecco/features/password/password-events.js";
+import { passwordEvents } from "@zecco/features/password/password.events.js";
+import {
+	savePwdDraft,
+	clearPwdDraft,
+} from "@zecco/features/password/password.helpers.js";
 import { router } from "@zecco/routes/router.js";
 
 /**
@@ -92,26 +96,6 @@ export const PasswordPage = async (ctx) => {
 	// Inject token into draft so views/events can access it
 	if (token) draft.token = token;
 
-	const saveDraft = (updates) => {
-		const next = { ...draft, ...updates };
-		try {
-			sessionStorage.setItem("pwd_draft", JSON.stringify(next));
-		} catch {
-			/* ignore */
-		}
-		Object.assign(draft, updates);
-	};
-
-	const clearDraft = () => {
-		try {
-			sessionStorage.removeItem("pwd_draft");
-			sessionStorage.removeItem("pwd_prev_step");
-			sessionStorage.removeItem("pwd_token");
-		} catch {
-			/* ignore */
-		}
-	};
-
 	const isMobile = mobileScreen.matches;
 	const UI = isMobile ? PasswordMobile : PasswordDesktop;
 
@@ -129,6 +113,22 @@ export const PasswordPage = async (ctx) => {
 			clearDraft,
 			goToStep,
 		});
+	};
+
+	// ── Draft helpers ─────────────────────────────────────────
+	// Called by password.events.js on every input change
+	const saveDraft = (updates) => {
+		const next = { ...draft, ...updates };
+		try {
+			sessionStorage.setItem("pwd_draft", JSON.stringify(next));
+		} catch {
+			/* ignore */
+		}
+		Object.assign(draft, updates);
+	};
+
+	const clearDraft = () => {
+		clearPwdDraft();
 	};
 
 	// ── State updater ────────────────────────────────────────

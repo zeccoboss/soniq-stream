@@ -1,6 +1,7 @@
 import CreateElement from "@zecco/utils/dom/create-element";
 import { buildNode } from "@zecco/utils/dom/build-node.js";
 import "./Login.styles.css";
+import { appConfig } from "@zecco/config/app.config";
 
 /**
  * LoginDesktop — Desktop login view
@@ -71,14 +72,14 @@ export const LoginDesktop = async ({
 
 					<!-- OAuth -->
 					<div class="login-oauth">
-						<button class="login-oauth-btn" id="login-google-btn" type="button"
+						<a href="${appConfig.API_BASE_URL}/oauth/google" class="login-oauth-btn" id="login-google-btn"
 							${state === "loading" ? "disabled" : ""}>
 							<i class="bi bi-google"></i> Continue with Google
-						</button>
-						<button class="login-oauth-btn" id="login-github-btn" type="button"
+						</a>
+						<a href="${appConfig.API_BASE_URL}/oauth/github" class="login-oauth-btn" id="login-github-btn"
 							${state === "loading" ? "disabled" : ""}>
 							<i class="bi bi-github"></i> Continue with GitHub
-						</button>
+						</a>
 					</div>
 
 					<div class="login-divider">

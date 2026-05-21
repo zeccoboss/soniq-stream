@@ -1,5 +1,5 @@
 const jwt = require("jsonwebtoken");
-const { v4: uuidv4 } = require("uuid");
+const { v4: uuidV4 } = require("uuid");
 const bcrypt = require("bcrypt");
 const UserModel = require("../../models/user.model");
 const { rolesList } = require("../../config/roles-list.config");
@@ -96,11 +96,11 @@ const findOrCreateUser = async ({ email, fullname, username, provider }) => {
 
 	// New OAuth user
 	user = await UserModel.create({
-		uuid: uuidv4(),
+		uuid: uuidV4(),
 		email,
 		fullname: fullname ?? null,
-		username: `${username ?? email.split("@")[0]}_${uuidv4().slice(0, 6)}`,
-		password: await bcrypt.hash(uuidv4(), 10), // unusable random password
+		username: `${username ?? email.split("@")[0]}_${uuidV4().slice(0, 6)}`,
+		password: await bcrypt.hash(uuidV4(), 10), // unusable random password
 		roles: [rolesList.User],
 		verified: true,
 		authProviders: [provider],
