@@ -1684,3 +1684,5 @@ ca1d47b5-7cb2-4f0a-a60b-59f1c3660720	21052026	03:50:20	/images/admin-avatar.png	
 068491c5-812e-4b36-9aaf-f1c56013f643	21052026	03:50:20	/script/script.js	GET	undefined
 49db6581-1904-4033-a456-abe5f1be9c7f	21052026	03:50:20	/style/style.css	GET	undefined
 0f8b52b2-c2f2-48ef-ac95-779f12ae7cb4	21052026	03:50:47	/images/admin-avatar.png	GET	undefined
+e2affd8e-d365-4733-b587-e1e3dc3fe871	21052026	07:56:25	/images/admin-avatar.png	GET	undefined
+bf917c63-956a-4bfd-9a29-b02051ee4051	21052026	08:00:43	/images/admin-avatar.png	GET	undefined
