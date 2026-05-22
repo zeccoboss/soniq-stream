@@ -9,6 +9,7 @@ const {
 	cookieOptions,
 	clearCookieOptions,
 } = require("../../helpers/cookie-options.helper");
+const { maskEmail } = require("../../helpers/mask-email.helper");
 
 const handleRegister = async (req, res) => {
 	try {
@@ -72,10 +73,12 @@ const handleRegister = async (req, res) => {
 
 		await sendVerificationMail(user.email, token);
 
-		return res.status(201).json({
+		const maskedEmail = maskEmail(user.email);
+
+		res.status(201).json({
 			success: true,
-			message: "Account created. Check your email to verify.",
-			email: user.email,
+			message: `Account created successfully. A verification email has been sent to ${maskedEmail}. Please check your inbox.`,
+			email: maskedEmail,
 		});
 	} catch (err) {
 		console.error("[Register]:", err);
@@ -115,9 +118,12 @@ const handleLogin = async (req, res) => {
 
 		// Check if email is verified
 		if (!foundUser.verified) {
+				const maskedEmail = maskEmail(foundUser.email);
+
 			return res.status(403).json({
 				success: false,
-				message: "Email not verified. Check your inbox.",
+				message: `Email not verified. A verification link was previously sent to ${maskedEmail}. Please check your inbox.`,
+				email: foundUser.email,
 			});
 		}
 

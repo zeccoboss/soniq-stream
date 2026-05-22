@@ -4,7 +4,7 @@ import { authService } from "@zecco/services/api/auth.service.js";
 import { showModal } from "@zecco/components/Modal/Modal.js";
 import { toast } from "@zecco/components/Toast/Toast.js";
 import { router } from "@zecco/routes/router.js";
-import { handleRegisterModal } from "./register.helpers";
+import { promptEmailVerification } from "./register.helpers";
 
 // --- Regex Helpers ---
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -260,8 +260,8 @@ export const registerEvents = (
 				// Only runs if the API call was successful (200 OK)
 				clearDraft();
 
-				handleRegisterModal({
-					email: registerResult.email,
+				promptEmailVerification({
+					email: cleanUserData.email,
 					message: registerResult.message,
 				});
 				// Manual cancel routes to login

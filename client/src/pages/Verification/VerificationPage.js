@@ -3,7 +3,6 @@ import { VerificationMobile } from "./VerificationMobile";
 import { VerificationDesktop } from "./VerificationDesktop";
 import { verificationEvents } from "@zecco/features/verification/verification-events";
 
-// client/src/pages/Verification/VerificationPage.js
 export const VerificationPage = async (ctx) => {
 	const root = document.createElement("section");
 	root.className = "verify-page-root";

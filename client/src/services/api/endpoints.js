@@ -15,6 +15,9 @@ export const ENDPOINTS = {
 		REFRESH: "/auth/refresh",
 		VERIFY_TOKEN: "/auth/verify",
 		FORGOT_PASSWORD: "/auth/forgot-password",
+		RESEND_VERIFICATION: "/auth/resend-verification",
+		VERIFY_REGISTER: (token) => `/auth/verify/register/${token}`,
+		VERIFY_RESET: (token) => `/auth/verify/reset/${token}`,
 	},
 
 	// ==================================================

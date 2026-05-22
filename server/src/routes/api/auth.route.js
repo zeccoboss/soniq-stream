@@ -74,7 +74,8 @@ router.post(
 // ================= EMAIL VERIFICATION =================
 
 // Verify email
-router.get("/verify/:token", handleVerifyEmail);
+router.get("/verify/register/:token", handleVerifyEmail);
+router.get("/verify/reset:token", handleVerifyEmail);
 
 // Resend verification email
 router.post(

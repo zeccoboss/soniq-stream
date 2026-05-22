@@ -12,6 +12,7 @@ const {
 } = require("../../helpers/media.helpers");
 const SettingsModel = require("../../models/settings.model");
 const appConfig = require("../../config/app.config");
+const { maskEmail } = require("../../helpers/mask-email.helper");
 
 const handleVerifyEmail = async (req, res) => {
 	try {
@@ -134,7 +135,14 @@ const handleResendEmailVerification = async (req, res) => {
 			message: "Failed to send verification email",
 		});
 	}
-	res.status(200).json({ message: "Verification email resent" });
+
+	const maskedEmail = maskEmail(user.email);
+
+	res.status(200).json({
+		success: true,
+		message: `Verification email resent successfully to ${maskedEmail}. Please check your inbox.`,
+		email: maskedEmail,
+	});
 };
 
 module.exports = { handleVerifyEmail, handleResendEmailVerification };

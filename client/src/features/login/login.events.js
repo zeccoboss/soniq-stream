@@ -3,7 +3,11 @@ import { authService } from "@zecco/services/api/auth.service.js";
 import { toast } from "@zecco/components/Toast/Toast.js";
 import { router } from "@zecco/routes/router.js";
 import { store } from "@zecco/store/store.js";
-import { saveLoginDraft, clearLoginDraft } from "./login.helpers.js";
+import {
+	saveLoginDraft,
+	clearLoginDraft,
+	promptLoginVerification,
+} from "./login.helpers.js";
 import { appConfig } from "@zecco/config/app.config.js";
 import meService from "@zecco/services/api/me.service.js";
 
@@ -66,8 +70,21 @@ export const loginEvents = async (root, { render }) => {
 				message: `Welcome back <strong>${me.data.username}</strong>!`,
 				type: "success",
 			});
-			router.redirect("/tab=discover");
+			router.redirect("/?tab=discover");
 		} catch (err) {
+			// Intercept unverified accounts from the backend response
+			// Adjust this condition to match exactly how your api wrapper structures error responses
+			if (err.status === 403 && err.data?.email) {
+				// Remove form error and stop loader since the modal is taking over
+				root.dispatchEvent(new CustomEvent("login-error", { detail: "" }));
+
+				promptLoginVerification({
+					email: err.data.email, // Passed explicitly from our updated controller[cite: 1]
+					message: err.data.message || err.message, // "Email not verified. Check your inbox."[cite: 1]
+				});
+				return;
+			}
+
 			// Backend errors also use the component's built-in error state
 			root.dispatchEvent(
 				new CustomEvent("login-error", {

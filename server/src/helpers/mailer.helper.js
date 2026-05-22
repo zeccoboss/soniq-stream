@@ -51,7 +51,7 @@ function welcomeAdmin(email) {
 }
 
 function sendVerificationMail(email, token) {
-	const verificationUrl = `${appConfig.client}/user/verify/${token}`;
+	const verificationUrl = `${appConfig.client}/auth/verify/?token=${token}&type=register`;
 
 	return sendMail({
 		to: email,
@@ -69,7 +69,7 @@ function sendVerificationMail(email, token) {
 }
 
 function resendVerificationMail(email, token) {
-	const verificationUrl = `${appConfig.client}user/verify/${token}`;
+	const verificationUrl = `${appConfig.client}/auth/verify/?token=${token}&type=register`;
 
 	return sendMail({
 		to: email,
@@ -87,7 +87,7 @@ function resendVerificationMail(email, token) {
 }
 
 function sendPasswordResetMail(email, token) {
-	const resetUrl = `${appConfig.client}/user/reset/${token}`;
+	const resetUrl = `${appConfig.client}/auth/verify/?token=${token}&type=reset`;
 
 	return sendMail({
 		to: email,
@@ -106,7 +106,7 @@ function sendPasswordResetMail(email, token) {
 }
 
 function resendPasswordResetMail(email, token) {
-	const resetUrl = `${appConfig.client}/user/reset/${token}`;
+	const resetUrl = `${appConfig.client}/auth/verify/?token=${token}&type=reset`;
 
 	return sendMail({
 		to: email,
