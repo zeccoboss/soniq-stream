@@ -21,11 +21,11 @@ export const applyMiddleware = () => {
 		.addOutlet("root", getTag("#app")) // Set root outlet for rendering pages
 		.register(routes) // Register routes from config
 		.setNotFound(notFound) // Handle unmatched routes with a 404 page
-		.setAuthChecker(() => readFromLocalStorage("user")) // Simple auth check for protected routes
+		.setAuthChecker(() => readFromLocalStorage("token")) // Simple auth check for protected routes
 		.setLayoutBuilder(() => buildLayout(getCurrentScreen()))
 		.use(activeLinkSwitcher) // Middleware to switch active link in navigation based on current route
 		.use(layoutSwitcher) // Middleware to switch layouts based on route or screen size
-		.use(authRedirect) // Middleware to redirect unauthenticated users trying to access protected routes to the login page
+		// .use(authRedirect) // Middleware to redirect unauthenticated users trying to access protected routes to the login page
 		.use(loadingIndicator) // Middleware to show a loading indicator during route changes
 		.use(scrollRestoration) // Middleware to restore scroll position on navigation
 		.use(titleUpdater) // Middleware to update document title based on route metadata

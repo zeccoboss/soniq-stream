@@ -40,7 +40,7 @@ const handleVerifyEmail = async (req, res) => {
 
 		// Create default settings for the new user
 		const newSettings = await SettingsModel.create({ user: user._id });
-		user.settingsId = newSettings._id;
+		user.settings = newSettings._id;
 
 		// ── Create default images ──────────────────────────────────────────────
 		const avatarKey = appConfig.local.userAvatarKey;

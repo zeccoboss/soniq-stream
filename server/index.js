@@ -31,7 +31,7 @@ app.use(cookieParser());
 app.use("/", require("./src/routes/root.route"));
 
 // Health check
-app.get("/api/v1/health", require("./src/routes/health.route"));
+app.use("/api/v1/health", require("./src/routes/health.route"));
 
 // API routes - Note: Routes that require authentication should use the verifyJWT middleware
 app.use("/api/v1/auth", require("./src/routes/api/auth.route")); // Authentication routes (Registration, Login, Logout, Token Refresh)

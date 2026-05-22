@@ -39,7 +39,7 @@ export class BaseService {
 				signal,
 			});
 
-			return res.data;
+			return res?.data;
 		} catch (error) {
 			this._handleError(error);
 		}

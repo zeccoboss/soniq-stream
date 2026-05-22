@@ -59,7 +59,7 @@ export const registerEvents = (
 				clearError();
 				const key = getKeyFromId(e.target.id);
 
-				// SECURITY: Never save passwords to sessionStorage
+				// SECURITY: Never save passwords to sessionStorage on input
 				if (key && e.target.type !== "password") {
 					saveDraft({ [key]: e.target.value.trim() });
 				}
@@ -173,8 +173,10 @@ export const registerEvents = (
 				);
 			}
 
-			// Save verified password to memory draft right before moving to step 3
+			// FIX: Save verified password to state right before moving to step 3.
+			// By using saveDraft, the overarching component's state receives it.
 			draft.password = pwd;
+			saveDraft({ password: pwd });
 			goToStep(3);
 		});
 	}
@@ -221,7 +223,14 @@ export const registerEvents = (
 
 		// Final Submit
 		submitBtn?.addEventListener("click", async () => {
-			const { dob, country, genres, termsAccepted, email } = draft;
+			// FIX: Added password to the destructured draft variables
+			const { dob, country, genres, termsAccepted, email, password } = draft;
+
+			// FIX: Catch if password was lost (e.g. page refresh)
+			if (!password)
+				return showError(
+					"Password missing. Please go back to step 2 and re-enter it.",
+				);
 
 			if (!dob || !country)
 				return showError("Please provide your date of birth and country.");
@@ -237,6 +246,7 @@ export const registerEvents = (
 
 				// Fire off API request
 				await authService.register(draft);
+				console.log("registered user...");
 
 				// Clear memory & storage
 				clearDraft();

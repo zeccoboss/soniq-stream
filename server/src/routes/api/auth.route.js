@@ -34,7 +34,7 @@ const verifyJWT = require("../../middlewares/verify-jwt.middleware");
 // Register
 router.post(
 	"/register",
-	registerLimiter,
+	// registerLimiter, // TODO: Uncomment later
 	validate(registerSchema),
 	authController.handleRegister,
 );

@@ -39,14 +39,15 @@ const initAdmin = async () => {
 
 		const admin = await UserModel.create({
 			uuid: uuidV4(),
-			firstName: "System",
-			lastName: "Admin",
+			firstName: process.env.ADMIN_FIRST_NAME,
+			lastName: process.env.ADMIN_LAST_NAME,
 			username: process.env.ADMIN_USERNAME,
 			email: process.env.ADMIN_EMAIL,
-			password: await bcrypt.hash(process.env.ADMIN_PASSWORD, 10),
+			fullname: process.env.ADMIN_FULLNAME,
+			password: await bcrypt.hash(process.env.ADMIN_TEST_PASSWORD, 10),
 			roles: Object.values(rolesList),
 			verified: true,
-			dob: new Date("1970-01-01"), // Admin placeholder
+			dob: new Date("2005-04-10"), // Admin placeholder
 			gender: "other",
 			country: "US",
 			genres: ["Classical"], // Admin requirement
@@ -86,7 +87,7 @@ const initAdmin = async () => {
 		admin.banner = banner._id; // Updated from 'cover' to 'banner'
 
 		const newSettings = await SettingsModel.create({ user: admin._id });
-		admin.settingsId = newSettings._id;
+		admin.settings = newSettings._id;
 
 		await admin.save();
 		await welcomeAdmin(admin.email);

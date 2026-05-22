@@ -1,14 +1,17 @@
+// @zecco/config/axios.config.js
 import { appConfig } from "@zecco/config/app.config";
+import { router } from "@zecco/routes/router";
+import {
+	readFromLocalStorage,
+	removeFromLocalStorage,
+	writeToLocalStorage,
+} from "@zecco/services/storage/local-storage";
 import axios from "axios";
-
-// Optional:
-// import { authStore } from '../stores/auth.store.js';
 
 const apiClient = axios.create({
 	baseURL: appConfig.API_BASE_URL,
-
 	timeout: 10000,
-
+	withCredentials: true,
 	headers: {
 		"Content-Type": "application/json",
 	},
@@ -20,15 +23,12 @@ const apiClient = axios.create({
 
 apiClient.interceptors.request.use(
 	(config) => {
-		const token = localStorage.getItem("token");
-
+		const token = readFromLocalStorage("token");
 		if (token) {
 			config.headers.Authorization = `Bearer ${token}`;
 		}
-
 		return config;
 	},
-
 	(error) => {
 		return Promise.reject(error);
 	},
@@ -38,102 +38,71 @@ apiClient.interceptors.request.use(
 // Response Interceptor
 // ========================================================
 
-apiClient.interceptors.response.use(
-	// Success
-	(response) => response,
+// 1. Move the queue state OUTSIDE the interceptor function entirely
+let isRefreshing = false;
+let failedQueue = [];
 
-	// Error
+const processQueue = (error, token = null) => {
+	failedQueue.forEach((prom) => {
+		if (error) {
+			prom.reject(error);
+		} else {
+			prom.resolve(token);
+		}
+	});
+	failedQueue = [];
+};
+
+// 2. A single, flattened response interceptor
+apiClient.interceptors.response.use(
+	(response) => response,
 	async (error) => {
 		const originalRequest = error.config;
 
-		// ------------------------------------------------
-		// Unauthorized
-		// ------------------------------------------------
-
-		if (error.response?.status === 401) {
-			console.warn("[API] Unauthorized — logging out");
-
-			// Prevent infinite retry loops
-			if (!originalRequest._retry) {
-				originalRequest._retry = true;
-
-				try {
-					console.log("[API] Attempting token refresh");
-
-					// =================================================
-					// OPTIONAL REFRESH TOKEN FLOW
-					// =================================================
-					//
-
-					// If you later implement refresh tokens:
-					//
-					// const refreshToken =
-					//     localStorage.getItem('refreshToken');
-					//
-					// const response =
-					//     await axios.post('/auth/refresh', {
-					//         refreshToken
-					//     });
-					//
-					// const newAccessToken =
-					//     response.data.accessToken;
-					//
-					// localStorage.setItem(
-					//     'token',
-					//     newAccessToken
-					// );
-					//
-					// originalRequest.headers.Authorization =
-					//     `Bearer ${newAccessToken}`;
-					//
-					// return apiClient(originalRequest);
-					//
-					// =================================================
-				} catch (refreshError) {
-					console.error("[API] Refresh failed", refreshError);
-				}
+		// 401 Token Refresh Logic
+		if (error.response?.status === 401 && !originalRequest._retry) {
+			if (isRefreshing) {
+				return new Promise((resolve, reject) => {
+					failedQueue.push({ resolve, reject });
+				})
+					.then((token) => {
+						originalRequest.headers.Authorization = `Bearer ${token}`;
+						return apiClient(originalRequest);
+					})
+					.catch((err) => Promise.reject(err));
 			}
 
-			// =================================================
-			// Logout User
-			// =================================================
+			originalRequest._retry = true;
+			isRefreshing = true;
 
-			localStorage.removeItem("token");
-			localStorage.removeItem("refreshToken");
+			return new Promise((resolve, reject) => {
+				apiClient
+					.get("/auth/refresh")
+					.then((response) => {
+						const newAccessToken = response.data.accessToken;
+						writeToLocalStorage("token", newAccessToken);
 
-			// Example store logout:
-			//
-			// authStore.logout();
+						apiClient.defaults.headers.common["Authorization"] =
+							`Bearer ${newAccessToken}`;
+						originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
 
-			// Optional redirect:
-			//
-			// window.location.href = '/login';
+						processQueue(null, newAccessToken);
+						resolve(apiClient(originalRequest));
+					})
+					.catch((err) => {
+						processQueue(err, null);
+						removeFromLocalStorage("token");
+						router.navigate("/login");
+						reject(err);
+					})
+					.finally(() => {
+						isRefreshing = false;
+					});
+			});
 		}
 
-		// ------------------------------------------------
-		// Server Error
-		// ------------------------------------------------
-
-		if (error.response?.status >= 500) {
-			console.error("[API] Server Error", error.response);
-		}
-
-		// ------------------------------------------------
-		// Timeout
-		// ------------------------------------------------
-
-		if (error.code === "ECONNABORTED") {
-			console.error("[API] Request timeout");
-		}
-
-		// ------------------------------------------------
-		// Network Error
-		// ------------------------------------------------
-
-		if (!error.response) {
-			console.error("[API] Network Error");
-		}
-
+		// THIS LINE FIXES THE FRONTEND CRASH
+		// It ensures base.service.js receives the error to format it properly.
 		return Promise.reject(error);
 	},
 );

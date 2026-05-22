@@ -1,7 +1,7 @@
 import { appConfig } from "@zecco/config/app.config";
 
 // Helper functions to interact with local storage, namespaced with the app name to avoid conflicts with other data in local storage. Provides functions to read and write data, handling JSON parsing/stringifying and errors gracefully.
-const buildKey = (key) => `${appConfig.APP_NAME}-${key}`;
+const buildKey = (key) => `${appConfig.APP_NAME}--${key}`;
 
 const readFromLocalStorage = (key) => {
 	try {

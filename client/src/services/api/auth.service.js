@@ -23,6 +23,9 @@ class AuthService extends BaseService {
 	resendVerification(email) {
 		return this.post("/auth/resend-verification", { email });
 	}
+	refresh() {
+		return this.get(ENDPOINTS.AUTH.REFRESH);
+	}
 }
 
 export const authService = new AuthService();

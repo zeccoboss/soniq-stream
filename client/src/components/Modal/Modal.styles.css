@@ -35,6 +35,8 @@
 	z-index: 1;
 	animation: modal-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
 	will-change: transform, opacity;
+	background-color: var(--glass);
+	filter: blur(100%);
 }
 
 @keyframes modal-in {

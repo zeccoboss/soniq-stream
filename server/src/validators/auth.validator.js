@@ -1,10 +1,15 @@
 const { z } = require("zod");
 
 const registerSchema = z.object({
-	// fullname: z
-	// 	.string({ required_error: "Full name is required" })
-	// 	.min(2, "Full name must be at least 2 characters")
-	// 	.max(100),
+	firstName: z
+		.string({ required_error: "First name is required" })
+		.min(2, "First name must be at least 2 characters")
+		.max(50),
+
+	lastName: z
+		.string({ required_error: "Last name is required" })
+		.min(2, "Last name must be at least 2 characters")
+		.max(50),
 
 	username: z
 		.string({ required_error: "Username is required" })
@@ -24,6 +29,23 @@ const registerSchema = z.object({
 		.min(8, "Password must be at least 8 characters")
 		.regex(/[A-Z]/, "Password must contain at least one uppercase letter")
 		.regex(/[0-9]/, "Password must contain at least one number"),
+
+	dob: z.string({ required_error: "Date of birth is required" }),
+
+	gender: z.string({ required_error: "Gender is required" }),
+
+	country: z.string({ required_error: "Country is required" }),
+
+	genres: z
+		.array(z.string(), { required_error: "Genres are required" })
+		.min(1, "You must select at least 1 genre")
+		.max(5, "You can select up to 5 genres"),
+
+	termsAccepted: z
+		.boolean({ required_error: "Terms acceptance is required" })
+		.refine((val) => val === true, {
+			message: "You must accept the Terms of Service",
+		}),
 });
 
 const loginSchema = z.object({

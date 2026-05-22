@@ -131,13 +131,19 @@ const handleLogin = async (req, res) => {
 
 		// Generate JWTs
 		const accessToken = jwt.sign(
-			{ UserInfo: { _id: foundUser._id, roles: foundUser.roles } },
+			{
+				UserInfo: {
+					_id: foundUser._id,
+					uuid: foundUser.uuid,
+					roles: foundUser.roles,
+				},
+			},
 			process.env.ACCESS_TOKEN_SECRET,
 			{ expiresIn: "15m" },
 		);
 
 		const refreshToken = jwt.sign(
-			{ _id: foundUser._id },
+			{ _id: foundUser._id, uuid: foundUser.uuid },
 			process.env.REFRESH_TOKEN_SECRET,
 			{ expiresIn: "7d" },
 		);

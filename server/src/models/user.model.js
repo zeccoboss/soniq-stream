@@ -82,7 +82,7 @@ const userSchema = new Schema(
 			type: Schema.Types.ObjectId,
 			ref: "Image",
 		},
-		settingsId: {
+		settings: {
 			type: Schema.Types.ObjectId,
 			ref: "Settings",
 			default: null,

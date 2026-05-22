@@ -11,10 +11,17 @@ export const authRedirect = async (ctx, next) => {
 	// Check if the current path starts with any of the protected routes (e.g., "/dashboard", "/profile", etc.)
 	const isProtected = protectedRoutes.some((r) => ctx.path.startsWith(r));
 
+	console.log(ctx.path);
+	console.log(isProtected);
+
 	//
 	const getUser = () => store.token;
 
+	console.log(getUser());
+
 	if (isProtected && !getUser()) {
+		console.log(".....");
+
 		// Pass the redirect route directly into next() to let the router handle it cleanly
 		await next(`/auth/login?redirect=${encodeURIComponent(ctx.path)}`);
 		return;

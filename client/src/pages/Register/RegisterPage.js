@@ -5,6 +5,11 @@ import { RegisterDesktop } from "./RegisterDesktop.js";
 import { RegisterMobile } from "./RegisterMobile.js";
 import { registerEvents } from "@zecco/features/register/register.events.js";
 import { router } from "@zecco/routes/router.js";
+import {
+	readFromSessionStorage,
+	removeFromSessionStorage,
+	writeToSessionStorage,
+} from "@zecco/services/storage/session-storage.js";
 
 /**
  * RegisterPage — Register orchestrator
@@ -49,7 +54,7 @@ export const RegisterPage = async (ctx) => {
 	// Determine slide direction by comparing with last rendered step
 	const prevStep = (() => {
 		try {
-			return Number(sessionStorage.getItem("reg_prev_step") || 1);
+			return Number(readFromSessionStorage("reg_prev_step") || 1);
 		} catch {
 			return 1;
 		}
@@ -59,7 +64,7 @@ export const RegisterPage = async (ctx) => {
 
 	// Persist current step as previous for next render
 	try {
-		sessionStorage.setItem("reg_prev_step", String(step));
+		writeToSessionStorage("reg_prev_step", step);
 	} catch {
 		/* ignore */
 	}
@@ -69,7 +74,8 @@ export const RegisterPage = async (ctx) => {
 	// Read here so views can pre-fill fields on step navigation.
 	const draft = (() => {
 		try {
-			return JSON.parse(sessionStorage.getItem("reg_draft") || "null") ?? {};
+			// return JSON.parse(sessionStorage.getItem("reg_draft") || "null") ?? {};
+			return readFromSessionStorage("reg_draft") ?? {};
 		} catch {
 			return {};
 		}
@@ -97,7 +103,7 @@ export const RegisterPage = async (ctx) => {
 	const saveDraft = (updates) => {
 		const next = { ...draft, ...updates };
 		try {
-			sessionStorage.setItem("reg_draft", JSON.stringify(next));
+			writeToSessionStorage("reg_draft", next);
 		} catch {
 			/* ignore */
 		}
@@ -106,8 +112,8 @@ export const RegisterPage = async (ctx) => {
 
 	const clearDraft = () => {
 		try {
-			sessionStorage.removeItem("reg_draft");
-			sessionStorage.removeItem("reg_prev_step");
+			removeFromSessionStorage("reg_draft");
+			removeFromSessionStorage("reg_prev_step");
 		} catch {
 			/* ignore */
 		}

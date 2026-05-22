@@ -1,3 +1,4 @@
+import { getOverlay } from "@zecco/layouts/Overlay/Overlay";
 import "./Modal.styles.css";
 
 /**
@@ -44,11 +45,6 @@ import "./Modal.styles.css";
  *   onConfirm    {Function}  — called when confirm is clicked, modal auto-closes after
  *   closable     {boolean}   — allow overlay backdrop click to close (default: true)
  */
-
-// ── Overlay reference ─────────────────────────────────────────
-// The overlay is already mounted in buildLayout.js
-// We get it by id rather than importing it to avoid circular deps
-const getOverlay = () => document.getElementById("app-overlay");
 
 // ── Icon map per type ─────────────────────────────────────────
 const TYPE_ICONS = {
@@ -178,7 +174,7 @@ export const showModal = ({
 				/* caller handles errors */
 			}
 		}
-		hideModal();
+		// hideModal();
 	});
 
 	// ── Mount ─────────────────────────────────────────────────

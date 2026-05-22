@@ -5,8 +5,9 @@ import { router } from "@zecco/routes/router.js";
 import { store } from "@zecco/store/store.js";
 import { saveLoginDraft, clearLoginDraft } from "./login.helpers.js";
 import { appConfig } from "@zecco/config/app.config.js";
+import meService from "@zecco/services/api/me.service.js";
 
-export const loginEvents = (root, { render }) => {
+export const loginEvents = async (root, { render }) => {
 	// 1. Auto-save drafts on input
 	root.addEventListener("input", (e) => {
 		if (e.target.matches("input[name='email']")) {
@@ -33,7 +34,9 @@ export const loginEvents = (root, { render }) => {
 	const submitBtn = root.querySelector(
 		"#login-submit-btn, #login-mob-submit-btn",
 	);
-	submitBtn?.addEventListener("click", async () => {
+	submitBtn?.addEventListener("click", async (e) => {
+		e.preventDefault();
+
 		const identifier = root.querySelector("#login-identifier").value.trim();
 		const password = root.querySelector("#login-pwd").value.trim();
 
@@ -50,14 +53,20 @@ export const loginEvents = (root, { render }) => {
 		root.dispatchEvent(new CustomEvent("login-loading"));
 
 		try {
-			const response = await authService.login({ identifier, password });
+			const loginResult = await authService.login({ identifier, password });
+			store.token = loginResult.accessToken;
 
-			store.setAuth(response.data.user, response.data.token);
+			const me = await meService.getProfile();
+			store.user = me.data;
+
 			clearLoginDraft();
 
 			// Success toast is still good here for the transition
-			toast({ message: "Welcome back!", type: "success" });
-			router.navigate("/");
+			toast({
+				message: `Welcome back <strong>${me.data.username}</strong>!`,
+				type: "success",
+			});
+			router.redirect("/tab=discover");
 		} catch (err) {
 			// Backend errors also use the component's built-in error state
 			root.dispatchEvent(
