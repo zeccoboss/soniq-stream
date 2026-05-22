@@ -9,6 +9,8 @@ const validate = (schema) => (req, res, next) => {
 			message: issue.message,
 		}));
 
+		console.log("❌ ZOD VALIDATION FAILED ON FIELDS:", errors);
+
 		return res.status(400).json({
 			success: false,
 			message: "Validation failed",

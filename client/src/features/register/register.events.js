@@ -4,6 +4,7 @@ import { authService } from "@zecco/services/api/auth.service.js";
 import { showModal } from "@zecco/components/Modal/Modal.js";
 import { toast } from "@zecco/components/Toast/Toast.js";
 import { router } from "@zecco/routes/router.js";
+import { handleRegisterModal } from "./register.helpers";
 
 // --- Regex Helpers ---
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -61,7 +62,7 @@ export const registerEvents = (
 
 				// SECURITY: Never save passwords to sessionStorage on input
 				if (key && e.target.type !== "password") {
-					saveDraft({ [key]: e.target.value.trim() });
+					saveDraft({ [key]: e.target.value });
 				}
 			}, 300),
 		);
@@ -244,39 +245,25 @@ export const registerEvents = (
 				submitBtn.innerHTML = `<i class="bi bi-arrow-repeat spin"></i> Creating account...`;
 				submitBtn.disabled = true;
 
-				// Fire off API request
-				await authService.register(draft);
-				console.log("registered user...");
+				// Inside your frontend form submit handler
+				const cleanUserData = {
+					...draft,
+					username: draft.username.trim(),
+					email: draft.email.trim(),
+					firstName: draft.firstName.trim(),
+					lastName: draft.lastName.trim(),
+				};
 
-				// Clear memory & storage
+				// Fire off API request and wait for the response
+				const registerResult = await authService.register(cleanUserData);
+
+				// Only runs if the API call was successful (200 OK)
 				clearDraft();
 
-				// Show Verification Modal
-				showModal({
-					title: "Check your email",
-					message: `We've sent a verification link to ${email}. Please verify your account to continue.`,
-					type: "info",
-					icon: "bi-envelope-check-fill",
-					confirmLabel: "Resend Email",
-					cancelLabel: "Go to Login",
-
-					onConfirm: async () => {
-						try {
-							await authService.resendVerification(email);
-							toast({
-								message: "Verification email resent!",
-								type: "success",
-							});
-							setTimeout(() => router.navigate("/auth/login"), 1000);
-						} catch (err) {
-							toast({
-								message: err.message || "Failed to resend email.",
-								type: "error",
-							});
-						}
-					},
+				handleRegisterModal({
+					email: registerResult.email,
+					message: registerResult.message,
 				});
-
 				// Manual cancel routes to login
 				document
 					.getElementById("modal-cancel-btn")

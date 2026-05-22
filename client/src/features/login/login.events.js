@@ -38,7 +38,7 @@ export const loginEvents = async (root, { render }) => {
 		e.preventDefault();
 
 		const identifier = root.querySelector("#login-identifier").value.trim();
-		const password = root.querySelector("#login-pwd").value.trim();
+		const password = root.querySelector("#login-pwd").value;
 
 		// Use the component's built-in error state instead of a toast
 		if (!identifier || !password) {
