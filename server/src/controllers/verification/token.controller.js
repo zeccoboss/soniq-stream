@@ -127,7 +127,7 @@ const handleResendEmailVerification = async (req, res) => {
 
 	// Send the email with the raw token (not hashed)
 	try {
-		await resendVerificationMail(user.email, token);
+		resendVerificationMail(user.email, token);
 	} catch (err) {
 		console.error("[ResendVerification] Email send failed:", err);
 		return res.status(500).json({

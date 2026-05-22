@@ -90,7 +90,7 @@ const initAdmin = async () => {
 		admin.settings = newSettings._id;
 
 		await admin.save();
-		await welcomeAdmin(admin.email);
+		welcomeAdmin(admin.email);
 
 		console.log("Admin created successfully!");
 	} catch (err) {

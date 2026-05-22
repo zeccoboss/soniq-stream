@@ -41,7 +41,7 @@ const handleForgotPassword = async (req, res) => {
 
 		// ── Send email ─────────────────────────────────────────────────────────
 		try {
-			await sendPasswordResetMail(email, token);
+			sendPasswordResetMail(email, token);
 		} catch (err) {
 			console.error("[ForgotPassword] Email send failed:", err);
 			return res

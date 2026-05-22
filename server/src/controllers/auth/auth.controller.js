@@ -71,7 +71,7 @@ const handleRegister = async (req, res) => {
 			lastUserVerificationSentAt: Date.now(),
 		});
 
-		await sendVerificationMail(user.email, token);
+		sendVerificationMail(user.email, token);
 
 		const maskedEmail = maskEmail(user.email);
 
@@ -118,7 +118,7 @@ const handleLogin = async (req, res) => {
 
 		// Check if email is verified
 		if (!foundUser.verified) {
-				const maskedEmail = maskEmail(foundUser.email);
+			const maskedEmail = maskEmail(foundUser.email);
 
 			return res.status(403).json({
 				success: false,
