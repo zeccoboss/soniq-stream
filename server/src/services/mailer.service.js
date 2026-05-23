@@ -9,13 +9,13 @@ const transporter = nodemailer.createTransport({
 		pass: process.env.MAIL_APP_PASSWORD,
 	},
 });
-
 transporter.verify((err, success) => {
-	console.error("");
-	if (err) console.error("Transporter error:", !!err);
-	else console.log("Transporter ready:", success);
+	if (err) {
+		console.error("Transporter error:", err);
+	} else {
+		console.log("Transporter ready:", success);
+	}
 });
-
 function sendMail({ to, subject, text, html }) {
 	return new Promise((resolve, reject) => {
 		transporter.sendMail(
