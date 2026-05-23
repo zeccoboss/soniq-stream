@@ -60,8 +60,13 @@ export const loginEvents = async (root, { render }) => {
 			const loginResult = await authService.login({ identifier, password });
 			store.token = loginResult.accessToken;
 
+			console.log("[LOGIN-RESULT]: ", loginResult);
+			console.log("Fetching profile after login...");
+
 			const me = await meService.getProfile();
+			console.log("profile Fetched, showing profile...");
 			store.user = me.data;
+			console.log("[PROFILE]: ", me.data);
 
 			clearLoginDraft();
 
