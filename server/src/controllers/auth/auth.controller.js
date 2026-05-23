@@ -71,7 +71,15 @@ const handleRegister = async (req, res) => {
 			lastUserVerificationSentAt: Date.now(),
 		});
 
-		sendVerificationMail(user.email, token);
+		// ── Send email ─────────────────────────────────────────────────────────
+		try {
+			sendVerificationMail(user.email, token);
+		} catch (err) {
+			console.error("[ForgotPassword] Email send failed:", err);
+			return res
+				.status(500)
+				.json({ success: false, message: "Failed to send reset email" });
+		}
 
 		const maskedEmail = maskEmail(user.email);
 

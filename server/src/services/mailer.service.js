@@ -17,11 +17,11 @@ transporter.verify((err, success) => {
 		console.log("Transporter ready:", success);
 	}
 });
-function sendMail({ to, subject, text, html }) {
+async function sendMail({ to, subject, text, html }) {
 	return new Promise((resolve, reject) => {
 		transporter.sendMail(
 			{
-				from: process.env.MAIL_USER,
+				from: `"SoniqStream" <ezekielobang@gmail.com>`,
 				to,
 				subject,
 				text,
@@ -32,7 +32,9 @@ function sendMail({ to, subject, text, html }) {
 				resolve(info);
 			},
 		);
+	}).catch((err) => {
+		console.error("❌ Email delivery failed:", err.message);
+		return null;
 	});
 }
-
 module.exports = { sendMail };
