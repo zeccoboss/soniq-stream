@@ -5,50 +5,19 @@ import { homeEvents } from "@zecco/features/home/home.events.js";
 import { store } from "@zecco/store/store.js";
 import { trackService } from "@zecco/services/api/track.service.js";
 
+// ── In-Memory Feed Cache Layer ──────────────────────────────
+// Placed outside the component lifecycle so it persists across internal router shifts
+let feedCache = {
+	data: null,
+	cachedAt: null,
+};
+
+// Cache lifetime window configuration (e.g., 5 minutes)
+const CACHE_DURATION = 300000;
+
 /**
  * HomePage — Home page orchestrator
- *
- * Route: /  (outlet: "main")
- * Tab routing: /?tab=discover | explore | foryou
- *
- * The router parses ctx.query.tab as a string automatically.
- * Tab switching works via anchor links — the router intercepts
- * them and calls replaceChildren, so the whole page re-renders
- * with the new tab active. No manual DOM toggling.
- *
- * State machine:
- *   skeleton → fetch → content | error
- *   error    → retry → skeleton → content | error
- *
- * Data contract (passed into Desktop/Mobile as `data`):
- * ─────────────────────────────────────────────────────
- *   user            Object | null   — from store
- *   isLoggedIn      boolean
- *
- *   // Discover tab
- *   genres          [{ name, icon, colorClass }]
- *   newUploads      [{ id, title, artist, cover, genre, duration }]
- *   trending        [{ id, title, artist, cover, plays }]
- *   topTracks       [{ id, title, artist, cover, genre, duration }]
- *   activeGenre     string | "all"  — genre chip toggle state
- *
- *   // Explore tab
- *   trendingArtists [{ username, username, avatar, uploadsCount }]
- *   newThisWeek     [{ id, title, artist, cover, genre }]
- *   trendingTracks  [{ id, title, artist, cover, plays }]
- *   activeFilter    "all" | "genres" | "artists" | "trending" | "new"
- *
- *   // For You tab
- *   hasEnoughData   boolean
- *   recentPlays     [{ id, title, artist, cover, genre }]
- *   liked           [{ id, title, artist, cover, genre }]
- *   genreRecs       [{ id, title, artist, cover, genre }]
- *   popularRightNow [{ id, title, artist, cover, genre, duration }]
- *   topGenre        string | null
- *
- * @async
- * @param {Object} ctx - Router context { path, params, query }
- * @returns {Promise<Element>}
+ * Route: / (outlet: "main")
  */
 export const HomePage = async (ctx) => {
 	const root = document.createElement("section");
@@ -59,10 +28,6 @@ export const HomePage = async (ctx) => {
 	let controller = null;
 
 	// ── Data container ───────────────────────────────────────
-	// All tab data lives here. Views read from it on every render.
-	// homeEvents mutates it via setData() for things like
-	// genre chip toggles and explore filter clicks —
-	// those don't need a server round trip.
 	let data = {
 		user: store.user ?? null,
 		isLoggedIn: store.isLoggedIn,
@@ -111,12 +76,12 @@ export const HomePage = async (ctx) => {
 	};
 
 	// ── Data patcher ─────────────────────────────────────────
-	// Used by homeEvents for UI-only state changes:
-	//   - genre chip toggles  → setData({ activeGenre: "Afrobeats" })
-	//   - explore filter tabs → setData({ activeFilter: "artists" })
-	// Re-renders without hitting the server.
 	const setData = async (updates) => {
 		data = { ...data, ...updates };
+		// Sync local updates to memory cache if active
+		if (feedCache.data) {
+			feedCache.data = { ...feedCache.data, ...updates };
+		}
 		await render();
 	};
 
@@ -125,11 +90,28 @@ export const HomePage = async (ctx) => {
 		try {
 			if (!isMounted) return;
 
+			// 1. Evaluate Cache Availability
+			const now = Date.now();
+			if (
+				feedCache.data &&
+				feedCache.cachedAt &&
+				now - feedCache.cachedAt < CACHE_DURATION
+			) {
+				data = {
+					...feedCache.data,
+					user: store.user ?? null,
+					isLoggedIn: store.isLoggedIn,
+				};
+				state = "content";
+				await render();
+				return;
+			}
+
+			// Cache miss -> Trigger skeleton display layout instantly
 			state = "skeleton";
 			await render();
 
 			// Refresh user from store on every load
-			// (token may have been validated since last visit)
 			data.user = store.user ?? null;
 			data.isLoggedIn = store.isLoggedIn;
 
@@ -139,7 +121,6 @@ export const HomePage = async (ctx) => {
 			const { signal } = controller;
 
 			// ── Genre list ─────────────────────────────────
-			// Static for now — wire to API when genre endpoint exists
 			data.genres = [
 				{
 					name: "Afrobeats",
@@ -175,30 +156,23 @@ export const HomePage = async (ctx) => {
 				{ name: "Rock", icon: "bi-lightning", colorClass: "gc-rock" },
 			];
 
-			// ==================================================
-			// ── Feeds ─────────────────────────────────────────
-			// ==================================================
+			const FEED_LIMIT = 10;
 
-			const FEED_LIMIT = 10; // fetch 10 items per feed for now — adjust as needed
+			// 2. Minimum display time enforcement promise (1500ms hold)
+			const skeletonDelayTimer = new Promise((resolve) =>
+				setTimeout(resolve, 1500),
+			);
+
 			const [exploreResult, discoverResult, forYouResult] =
 				await Promise.allSettled([
-					trackService.getExploreFeed({
-						limit: FEED_LIMIT,
-						signal,
-					}),
-
-					trackService.getDiscoverFeed({
-						limit: FEED_LIMIT,
-						signal,
-					}),
-
+					trackService.getExploreFeed({ limit: FEED_LIMIT, signal }),
+					trackService.getDiscoverFeed({ limit: FEED_LIMIT, signal }),
 					trackService.getForYouFeed({
 						userId: store?.user?.id ?? null,
 						signal,
 					}),
+					skeletonDelayTimer, // Bundled to force structural execution window
 				]);
-
-			// console.log(discoverResult);
 
 			// ── Explore Feed ────────────────────────────────
 			if (exploreResult.status === "fulfilled") {
@@ -217,7 +191,6 @@ export const HomePage = async (ctx) => {
 
 			// ── Discover Feed ───────────────────────────────
 			if (discoverResult.status === "fulfilled") {
-				// actual API payload
 				const discoverPayload = discoverResult.value?.value;
 
 				if (discoverPayload?.success) {
@@ -254,9 +227,7 @@ export const HomePage = async (ctx) => {
 
 				data.popularRightNow =
 					forYouRes.popularRightNow ?? data.popularRightNow;
-
 				data.topGenre = forYouRes.topGenre ?? null;
-
 				data.hasEnoughData = data.recentPlays.length >= 3;
 			} else {
 				console.error(
@@ -264,7 +235,12 @@ export const HomePage = async (ctx) => {
 					forYouResult.reason,
 				);
 			}
+
 			if (!isMounted) return;
+
+			// 3. Hydrate cache payload configuration on successful run
+			feedCache.data = { ...data };
+			feedCache.cachedAt = Date.now();
 
 			state = "content";
 			await render();
@@ -278,7 +254,10 @@ export const HomePage = async (ctx) => {
 	};
 
 	// ── Boot ─────────────────────────────────────────────────
-	await loadData();
+	// Removed the accidental 'await' keyword here!
+	// This allows the element shell to immediately return to your router
+	// and mount the skeleton onto the screen while data fetches asynchronously.
+	loadData();
 
 	// ── Lifecycle ────────────────────────────────────────────
 	root.__onUnmount = () => {
@@ -287,4 +266,10 @@ export const HomePage = async (ctx) => {
 	};
 
 	return root;
+};
+
+// Export cache breaker utility for integration with logout events
+export const invalidateHomeCache = () => {
+	feedCache.data = null;
+	feedCache.cachedAt = null;
 };
