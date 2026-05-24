@@ -1,40 +1,32 @@
-const nodemailer = require("nodemailer");
+const { BrevoClient } = require("@getbrevo/brevo");
 
-const transporter = nodemailer.createTransport({
-	host: process.env.MAIL_HOST,
-	port: Number(process.env.MAIL_PORT),
-	secure: Number(process.env.MAIL_PORT) === 465,
-	auth: {
-		user: process.env.MAIL_USER,
-		pass: process.env.MAIL_APP_PASSWORD,
-	},
-	connectionTimeout: 15000,
+// Initialize the new unified Brevo client
+const brevo = new BrevoClient({
+	apiKey: process.env.MAIL_APP_PASSWORD,
 });
-transporter.verify((err, success) => {
-	if (err) {
-		console.error("Transporter error:", err);
-	} else {
-		console.log("Transporter ready:", success);
-	}
-});
-async function sendMail({ to, subject, text, html }) {
-	return new Promise((resolve, reject) => {
-		transporter.sendMail(
-			{
-				from: `"SoniqStream" <ezekielobang@gmail.com>`,
-				to,
-				subject,
-				text,
-				html,
-			},
-			(err, info) => {
-				if (err) return reject(err);
-				resolve(info);
-			},
-		);
-	}).catch((err) => {
-		console.error("❌ Email delivery failed:", err.message);
-		return null;
-	});
+
+function sendMail({ to, subject, text, html }) {
+	// In v4, you pass a clean object directly to the method
+	return brevo.transactionalEmails
+		.sendTransacEmail({
+			subject: subject,
+			htmlContent: html || text,
+			textContent: text,
+
+			// Crucial: Must be your verified personal sender email on Brevo
+			sender: { name: "SoniqStream", email: "ezekielobang@gmail.com" },
+
+			// Brevo still expects recipients structured inside an array of objects
+			to: [{ email: to }],
+		})
+		.then((data) => {
+			console.log("✓ Email dispatched successfully via Brevo v4 HTTP API");
+			return data;
+		})
+		.catch((err) => {
+			console.error("❌ HTTP Email delivery failed:", err.message);
+			return null;
+		});
 }
+
 module.exports = { sendMail };
