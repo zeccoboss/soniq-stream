@@ -36,6 +36,22 @@ class AppStore {
 	#isLoading = false;
 	#deepLinkTrackId = null;
 
+	// ── User Preferences & Settings ───────────────────────────────────
+	#preferences = {
+		theme: "Dark", // "Dark" | "Light" | "System"
+		language: "en",
+		region: "NG",
+		streamingQuality: "auto", // "auto" | "low" | "normal" | "high"
+		equalizerEnabled: false,
+		notificationFollowers: true,
+		notificationUploads: true,
+		notificationLikes: false,
+		showActivity: true,
+		showFollowers: true,
+		showLikes: false,
+		profileVisibility: "public", // "public" | "followers" | "private"
+	};
+
 	// ═════════════════════════════════════════════════════════════════
 	// AUTHENTICATION
 	// ═════════════════════════════════════════════════════════════════
@@ -482,6 +498,39 @@ class AppStore {
 	}
 
 	// ═════════════════════════════════════════════════════════════════
+	// USER PREFERENCES & SETTINGS
+	// ═════════════════════════════════════════════════════════════════
+
+	get preferences() {
+		return this.#preferences;
+	}
+
+	setPreferences(newPreferences) {
+		if (!newPreferences || typeof newPreferences !== "object") {
+			console.error("[Store]: Invalid preferences object.");
+			return;
+		}
+		this.#preferences = { ...this.#preferences, ...newPreferences };
+		writeToLocalStorage("preferences", this.#preferences);
+	}
+
+	updatePreference(key, value) {
+		if (!key || typeof key !== "string") {
+			console.error("[Store]: Invalid preference key.");
+			return;
+		}
+		this.#preferences[key] = value;
+		writeToLocalStorage("preferences", this.#preferences);
+	}
+
+	loadPreferencesFromStorage() {
+		const stored = readFromLocalStorage("preferences");
+		if (stored && typeof stored === "object") {
+			this.#preferences = { ...this.#preferences, ...stored };
+		}
+	}
+
+	// ═════════════════════════════════════════════════════════════════
 	// TEARDOWN LIFECYCLES
 	// ═════════════════════════════════════════════════════════════════
 
@@ -489,6 +538,8 @@ class AppStore {
 		this.#user = null;
 		this.#token = null;
 		removeFromLocalStorage("token");
+		removeFromLocalStorage("user");
+		removeFromLocalStorage("preferences");
 	}
 
 	clearAll() {
@@ -498,6 +549,20 @@ class AppStore {
 		this.#overlayOpen = false;
 		this.#isLoading = false;
 		this.#deepLinkTrackId = null;
+		this.#preferences = {
+			theme: "Dark",
+			language: "en",
+			region: "NG",
+			streamingQuality: "auto",
+			equalizerEnabled: false,
+			notificationFollowers: true,
+			notificationUploads: true,
+			notificationLikes: false,
+			showActivity: true,
+			showFollowers: true,
+			showLikes: false,
+			profileVisibility: "public",
+		};
 	}
 
 	init() {
@@ -508,6 +573,9 @@ class AppStore {
 		if (trackId) {
 			console.log(`[Store]: Deep link track detected → ${trackId}`);
 		}
+
+		// Load preferences from storage
+		this.loadPreferencesFromStorage();
 	}
 }
 

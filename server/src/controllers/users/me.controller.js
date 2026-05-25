@@ -30,7 +30,7 @@ const getMe = async (req, res) => {
 // @route   GET /api/v1/me/settings
 const getSettings = async (req, res) => {
 	try {
-		const settings = await getSettingsFeed(req.user.id);
+		const settings = await getSettingsFeed(req.user._id);
 		res.json({ success: true, data: settings });
 	} catch (error) {
 		res.status(500).json({ success: false, message: error.message });

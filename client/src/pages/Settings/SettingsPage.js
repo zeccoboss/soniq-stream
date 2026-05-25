@@ -1,7 +1,10 @@
 import { mobileScreen } from "@zecco/core/screen-break-points.js";
+import { themeManager } from "@zecco/core/theme-manager.js";
 import { SettingsDesktop } from "./SettingsDesktop.js";
 import { SettingsMobile } from "./SettingsMobile.js";
 import { settingsEvents } from "@zecco/features/settings/settings.events.js";
+import { store } from "@zecco/store/store.js";
+import meService from "@zecco/services/api/me.service.js";
 
 /**
  * SettingsPage — Main settings orchestrator
@@ -22,6 +25,8 @@ export const SettingsPage = async (ctx) => {
 	let state = "skeleton";
 	let isMounted = true;
 	let controller = null;
+	let userData = null;
+	let settingsData = null;
 
 	const isMobile = mobileScreen.matches;
 	const UI = isMobile ? SettingsMobile : SettingsDesktop;
@@ -29,10 +34,10 @@ export const SettingsPage = async (ctx) => {
 	// ── Render ───────────────────────────────────────────────
 	const render = async () => {
 		if (!isMounted) return;
-		const view = await UI({ state, ctx });
+		const view = await UI({ state, ctx, userData, settingsData });
 		root.replaceChildren(view);
 		// Bind events to fresh DOM every render
-		settingsEvents(root, { state, setState });
+		settingsEvents(root, { state, setState, userData, settingsData });
 	};
 
 	// ── State updater ────────────────────────────────────────
@@ -55,20 +60,32 @@ export const SettingsPage = async (ctx) => {
 			await render();
 
 			// Check auth
-			const user = JSON.parse(localStorage.getItem("user") || "null");
-			if (!user) {
+			const user = store.user;
+			if (!user || !store.isAuthenticated) {
 				state = "auth";
-				setState("content"); // TODO: remove later
-
 				await render();
 				return;
 			}
 
-			// TODO: fetch user preferences / settings from API
-			// controller = new AbortController();
-			// const settings = await settingsService.get(user.id, {
-			//   signal: controller.signal
-			// });
+			userData = user;
+
+			// Fetch user settings from API
+			try {
+				controller = new AbortController();
+				settingsData = await meService.getSettings(controller.signal);
+
+				// Update store preferences with fetched settings
+				if (settingsData && typeof settingsData === "object") {
+					store.setPreferences(settingsData);
+				}
+			} catch (settingsErr) {
+				console.warn(
+					"[SettingsPage] Settings fetch error, using defaults:",
+					settingsErr,
+				);
+				// Use default preferences from store if fetch fails
+				settingsData = store.preferences;
+			}
 
 			if (!isMounted) return;
 
@@ -82,6 +99,9 @@ export const SettingsPage = async (ctx) => {
 			}
 		}
 	};
+
+	// ── Initialize theme ────────────────────────────────────
+	themeManager.init();
 
 	// ── Boot ─────────────────────────────────────────────────
 	await loadData();

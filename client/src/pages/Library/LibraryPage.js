@@ -60,7 +60,7 @@ export const LibraryPage = async (ctx) => {
 	};
 
 	// ── Lifecycle ──
-	await loadData(); // Start loading (includes initial render)
+	loadData(); // Start loading (includes initial render)
 
 	root.__onUnmount = () => {
 		isMounted = false;

@@ -61,6 +61,70 @@ const getPublicProfile = async (identifier) => {
 	}
 };
 
+/**
+ * Fetches or initializes a user's private settings.
+ * @param {string} userId - The database ID of the authenticated user.
+ * @returns {Promise<Object>} The user's settings object.
+ */
+const getSettingsFeed = async (userId) => {
+	try {
+		const user = await User.findById(userId).select("settings");
+
+		if (!user) {
+			throw new Error("User not found");
+		}
+
+		// Fallback: If settings don't exist yet for the user, return a default schema structure
+		if (!user.settings) {
+			user.settings = {
+				theme: "dark",
+				notifications: { email: true, push: false },
+				streamingQuality: "high",
+			};
+			await user.save();
+		}
+
+		return user.settings;
+	} catch (error) {
+		console.error("Get Settings Service Error:", error.message);
+		throw error;
+	}
+};
+
+/**
+ * Updates a user's settings.
+ * @param {string} userId - The database ID of the authenticated user.
+ * @param {Object} newSettings - The partial or complete settings payload to update.
+ * @returns {Promise<Object>} The updated settings object.
+ */
+const updateSettingsFeed = async (userId, newSettings) => {
+	try {
+		const user = await User.findById(userId);
+
+		if (!user) {
+			throw new Error("User not found");
+		}
+
+		// Merge existing settings with new updates, handling nested objects like 'notifications'
+		user.settings = {
+			...user.settings,
+			...newSettings,
+			notifications: {
+				...user.settings?.notifications,
+				...newSettings?.notifications,
+			},
+		};
+
+		await user.save();
+		return user.settings;
+	} catch (error) {
+		console.error("Update Settings Service Error:", error.message);
+		throw error;
+	}
+};
+
 module.exports = {
 	getPublicProfile,
+	getSettingsFeed,
+	updateSettingsFeed, // <-- Now properly exported for your controller to use!
 };

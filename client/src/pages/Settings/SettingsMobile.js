@@ -15,9 +15,16 @@ import "./Settings.styles.css";
  * @param {Object} props
  * @param {string} props.state - "skeleton" | "auth" | "content" | "loading" | "error"
  * @param {Object} props.ctx - Router context
+ * @param {Object} props.userData - Current user data
+ * @param {Object} props.settingsData - User settings/preferences
  * @returns {Promise<Element>} The settings section element
  */
-export const SettingsMobile = async ({ state, ctx }) => {
+export const SettingsMobile = async ({
+	state,
+	ctx,
+	userData,
+	settingsData,
+}) => {
 	const root = new CreateElement("section");
 	root
 		.addClass("settings-section-mobile", "")
@@ -62,17 +69,17 @@ export const SettingsMobile = async ({ state, ctx }) => {
 					<div class="settings-mob-profile-card" id="settings-mob-profile-card">
 						<div class="settings-mob-avatar-wrap">
 							<img
-								src="${defaultAvatar}"
+								src="${userData?.avatar || defaultAvatar}"
 								alt="Profile avatar"
 								class="settings-mob-avatar-img"
 								id="settings-mob-avatar-img"
 								onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"
 							/>
-							<div class="settings-mob-avatar-fallback" id="settings-mob-avatar-fallback">—</div>
+							<div class="settings-mob-avatar-fallback" id="settings-mob-avatar-fallback">${userData?.username?.[0]?.toUpperCase() || "—"}</div>
 						</div>
 						<div class="settings-mob-profile-info">
-							<p class="settings-mob-profile-name" id="settings-mob-display-name">—</p>
-							<p class="settings-mob-profile-plan" id="settings-mob-display-plan">Free plan</p>
+							<p class="settings-mob-profile-name" id="settings-mob-display-name">${userData?.username || "—"}</p>
+							<p class="settings-mob-profile-plan" id="settings-mob-display-plan">${userData?.isAdmin ? "Admin" : "Free plan"}</p>
 						</div>
 						<i class="bi bi-chevron-right settings-mob-chevron"></i>
 					</div>

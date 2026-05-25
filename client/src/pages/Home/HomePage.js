@@ -69,7 +69,7 @@ export const HomePage = async (ctx) => {
 	const setState = async (newState) => {
 		state = newState;
 		if (newState === "skeleton") {
-			await loadData();
+			loadData();
 		} else {
 			await render();
 		}

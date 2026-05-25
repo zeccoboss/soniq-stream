@@ -9,9 +9,16 @@ import "./Settings.styles.css";
  * @param {Object} props
  * @param {string} props.state - "skeleton" | "auth" | "content" | "loading" | "error"
  * @param {Object} props.ctx - Router context
+ * @param {Object} props.userData - Current user data
+ * @param {Object} props.settingsData - User settings/preferences
  * @returns {Promise<Element>} The settings section element
  */
-export const SettingsDesktop = async ({ state, ctx }) => {
+export const SettingsDesktop = async ({
+	state,
+	ctx,
+	userData,
+	settingsData,
+}) => {
 	const root = new CreateElement("section");
 	root.addClass("settings-section").setId("settings-section");
 
@@ -102,21 +109,21 @@ export const SettingsDesktop = async ({ state, ctx }) => {
 						<div class="settings-avatar-row">
 							<div class="settings-avatar-wrap">
 								<img
-									src="${defaultAvatar}"
+									src="${userData?.avatar || defaultAvatar}"
 									alt="Profile avatar"
 									class="settings-avatar-img"
 									id="settings-avatar-img"
 									onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"
 								/>
-								<div class="settings-avatar-fallback" id="settings-avatar-fallback">—</div>
+								<div class="settings-avatar-fallback" id="settings-avatar-fallback">${userData?.username?.[0]?.toUpperCase() || "—"}</div>
 								<button class="settings-avatar-edit" id="settings-avatar-edit-btn" title="Change avatar">
 									<i class="bi bi-pencil-fill"></i>
 								</button>
 								<input type="file" id="settings-avatar-input" accept="image/*" hidden />
 							</div>
 							<div class="settings-avatar-info">
-								<p class="settings-avatar-name" id="settings-display-name">—</p>
-								<p class="settings-avatar-plan" id="settings-display-plan">Free plan</p>
+								<p class="settings-avatar-name" id="settings-display-name">${userData?.username || "—"}</p>
+								<p class="settings-avatar-plan" id="settings-display-plan">${userData?.isAdmin ? "Admin" : "Free plan"}</p>
 							</div>
 						</div>
 						<div class="settings-group">
@@ -187,9 +194,9 @@ export const SettingsDesktop = async ({ state, ctx }) => {
 								</div>
 								<div class="settings-item-right">
 									<select class="settings-inline-select" id="settings-privacy-visibility">
-										<option value="public">Public</option>
-										<option value="followers">Followers only</option>
-										<option value="private">Private</option>
+										<option value="public" ${settingsData?.profileVisibility === "public" ? "selected" : ""}>Public</option>
+										<option value="followers" ${settingsData?.profileVisibility === "followers" ? "selected" : ""}>Followers only</option>
+										<option value="private" ${settingsData?.profileVisibility === "private" ? "selected" : ""}>Private</option>
 									</select>
 								</div>
 							</div>
@@ -201,7 +208,7 @@ export const SettingsDesktop = async ({ state, ctx }) => {
 										<div class="settings-item-sub">Let followers see what you play</div>
 									</div>
 								</div>
-								<div class="settings-toggle on" id="settings-toggle-activity" role="switch" aria-checked="true"></div>
+								<div class="settings-toggle ${settingsData?.showActivity ? "on" : ""}" id="settings-toggle-activity" role="switch" aria-checked="${settingsData?.showActivity ? "true" : "false"}"></div>
 							</div>
 							<div class="settings-item">
 								<div class="settings-item-left">
@@ -211,7 +218,7 @@ export const SettingsDesktop = async ({ state, ctx }) => {
 										<div class="settings-item-sub">Display your follower count publicly</div>
 									</div>
 								</div>
-								<div class="settings-toggle on" id="settings-toggle-followers" role="switch" aria-checked="true"></div>
+								<div class="settings-toggle ${settingsData?.showFollowers ? "on" : ""}" id="settings-toggle-followers" role="switch" aria-checked="${settingsData?.showFollowers ? "true" : "false"}"></div>
 							</div>
 							<div class="settings-item">
 								<div class="settings-item-left">
@@ -221,7 +228,7 @@ export const SettingsDesktop = async ({ state, ctx }) => {
 										<div class="settings-item-sub">Let others see tracks you've liked</div>
 									</div>
 								</div>
-								<div class="settings-toggle" id="settings-toggle-likes" role="switch" aria-checked="false"></div>
+								<div class="settings-toggle ${settingsData?.showLikes ? "on" : ""}" id="settings-toggle-likes" role="switch" aria-checked="${settingsData?.showLikes ? "true" : "false"}"></div>
 							</div>
 						</div>
 					</div>
@@ -231,18 +238,18 @@ export const SettingsDesktop = async ({ state, ctx }) => {
 						<div class="settings-panel-title">Appearance</div>
 						<div class="settings-group-label">Theme</div>
 						<div class="settings-theme-btns">
-							<button class="settings-theme-btn theme_btn_dark" data-theme="Dark">
+							<button class="settings-theme-btn theme_btn_dark ${settingsData?.theme === "Dark" ? "theme-selected" : ""}" data-theme="Dark">
 								<i class="bi bi-moon-fill"></i> Dark
 							</button>
-							<button class="settings-theme-btn theme_btn_light" data-theme="Light">
+							<button class="settings-theme-btn theme_btn_light ${settingsData?.theme === "Light" ? "theme-selected" : ""}" data-theme="Light">
 								<i class="bi bi-sun-fill"></i> Light
 							</button>
-							<button class="settings-theme-btn theme_btn_system" data-theme="System">
+							<button class="settings-theme-btn theme_btn_system ${settingsData?.theme === "System" ? "theme-selected" : ""}" data-theme="System">
 								<i class="bi bi-laptop"></i> System
 							</button>
 						</div>
 						<p class="settings-theme-note">
-							Current: <span data-theme-placeholder>Dark</span>
+							Current: <span data-theme-placeholder>${settingsData?.theme || "Dark"}</span>
 						</p>
 					</div>
 
@@ -258,7 +265,7 @@ export const SettingsDesktop = async ({ state, ctx }) => {
 										<div class="settings-item-sub">When someone follows you</div>
 									</div>
 								</div>
-								<div class="settings-toggle on" id="settings-notif-followers" role="switch" aria-checked="true"></div>
+								<div class="settings-toggle ${settingsData?.notificationFollowers ? "on" : ""}" id="settings-notif-followers" role="switch" aria-checked="${settingsData?.notificationFollowers ? "true" : "false"}"></div>
 							</div>
 							<div class="settings-item">
 								<div class="settings-item-left">
@@ -268,7 +275,7 @@ export const SettingsDesktop = async ({ state, ctx }) => {
 										<div class="settings-item-sub">From artists you follow</div>
 									</div>
 								</div>
-								<div class="settings-toggle on" id="settings-notif-uploads" role="switch" aria-checked="true"></div>
+								<div class="settings-toggle ${settingsData?.notificationUploads ? "on" : ""}" id="settings-notif-uploads" role="switch" aria-checked="${settingsData?.notificationUploads ? "true" : "false"}"></div>
 							</div>
 							<div class="settings-item">
 								<div class="settings-item-left">
@@ -278,7 +285,7 @@ export const SettingsDesktop = async ({ state, ctx }) => {
 										<div class="settings-item-sub">When someone likes your music</div>
 									</div>
 								</div>
-								<div class="settings-toggle" id="settings-notif-likes" role="switch" aria-checked="false"></div>
+								<div class="settings-toggle ${settingsData?.notificationLikes ? "on" : ""}" id="settings-notif-likes" role="switch" aria-checked="${settingsData?.notificationLikes ? "true" : "false"}"></div>
 							</div>
 						</div>
 					</div>
@@ -289,10 +296,10 @@ export const SettingsDesktop = async ({ state, ctx }) => {
 						<div class="settings-group-label">Streaming quality</div>
 						<div class="settings-select-wrap">
 							<select class="settings-select" id="settings-track-quality">
-								<option value="auto">Auto (recommended)</option>
-								<option value="low">Low — 96 kbps</option>
-								<option value="normal">Normal — 160 kbps</option>
-								<option value="high">High — 320 kbps</option>
+								<option value="auto" ${settingsData?.streamingQuality === "auto" ? "selected" : ""}>Auto (recommended)</option>
+								<option value="low" ${settingsData?.streamingQuality === "low" ? "selected" : ""}>Low — 96 kbps</option>
+								<option value="normal" ${settingsData?.streamingQuality === "normal" ? "selected" : ""}>Normal — 160 kbps</option>
+								<option value="high" ${settingsData?.streamingQuality === "high" ? "selected" : ""}>High — 320 kbps</option>
 							</select>
 						</div>
 						<div class="settings-group-label" style="margin-top:16px">Equalizer</div>
@@ -304,7 +311,7 @@ export const SettingsDesktop = async ({ state, ctx }) => {
 									<div class="settings-item-sub">Adjust bass, mid, and treble</div>
 								</div>
 							</div>
-							<div class="settings-toggle" id="settings-toggle-eq" role="switch" aria-checked="false"></div>
+							<div class="settings-toggle ${settingsData?.equalizerEnabled ? "on" : ""}" id="settings-toggle-eq" role="switch" aria-checked="${settingsData?.equalizerEnabled ? "true" : "false"}"></div>
 						</div>
 					</div>
 
@@ -314,22 +321,22 @@ export const SettingsDesktop = async ({ state, ctx }) => {
 						<div class="settings-group-label">Language</div>
 						<div class="settings-select-wrap" style="margin-bottom:16px">
 							<select class="settings-select" id="settings-language">
-								<option value="en">English</option>
-								<option value="yo">Yoruba</option>
-								<option value="ig">Igbo</option>
-								<option value="ha">Hausa</option>
-								<option value="pcm">Pidgin</option>
+								<option value="en" ${settingsData?.language === "en" ? "selected" : ""}>English</option>
+								<option value="yo" ${settingsData?.language === "yo" ? "selected" : ""}>Yoruba</option>
+								<option value="ig" ${settingsData?.language === "ig" ? "selected" : ""}>Igbo</option>
+								<option value="ha" ${settingsData?.language === "ha" ? "selected" : ""}>Hausa</option>
+								<option value="pcm" ${settingsData?.language === "pcm" ? "selected" : ""}>Pidgin</option>
 							</select>
 						</div>
 						<div class="settings-group-label">Region</div>
 						<div class="settings-select-wrap">
 							<select class="settings-select" id="settings-region">
-								<option value="NG">Nigeria</option>
-								<option value="GH">Ghana</option>
-								<option value="KE">Kenya</option>
-								<option value="ZA">South Africa</option>
-								<option value="GB">United Kingdom</option>
-								<option value="US">United States</option>
+								<option value="NG" ${settingsData?.region === "NG" ? "selected" : ""}>Nigeria</option>
+								<option value="GH" ${settingsData?.region === "GH" ? "selected" : ""}>Ghana</option>
+								<option value="KE" ${settingsData?.region === "KE" ? "selected" : ""}>Kenya</option>
+								<option value="ZA" ${settingsData?.region === "ZA" ? "selected" : ""}>South Africa</option>
+								<option value="GB" ${settingsData?.region === "GB" ? "selected" : ""}>United Kingdom</option>
+								<option value="US" ${settingsData?.region === "US" ? "selected" : ""}>United States</option>
 							</select>
 						</div>
 					</div>
@@ -340,18 +347,18 @@ export const SettingsDesktop = async ({ state, ctx }) => {
 						<div class="settings-logout-card">
 							<div class="settings-logout-avatar">
 								<img
-									src="${defaultAvatar}"
+									src="${userData?.avatar || defaultAvatar}"
 									alt="Profile avatar"
 									class="settings-logout-avatar-img"
 									id="settings-logout-img"
 									onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"
 								/>
-								<div class="settings-logout-avatar-fallback" id="settings-logout-fallback">—</div>
+								<div class="settings-logout-avatar-fallback" id="settings-logout-fallback">${userData?.username?.[0]?.toUpperCase() || "—"}</div>
 							</div>
 							<div class="settings-logout-info">
-								<p class="settings-logout-name" id="settings-logout-name">—</p>
-								<p class="settings-logout-email" id="settings-logout-email">—</p>
-								<p class="settings-logout-plan" id="settings-logout-plan">Free plan</p>
+								<p class="settings-logout-name" id="settings-logout-name">${userData?.username || "—"}</p>
+								<p class="settings-logout-email" id="settings-logout-email">${userData?.email || "—"}</p>
+								<p class="settings-logout-plan" id="settings-logout-plan">${userData?.isAdmin ? "Admin" : "Free plan"}</p>
 							</div>
 						</div>
 						<p class="settings-logout-note">

@@ -58,7 +58,7 @@ export const ProfilePage = async (ctx) => {
 	const setState = async (newState) => {
 		state = newState;
 		if (newState === "skeleton") {
-			await loadData();
+			loadData();
 		} else {
 			await render();
 		}
@@ -126,7 +126,7 @@ export const ProfilePage = async (ctx) => {
 	};
 
 	// ── Boot ─────────────────────────────────────────────────
-	await loadData();
+	loadData();
 
 	// ── Lifecycle ────────────────────────────────────────────
 	root.__onUnmount = () => {
