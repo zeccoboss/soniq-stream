@@ -15,6 +15,13 @@ const { seedTracks } = require("./src/services/seed.service");
 
 connectDB(); // Connect to mongodb
 const app = express(); // Create App
+
+// ==========================================
+// VERCEL DEPLOYMENT FIX: Trust the reverse proxy
+// ==========================================
+app.set("trust proxy", 1);
+console.log("hello world");
+
 const PORT = appConfig.port; // Get PORT
 
 app.use(credentials); // Handle options credentials check - before CORS! and fetch cookies credentials requirement
@@ -35,6 +42,8 @@ app.use("/api/v1/health", require("./src/routes/health.route"));
 
 // API routes - Note: Routes that require authentication should use the verifyJWT middleware
 app.use("/api/v1/auth", require("./src/routes/api/auth.route")); // Authentication routes (Registration, Login, Logout, Token Refresh)
+// Note: express-rate-limit will likely be inside your auth.route file, which is perfectly fine as long as trust proxy is set here at the root level!
+
 app.use("/api/v1/oauth", require("./src/routes/api/oauth.route")); // OAuth routes (Google, GitHub, etc.)
 app.use("/api/v1/users", require("./src/routes/api/users.route")); // Admin user management
 app.use("/api/v1/me", require("./src/routes/api/me.route")); // Current user context routes (Profile, Settings, etc.)
