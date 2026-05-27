@@ -1,26 +1,31 @@
 const UserModel = require("../../models/user.model");
 const { getLibraryFeed } = require("../../services/feeds/library-feed.service");
 const userService = require("../../services/user.service");
+const { sanitizeUserData } = require("../../services/dto.service");
 
 const {
 	getSettingsFeed,
 	updateSettingsFeed,
 } = require("../../services/feeds/settings-feed.service");
 
-// @desc    Get complete user profile with images
+// @desc    Get complete user profile with images and settings
 // @route   GET /api/v1/me
 const getMe = async (req, res) => {
 	try {
 		// req.user comes from verifyJWT middleware (decoded.UserInfo)
 		const user = await UserModel.findOne({ uuid: req.user.uuid })
 			.populate("avatar banner settings")
-			.select("-password -refreshToken");
+			.select("-password -refreshToken")
+			.lean({ virtuals: true });
 
 		if (!user)
 			return res
 				.status(404)
 				.json({ success: false, message: "User session not found" });
-		res.json({ success: true, data: user });
+
+		const cleanUser = sanitizeUserData(user);
+
+		res.json({ success: true, data: cleanUser });
 	} catch (error) {
 		res.status(500).json({ success: false, message: error.message });
 	}
@@ -48,7 +53,7 @@ const updateSettings = async (req, res) => {
 	}
 };
 
-// @desc    Fetch user music library (Liked tracks, playlists, uploads)
+// @desc    Fetch user music library (Liked tracks, playlists, upload)
 // @route   GET /api/v1/me/library
 const getMyLibrary = async (req, res) => {
 	try {

@@ -1,17 +1,26 @@
 const verifyRoles = (...allowedRoles) => {
 	return (req, res, next) => {
-		if (!req?.roles) return res.sendStatus(401);
+		// Reject if req.roles wasn't attached by verifyJWT
+		if (!req?.roles || req.roles.length === 0) {
+			return res.status(401).json({
+				code: "UNAUTHENTICATED",
+				message: "Unauthorized: No roles assigned.",
+			});
+		}
 
-		const rolesArrays = [...allowedRoles];
+		const rolesArray = [...allowedRoles];
 
-		console.log(rolesArrays);
-		console.log(req.roles);
+		// Check if user has at least one of the required roles
+		const hasRole = req.roles.some((role) => rolesArray.includes(role));
 
-		const result = req.roles
-			.map((role) => rolesArrays.includes(role))
-			.find((value) => value === true);
+		// If they are logged in but lack the role, it's 403 Forbidden
+		if (!hasRole) {
+			return res.status(403).json({
+				code: "FORBIDDEN",
+				message: "Forbidden: Insufficient permissions.",
+			});
+		}
 
-		if (!result) return res.sendStatus(401);
 		next();
 	};
 };

@@ -29,7 +29,7 @@ export const HomePage = async (ctx) => {
 
 	// ── Data container ───────────────────────────────────────
 	let data = {
-		user: store.user ?? null,
+		user: store?.auth.user ?? null,
 		isLoggedIn: store.isLoggedIn,
 
 		// Discover
@@ -99,7 +99,7 @@ export const HomePage = async (ctx) => {
 			) {
 				data = {
 					...feedCache.data,
-					user: store.user ?? null,
+					user: store?.auth.user ?? null,
 					isLoggedIn: store.isLoggedIn,
 				};
 				state = "content";
@@ -112,7 +112,7 @@ export const HomePage = async (ctx) => {
 			await render();
 
 			// Refresh user from store on every load
-			data.user = store.user ?? null;
+			data.user = store?.auth.user ?? null;
 			data.isLoggedIn = store.isLoggedIn;
 
 			// Cancel previous in-flight requests
@@ -177,6 +177,8 @@ export const HomePage = async (ctx) => {
 			// ── Explore Feed ────────────────────────────────
 			if (exploreResult.status === "fulfilled") {
 				const exploreRes = exploreResult.value;
+
+				console.log(exploreRes);
 
 				data.trendingArtists = exploreRes.trendingArtists ?? [];
 				data.newThisWeek = exploreRes.newThisWeek ?? [];

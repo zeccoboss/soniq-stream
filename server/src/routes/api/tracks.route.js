@@ -36,7 +36,7 @@ router.post("/:uuid/share", incrementShareCount); // Share usually just tracks m
 // router.get("/:uuid/download", verifyJWT, downloadTrack); // TODO: to be added later
 
 // Upload
-router.post("/uploads", verifyJWT, uploader.single("track"), uploadTrack);
+router.post("/upload", verifyJWT, uploader.single("track"), uploadTrack);
 
 // Mutations
 router.patch("/:uuid", verifyJWT, validate(updateTrackSchema), updateTrack);

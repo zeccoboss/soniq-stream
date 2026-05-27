@@ -18,7 +18,7 @@ import { buildNode } from "@zecco/utils/dom/build-node.js";
  *   topGenre        string | null
  */
 
-const initials = (str = "?") => str.trim().charAt(0).toUpperCase();
+const initials = (str = "?") => str?.trim().charAt(0).toUpperCase();
 
 const coverImg = (src, alt) =>
 	`<img src="${src || "/src/assets/images/track-cover.png"}" alt="${alt}"

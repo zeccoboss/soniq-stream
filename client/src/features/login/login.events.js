@@ -58,15 +58,10 @@ export const loginEvents = async (root, { render }) => {
 
 		try {
 			const loginResult = await authService.login({ identifier, password });
-			store.token = loginResult.accessToken;
-
-			console.log("[LOGIN-RESULT]: ", loginResult);
-			console.log("Fetching profile after login...");
+			store.auth.token = loginResult.accessToken;
 
 			const me = await meService.getProfile();
-			console.log("profile Fetched, showing profile...");
-			store.user = me.data;
-			console.log("[PROFILE]: ", me.data);
+			store.auth.user = me.data;
 
 			clearLoginDraft();
 

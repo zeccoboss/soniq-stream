@@ -10,7 +10,7 @@ import { store } from "@zecco/store/store.js";
  * Route: /profile/:username  (outlet: "main")
  *
  * Two modes:
- *   Own profile  → ctx.params.username matches store.user.username
+ *   Own profile  → ctx.params.username matches store?.auth.user.username
  *                  isOwner = true — shows edit buttons, liked tab
  *   Other profile → viewing someone else's page
  *                  isOwner = false — shows follow button only
@@ -82,8 +82,8 @@ export const ProfilePage = async (ctx) => {
 
 			// Auth check — profile page is auth-guarded in routes
 			// but we still need the user object to determine isOwner
-			const currentUser = store.user;
-			if (!store.isLoggedIn || !currentUser) {
+			const currentUser = store?.auth.user;
+			if (!store?.auth.isLoggedIn || !currentUser) {
 				state = "auth";
 				await render();
 				return;

@@ -53,7 +53,7 @@ const deleteTrackAsAdmin = async (req, res) => {
 
 		if (!track) return res.status(404).json({ message: "Track not found" });
 
-		// Clean up: Remove the track reference from the User's uploads array
+		// Clean up: Remove the track reference from the User's upload array
 		await User.findByIdAndUpdate(track.user, {
 			$pull: { uploadsTracksId: track._id },
 		});

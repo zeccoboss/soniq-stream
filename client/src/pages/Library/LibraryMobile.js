@@ -25,7 +25,7 @@ export const LibraryMobile = async ({ state, ctx }) => {
 				<nav class="lib-filter-tabs-mobile" id="lib-filter-tabs-mobile">
 					<button class="lib-filter-tab active" data-tab="all">All</button>
 					<button class="lib-filter-tab" data-tab="liked">Liked</button>
-					<button class="lib-filter-tab" data-tab="uploads">Uploads</button>
+					<button class="lib-filter-tab" data-tab="upload">upload</button>
 					<button class="lib-filter-tab" data-tab="playlists">Playlists</button>
 					<button class="lib-filter-tab" data-tab="recent">Recent</button>
 				</nav>
@@ -64,11 +64,11 @@ export const LibraryMobile = async ({ state, ctx }) => {
 									<p class="lib-hero-sub" id="lib-liked-meta-mobile">— songs</p>
 								</div>
 							</div>
-							<div class="lib-hero-card-mobile" id="lib-hero-uploads-mobile">
-								<div class="lib-hero-cover lhc-uploads"><i class="bi bi-cloud-upload-fill"></i></div>
+							<div class="lib-hero-card-mobile" id="lib-hero-upload-mobile">
+								<div class="lib-hero-cover lhc-upload"><i class="bi bi-cloud-upload-fill"></i></div>
 								<div class="lib-hero-info">
-									<p class="lib-hero-title">My Uploads</p>
-									<p class="lib-hero-sub" id="lib-uploads-meta-mobile">— tracks</p>
+									<p class="lib-hero-title">My upload</p>
+									<p class="lib-hero-sub" id="lib-upload-meta-mobile">— tracks</p>
 								</div>
 							</div>
 							<div class="lib-hero-card-mobile" id="lib-hero-recent-mobile">
@@ -99,6 +99,39 @@ export const LibraryMobile = async ({ state, ctx }) => {
 							</div>
 							<div class="lib-track-list-mobile" id="lib-liked-list-mobile">
 								<!-- Track items injected here -->
+							</div>
+						</div>
+
+						<!-- ── upload (mobile: list) ── -->
+						<div id="lib-upload-section-mobile">
+							<div class="lib-sec-head">
+								<span class="lib-sec-title">Your upload</span>
+								<button class="lib-sec-link" id="lib-see-all-upload-mobile">See all <i class="bi bi-arrow-right"></i></button>
+							</div>
+							<div class="lib-track-list-mobile" id="lib-upload-list-mobile">
+								<!-- Track items injected here -->
+							</div>
+						</div>
+
+						<!-- ── Recently Played (mobile: list) ── -->
+						<div id="lib-recent-section-mobile">
+							<div class="lib-sec-head">
+								<span class="lib-sec-title">Recently Played</span>
+								<button class="lib-sec-link" id="lib-see-all-recent-mobile">See all <i class="bi bi-arrow-right"></i></button>
+							</div>
+							<div class="lib-track-list-mobile" id="lib-recent-list-mobile">
+								<!-- Track items injected here -->
+							</div>
+						</div>
+
+						<!-- ── Following (mobile: list) ── -->
+						<div id="lib-following-section-mobile">
+							<div class="lib-sec-head">
+								<span class="lib-sec-title">Artists You Follow</span>
+								<button class="lib-sec-link" id="lib-see-all-artists-mobile">See all <i class="bi bi-arrow-right"></i></button>
+							</div>
+							<div class="lib-artist-row-mobile" id="lib-artist-row-mobile">
+								<!-- Artist items injected here -->
 							</div>
 						</div>
 

@@ -28,7 +28,7 @@ class MeService extends BaseService {
 		return this.updateSettings(
 			{
 				notificationFollowers: prefs.followers,
-				notificationUploads: prefs.uploads,
+				notificationUploads: prefs.upload,
 				notificationLikes: prefs.likes,
 			},
 			{ signal },
@@ -122,6 +122,31 @@ class MeService extends BaseService {
 	 */
 	updatePlayerState(state, signal = null) {
 		return this.patch(ENDPOINTS.ME.PLAYER, state, { signal });
+	}
+
+	/**
+	 * Uploads an audio track using the inherited BaseService post handler
+	 * @param {FormData} formData - The multi-part form payload
+	 * @param {Function} onProgress - Callback tracking percentage completion (0-100)
+	 * @param {AbortSignal} signal - Optional abort controller signal
+	 */
+	// Inside me.service.js
+	async uploadTrack(formData, onProgress, signal = null) {
+		return this.post(ENDPOINTS.UPLOAD.TRACK, formData, {
+			// ◄── Hits your /api/v1/tracks/upload endpoint
+			signal,
+			headers: {
+				"Content-Type": "multipart/form-data", // ◄── Tells the backend to expect a file stream
+			},
+			onUploadProgress: (progressEvent) => {
+				if (progressEvent.total) {
+					const percentCompleted = Math.round(
+						(progressEvent.loaded * 100) / progressEvent.total,
+					);
+					onProgress(percentCompleted);
+				}
+			},
+		});
 	}
 }
 

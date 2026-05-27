@@ -107,7 +107,7 @@ export const ProfileMobile = async ({ state, ctx, data = {} }) => {
 				</div>
 				<h3 class="profile-auth-title">Your profile awaits</h3>
 				<p class="profile-auth-sub">
-					Log in to view your profile, uploads and activity.
+					Log in to view your profile, upload and activity.
 				</p>
 				<div class="profile-auth-btns">
 					<a href="/auth/login" class="profile-btn-accent">Login</a>
@@ -125,7 +125,7 @@ export const ProfileMobile = async ({ state, ctx, data = {} }) => {
 					<div class="profile-mob-cover" id="profile-mob-cover">
 						<div class="profile-cover-glow"></div>
 						<img
-							src=""
+							src="${data?.user?.banner?.url}"
 							alt="Profile cover"
 							class="profile-cover-img"
 							id="profile-mob-cover-img"
@@ -148,7 +148,7 @@ export const ProfileMobile = async ({ state, ctx, data = {} }) => {
 						<div class="profile-identity-top">
 							<div class="profile-avatar-wrap">
 								<img
-									src="${user.avatar ?? defaultAvatar}"
+									src="${data?.user?.avatar?.url ?? defaultAvatar}"
 									alt="Profile avatar"
 									class="profile-avatar-img profile-avatar-img--mob"
 									id="profile-mob-avatar-img"
@@ -204,11 +204,11 @@ export const ProfileMobile = async ({ state, ctx, data = {} }) => {
 								<span class="profile-stat-label">Followers</span>
 							</div>
 							<div class="profile-stat-divider"></div>
-							<div class="profile-stat" id="profile-mob-stat-uploads">
-								<span class="profile-stat-num" id="profile-mob-uploads-count">
+							<div class="profile-stat" id="profile-mob-stat-upload">
+								<span class="profile-stat-num" id="profile-mob-upload-count">
 									${user.uploadsCount ?? 0}
 								</span>
-								<span class="profile-stat-label">Uploads</span>
+								<span class="profile-stat-label">upload</span>
 							</div>
 						</div>
 
@@ -227,8 +227,8 @@ export const ProfileMobile = async ({ state, ctx, data = {} }) => {
 					<!-- ── Tabs ── -->
 					<div class="profile-mob-content">
 						<nav class="profile-mob-tabs" id="profile-mob-tabs">
-							<button class="profile-mob-tab active" data-tab="uploads">
-								<i class="bi bi-cloud-upload"></i> Uploads
+							<button class="profile-mob-tab active" data-tab="upload">
+								<i class="bi bi-cloud-upload"></i> upload
 							</button>
 							<button class="profile-mob-tab" data-tab="playlists">
 								<i class="bi bi-collection-play"></i> Playlists
@@ -244,25 +244,25 @@ export const ProfileMobile = async ({ state, ctx, data = {} }) => {
 							}
 						</nav>
 
-						<!-- Uploads panel -->
-						<div class="profile-mob-panel active-profile-mob-panel" id="profile-mob-panel-uploads" data-panel="uploads">
-							<div class="profile-panel-empty ${tracks.length ? "hidden" : ""}" id="profile-mob-uploads-empty">
+						<!-- upload panel -->
+						<div class="profile-mob-panel active-profile-mob-panel" id="profile-mob-panel-upload" data-panel="upload">
+							<div class="profile-panel-empty ${tracks.length ? "hidden" : ""}" id="profile-mob-upload-empty">
 								<i class="bi bi-cloud-upload profile-panel-empty-icon"></i>
-								<p class="profile-panel-empty-title">No uploads yet</p>
+								<p class="profile-panel-empty-title">No upload yet</p>
 								<p class="profile-panel-empty-sub">
 									${isOwner ? "Share your music with the world" : "This artist hasn't uploaded yet"}
 								</p>
 								${
 									isOwner
 										? `
-									<a href="/uploads" class="profile-btn-accent">
+									<a href="/upload" class="profile-btn-accent">
 										<i class="bi bi-upload"></i> Upload
 									</a>
 								`
 										: ""
 								}
 							</div>
-							<div class="profile-track-list" id="profile-mob-uploads-list">
+							<div class="profile-track-list" id="profile-mob-upload-list">
 								<!-- injected by profile.events.js -->
 							</div>
 						</div>

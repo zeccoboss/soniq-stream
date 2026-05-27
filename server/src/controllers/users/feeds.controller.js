@@ -30,7 +30,7 @@ const getDiscover = async (req, res) => {
 
 const getExplore = async (req, res) => {
 	const data = await getExploreFeed(req.query);
-
+	console.log(data);
 	res.json({
 		success: true,
 		...data,

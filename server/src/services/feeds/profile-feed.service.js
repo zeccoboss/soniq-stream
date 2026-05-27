@@ -22,7 +22,7 @@ const getPublicProfile = async (identifier) => {
 			.populate({
 				path: "uploadsTracksId",
 				select: "title artist duration cover uuid",
-				match: { visibility: "public" }, // Only show public uploads
+				match: { visibility: "public" }, // Only show public upload
 				populate: { path: "cover", select: "storage name" },
 			})
 			.populate({

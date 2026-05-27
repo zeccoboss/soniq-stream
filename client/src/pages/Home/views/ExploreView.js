@@ -11,7 +11,7 @@ import { buildNode } from "@zecco/utils/dom/build-node.js";
  *   activeFilter    "all" | "genres" | "artists" | "trending" | "new"
  */
 
-const initials = (str = "?") => str.trim().charAt(0).toUpperCase();
+const initials = (str = "?") => str?.trim().charAt(0).toUpperCase();
 
 const coverImg = (src, alt) =>
 	`<img src="${src || "/src/assets/images/track-cover.png"}" alt="${alt}"
@@ -76,9 +76,10 @@ const trendingArtistsSection = (artists = []) => {
 			${sectionHead("Trending Artists", "home-explore-see-all-artists")}
 			<div class="home-artist-scroll">
 				${artists
-					.map(
-						(a) => `
-					<div class="home-artist-card" data-username="${a.username ?? ""}">
+					.map((a) => {
+						console.log(a);
+						return `
+					<div class="home-artist-card" data-username="${a.username ?? ""}" data-uuid="${a.uuid ?? ""}">
 						<div class="home-artist-avatar">
 							<img src="${a.avatar || "/src/assets/images/default-profile.png"}"
 								alt="${a.username}" class="home-artist-img" loading="lazy"
@@ -87,8 +88,8 @@ const trendingArtistsSection = (artists = []) => {
 						</div>
 						<span class="home-artist-name">${a.username}</span>
 						<span class="home-artist-meta">${a.uploadsCount ?? 0} track${(a.uploadsCount ?? 0) !== 1 ? "s" : ""}</span>
-					</div>`,
-					)
+					</div>`;
+					})
 					.join("")}
 			</div>
 		</section>`;

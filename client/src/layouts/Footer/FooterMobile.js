@@ -15,8 +15,8 @@ const FooterMobile = () => {
 					</a>
 				</li>
 
-				<li id="/uploads" class="upload">
-					<a href="/uploads" id="upload-nav-link" data-nav-link="/uploads" class="nav-links  mobile-nav-links">
+				<li id="/upload" class="upload">
+					<a href="/upload" id="upload-nav-link" data-nav-link="/upload" class="nav-links  mobile-nav-links">
 						<i class="bi bi-cloud-upload-fill nav-icons"></i>
 						<span class="mobile-nav-label">Upload</span>
 					</a>

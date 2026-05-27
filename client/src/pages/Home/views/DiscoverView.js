@@ -20,7 +20,7 @@ import { buildNode } from "@zecco/utils/dom/build-node.js";
  */
 
 // ── Shared atom builders ─────────────────────────────────────
-const initials = (str = "?") => str.trim().charAt(0).toUpperCase();
+const initials = (str = "?") => str?.trim().charAt(0).toUpperCase();
 
 const coverImg = (src, alt, cls = "") =>
 	`<img
@@ -136,13 +136,13 @@ const trackCard = (track) => `
 	</div>
 `;
 
-// ── New Uploads section ──────────────────────────────────────
+// ── New upload section ──────────────────────────────────────
 const newUploadsSection = (tracks = []) => {
 	if (!tracks.length) return "";
 	return `
-		<section class="home-sec" id="home-new-uploads">
-			${sectionHead("New Uploads", "home-see-all-uploads")}
-			<div class="home-track-list" id="home-uploads-list">
+		<section class="home-sec" id="home-new-upload">
+			${sectionHead("New upload", "home-see-all-upload")}
+			<div class="home-track-list" id="home-upload-list">
 				${tracks.map((t, i) => trackRow(t, i)).join("")}
 			</div>
 		</section>
@@ -185,7 +185,7 @@ const discoverEmptyState = () => `
 		<p class="home-discover-empty-sub">
 			The platform is quiet. Be the first to upload and start the community.
 		</p>
-		<a href="/uploads" class="home-cta-btn">
+		<a href="/upload" class="home-cta-btn">
 			<i class="bi bi-cloud-upload"></i> Upload a Track
 		</a>
 	</div>

@@ -23,6 +23,8 @@ export class BaseService {
 				signal,
 			});
 
+			console.log(res);
+
 			return res.data;
 		} catch (error) {
 			this._handleError(error);
@@ -30,13 +32,14 @@ export class BaseService {
 	}
 
 	/**
-	 * Standard POST request
+	 * Standard POST request (Updated to forward extra Axios options)
 	 */
-	async post(url, data = {}, { params = {}, signal } = {}) {
+	async post(url, data = {}, { params = {}, signal, ...options } = {}) {
 		try {
 			const res = await apiClient.post(url, data, {
 				params: this._cleanParams(params),
 				signal,
+				...options, // <--- This dynamically forwards headers, onUploadProgress, etc.
 			});
 
 			return res?.data;

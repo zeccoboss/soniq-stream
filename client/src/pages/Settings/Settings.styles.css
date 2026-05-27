@@ -137,13 +137,13 @@
 }
 
 .settings-panel {
-	display: none;
+	display: none !important;
 	flex-direction: column;
 	gap: 16px;
 	padding: 24px 28px;
 }
 .active-settings-panel {
-	display: flex;
+	display: flex !important;
 }
 
 .settings-panel-title {
@@ -864,6 +864,12 @@
 	flex: 1;
 	flex-direction: column;
 	overflow: hidden;
+}
+.settings-section-mobile > .settings-mob-sub[data-content="auth"],
+.settings-section-mobile > .settings-mob-sub[data-content="loading"],
+.settings-section-mobile > .settings-mob-sub[data-content="error"],
+.settings-section-mobile > .settings-mob-sub[data-content="skeleton"] {
+	display: flex;
 }
 .active-settings-mob-sub {
 	display: flex;

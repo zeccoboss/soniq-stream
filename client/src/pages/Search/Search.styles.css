@@ -609,44 +609,53 @@
 }
 .srch-genre-card {
 	border-radius: var(--radius-md);
-	padding: 14px 12px 12px;
+	padding: 10px 8px;
 	min-height: 72px;
 	display: flex;
 	flex-direction: column;
-	align-items: flex-start;
+	align-items: center;
 	justify-content: flex-end;
-	gap: 4px;
+	gap: 5px;
 	position: relative;
 	overflow: hidden;
 	cursor: pointer;
 	border: none;
 	font-family: var(--font-body);
-	transition: transform 0.2s;
+	transition: transform 0.15s;
 }
 .srch-genre-card::before {
 	content: "";
 	position: absolute;
 	inset: 0;
-	background: linear-gradient(to top, rgba(0, 0, 0, 0.4) 0%, transparent 60%);
+	background: radial-gradient(
+		circle at 30% 25%,
+		rgba(255, 255, 255, 0.15),
+		transparent 65%
+	);
 	pointer-events: none;
 }
 .srch-genre-card:hover {
 	transform: translateY(-2px);
 }
-.srch-genre-emoji {
-	position: absolute;
-	top: 10px;
-	right: 10px;
-	font-size: 1.3rem;
-	opacity: 0.7;
+.srch-genre-card:active {
+	transform: scale(0.94);
 }
-.srch-genre-name {
-	font-size: 0.68rem;
-	font-weight: 700;
-	color: white;
+.srch-genre-icon {
 	position: relative;
 	z-index: 1;
-	text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+	font-size: 1.3rem;
+	color: white;
+	opacity: 0.85;
+}
+.srch-genre-label {
+	position: relative;
+	z-index: 1;
+	font-family: var(--font-head);
+	font-size: 0.6rem;
+	font-weight: 700;
+	color: white;
+	text-align: center;
+	letter-spacing: 0.2px;
 }
 
 /* Genre colour palette */

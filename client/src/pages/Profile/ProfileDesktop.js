@@ -99,7 +99,7 @@ export const ProfileDesktop = async ({ state, ctx, data = {} }) => {
 				</div>
 				<h3 class="profile-auth-title">Your profile awaits</h3>
 				<p class="profile-auth-sub">
-					Log in to view your profile, uploads, playlists and activity.
+					Log in to view your profile, upload, playlists and activity.
 				</p>
 				<div class="profile-auth-btns">
 					<a href="/auth/login" class="profile-btn-accent">Login</a>
@@ -117,7 +117,7 @@ export const ProfileDesktop = async ({ state, ctx, data = {} }) => {
 					<div class="profile-cover" id="profile-cover">
 						<div class="profile-cover-glow"></div>
 						<img
-							src=""
+							src="${data?.user?.banner?.url}"
 							alt="Profile cover"
 							class="profile-cover-img"
 							id="profile-cover-img"
@@ -140,7 +140,7 @@ export const ProfileDesktop = async ({ state, ctx, data = {} }) => {
 						<div class="profile-identity-top">
 							<div class="profile-avatar-wrap">
 								<img
-									src="${user.avatar ?? defaultAvatar}"
+									src="${data?.user?.avatar?.url ?? defaultAvatar}"
 									alt="Profile avatar"
 									class="profile-avatar-img"
 									id="profile-avatar-img"
@@ -196,11 +196,11 @@ export const ProfileDesktop = async ({ state, ctx, data = {} }) => {
 								<span class="profile-stat-label">Followers</span>
 							</div>
 							<div class="profile-stat-divider"></div>
-							<div class="profile-stat" id="profile-stat-uploads">
-								<span class="profile-stat-num" id="profile-uploads-count">
+							<div class="profile-stat" id="profile-stat-upload">
+								<span class="profile-stat-num" id="profile-upload-count">
 									${user.uploadsCount ?? 0}
 								</span>
-								<span class="profile-stat-label">Uploads</span>
+								<span class="profile-stat-label">upload</span>
 							</div>
 						</div>
 
@@ -219,8 +219,8 @@ export const ProfileDesktop = async ({ state, ctx, data = {} }) => {
 					<!-- ── Tabs + panels ── -->
 					<div class="profile-content">
 						<nav class="profile-tabs" id="profile-tabs">
-							<button class="profile-tab active" data-tab="uploads">
-								<i class="bi bi-cloud-upload"></i> Uploads
+							<button class="profile-tab active" data-tab="upload">
+								<i class="bi bi-cloud-upload"></i> upload
 							</button>
 							<button class="profile-tab" data-tab="playlists">
 								<i class="bi bi-collection-play"></i> Playlists
@@ -236,25 +236,25 @@ export const ProfileDesktop = async ({ state, ctx, data = {} }) => {
 							}
 						</nav>
 
-						<!-- Uploads panel -->
-						<div class="profile-panel active-profile-panel" id="profile-panel-uploads" data-panel="uploads">
-							<div class="profile-panel-empty ${tracks.length ? "hidden" : ""}" id="profile-uploads-empty">
+						<!-- upload panel -->
+						<div class="profile-panel active-profile-panel" id="profile-panel-upload" data-panel="upload">
+							<div class="profile-panel-empty ${tracks.length ? "hidden" : ""}" id="profile-upload-empty">
 								<i class="bi bi-cloud-upload profile-panel-empty-icon"></i>
-								<p class="profile-panel-empty-title">No uploads yet</p>
+								<p class="profile-panel-empty-title">No upload yet</p>
 								<p class="profile-panel-empty-sub">
 									${isOwner ? "Share your music with the world" : "This artist hasn't uploaded yet"}
 								</p>
 								${
 									isOwner
 										? `
-									<a href="/uploads" class="profile-btn-accent">
+									<a href="/upload" class="profile-btn-accent">
 										<i class="bi bi-upload"></i> Upload a Track
 									</a>
 								`
 										: ""
 								}
 							</div>
-							<div class="profile-track-list" id="profile-uploads-list">
+							<div class="profile-track-list" id="profile-upload-list">
 								<!-- injected by profile.events.js -->
 							</div>
 						</div>

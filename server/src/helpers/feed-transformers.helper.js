@@ -1,5 +1,3 @@
-const getImageUrl = (image) => image?.url ?? null;
-
 const toTrackCard = (track) => ({
 	id: track._id,
 	title: track.title,
@@ -10,9 +8,18 @@ const toTrackCard = (track) => ({
 	duration: track.duration ?? 0,
 });
 
+const getImageUrl = (image) => {
+	if (!image?.storage) return null;
+
+	return new URL(image.storage.key, image.storage.baseUrl).href;
+};
+
 const toArtistCard = (artist) => ({
 	username: artist.username ?? "Unknown Artist",
+	uuid: artist.uuid,
+
 	avatar: getImageUrl(artist.avatar),
+
 	uploadsCount: artist.uploadsCount ?? 0,
 });
 

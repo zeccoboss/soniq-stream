@@ -1,4 +1,3 @@
-// @zecco/config/axios.config.js
 import { appConfig } from "@zecco/config/app.config";
 import { router } from "@zecco/routes/router";
 import {
@@ -20,7 +19,6 @@ const apiClient = axios.create({
 // ========================================================
 // Request Interceptor
 // ========================================================
-
 apiClient.interceptors.request.use(
 	(config) => {
 		const token = readFromLocalStorage("token");
@@ -29,16 +27,12 @@ apiClient.interceptors.request.use(
 		}
 		return config;
 	},
-	(error) => {
-		return Promise.reject(error);
-	},
+	(error) => Promise.reject(error),
 );
 
 // ========================================================
-// Response Interceptor
+// Response Interceptor Global State
 // ========================================================
-
-// 1. Move the queue state OUTSIDE the interceptor function entirely
 let isRefreshing = false;
 let failedQueue = [];
 
@@ -53,14 +47,19 @@ const processQueue = (error, token = null) => {
 	failedQueue = [];
 };
 
-// 2. A single, flattened response interceptor
+// ========================================================
+// Response Interceptor
+// ========================================================
 apiClient.interceptors.response.use(
 	(response) => response,
 	async (error) => {
 		const originalRequest = error.config;
 
-		// 401 Token Refresh Logic
-		if (error.response?.status === 401 && !originalRequest._retry) {
+		// Check if it's explicitly an expired token
+		const isUnauthorized = error.response?.status === 401;
+		const isTokenExpired = error.response?.data?.code === "TOKEN_EXPIRED";
+
+		if (isUnauthorized && isTokenExpired && !originalRequest._retry) {
 			if (isRefreshing) {
 				return new Promise((resolve, reject) => {
 					failedQueue.push({ resolve, reject });
@@ -76,8 +75,11 @@ apiClient.interceptors.response.use(
 			isRefreshing = true;
 
 			return new Promise((resolve, reject) => {
-				apiClient
-					.get("/auth/refresh")
+				// Use base axios to avoid triggering the request interceptor
+				axios
+					.get(`${appConfig.API_BASE_URL}/auth/refresh`, {
+						withCredentials: true,
+					})
 					.then((response) => {
 						const newAccessToken = response.data.accessToken;
 						writeToLocalStorage("token", newAccessToken);
@@ -101,8 +103,6 @@ apiClient.interceptors.response.use(
 			});
 		}
 
-		// THIS LINE FIXES THE FRONTEND CRASH
-		// It ensures base.service.js receives the error to format it properly.
 		return Promise.reject(error);
 	},
 );

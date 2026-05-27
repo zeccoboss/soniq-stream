@@ -166,13 +166,6 @@ const uploadTrack = async (req, res) => {
 			.json({ success: false, message: "No file uploaded" });
 	}
 
-	console.log("Received file upload request:", {
-		originalName: req.file.originalname,
-		mimeType: req.file.mimetype,
-		size: req.file.size,
-		userId: req.user._id,
-	});
-
 	const userId = req.user._id;
 
 	try {
@@ -206,6 +199,14 @@ const uploadTrack = async (req, res) => {
 				.status(500)
 				.json({ success: false, message: "Track processing failed" });
 		}
+
+		// ── Synchronize User Document ──────────────────────────────────────────
+		// Push the processed track's _id directly into the user's uploadsTracksId array
+		await User.findByIdAndUpdate(
+			userId,
+			{ $push: { uploadsTracksId: Track._id } },
+			{ new: true },
+		);
 
 		return res.status(201).json({
 			success: true,
@@ -432,7 +433,7 @@ const incrementShareCount = async (req, res) => {
 	}
 };
 
-// createTrack is intentionally omitted — uploads go through uploadTrack
+// createTrack is intentionally omitted — upload go through uploadTrack
 module.exports = {
 	getAllTracks,
 	getTrack,

@@ -55,8 +55,8 @@ export const LibraryPage = async (ctx) => {
 
 		const view = await UI({ state, ctx });
 		root.replaceChildren(view);
-		// Bind events ONLY to fresh DOM
-		libraryEvents(root);
+		// Bind events ONLY to fresh DOM — pass the view, not the root wrapper
+		libraryEvents(view);
 	};
 
 	// ── Lifecycle ──

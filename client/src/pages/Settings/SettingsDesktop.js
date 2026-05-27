@@ -271,11 +271,11 @@ export const SettingsDesktop = async ({
 								<div class="settings-item-left">
 									<div class="settings-item-icon si-green"><i class="bi bi-cloud-upload"></i></div>
 									<div class="settings-item-text">
-										<div class="settings-item-title">New uploads</div>
+										<div class="settings-item-title">New upload</div>
 										<div class="settings-item-sub">From artists you follow</div>
 									</div>
 								</div>
-								<div class="settings-toggle ${settingsData?.notificationUploads ? "on" : ""}" id="settings-notif-uploads" role="switch" aria-checked="${settingsData?.notificationUploads ? "true" : "false"}"></div>
+								<div class="settings-toggle ${settingsData?.notificationUploads ? "on" : ""}" id="settings-notif-upload" role="switch" aria-checked="${settingsData?.notificationUploads ? "true" : "false"}"></div>
 							</div>
 							<div class="settings-item">
 								<div class="settings-item-left">

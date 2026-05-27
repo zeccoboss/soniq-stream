@@ -39,52 +39,56 @@ const handleVerifyEmail = async (req, res) => {
 		user.verificationToken = undefined;
 		user.verificationTokenExpiry = undefined;
 
-		// Create default settings for the new user
-		const newSettings = await SettingsModel.create({ user: user._id });
-		user.settings = newSettings._id;
+		// ── Create settings if missing ────────────────────────────────────────
+		if (!user.settings) {
+			const newSettings = await SettingsModel.create({ user: user._id });
+			user.settings = newSettings._id;
+		}
 
-		// ── Create default images ──────────────────────────────────────────────
-		const avatarKey = appConfig.local.userAvatarKey;
-		const bannerKey = appConfig.local.bannerKey;
+		// ── Create default images if missing ───────────────────────────────────
+		if (!user.avatar || !user.banner) {
+			const avatarKey = appConfig.local.userAvatarKey;
+			const bannerKey = appConfig.local.bannerKey;
 
-		const [avatarDimensions, bannerDimensions] = await Promise.all([
-			getLocalImageDimensions(avatarKey),
-			getLocalImageDimensions(bannerKey),
-		]);
-
-		if (avatarDimensions && bannerDimensions) {
-			const [avatar, banner] = await Promise.all([
-				avaterImageHandler({
-					user: user._id,
-					format: `image/${getImageExtension(avatarKey)}`,
-					size: getLocalMediaSize(avatarKey),
-					dimensions: avatarDimensions,
-					storage: {
-						key: avatarKey,
-						baseUrl: appConfig.base,
-						type: "local",
-					},
-				}),
-				bannerImageHandler({
-					user: user._id,
-					format: `image/${getImageExtension(bannerKey)}`,
-					size: getLocalMediaSize(bannerKey),
-					dimensions: bannerDimensions,
-					storage: {
-						key: bannerKey,
-						baseUrl: appConfig.base,
-						type: "local",
-					},
-				}),
+			const [avatarDimensions, bannerDimensions] = await Promise.all([
+				getLocalImageDimensions(avatarKey),
+				getLocalImageDimensions(bannerKey),
 			]);
 
-			user.avatar = avatar._id;
-			user.cover = banner._id;
-		} else {
-			// Don't block verification if image creation fails
-			console.error(
-				"[VerifyEmail] Could not load default image dimensions — skipping image creation",
-			);
+			// Only proceed if both dimensions are valid
+			if (!avatarDimensions || !bannerDimensions) {
+				console.error(
+					"[VerifyEmail] Missing image dimensions — skipping image creation",
+				);
+			} else {
+				const [avatar, banner] = await Promise.all([
+					avaterImageHandler({
+						user: user._id,
+						format: `image/${getImageExtension(avatarKey)}`,
+						size: getLocalMediaSize(avatarKey),
+						dimensions: avatarDimensions,
+						storage: {
+							key: avatarKey,
+							baseUrl: appConfig.base,
+							type: "local",
+						},
+					}),
+					bannerImageHandler({
+						user: user._id,
+						format: `image/${getImageExtension(bannerKey)}`,
+						size: getLocalMediaSize(bannerKey),
+						dimensions: bannerDimensions,
+						storage: {
+							key: bannerKey,
+							baseUrl: appConfig.base,
+							type: "local",
+						},
+					}),
+				]);
+
+				user.avatar = avatar._id;
+				user.banner = banner._id;
+			}
 		}
 
 		await user.save();
@@ -107,7 +111,7 @@ const handleResendEmailVerification = async (req, res) => {
 	if (user?.verified)
 		return res.status(400).json({ error: "User already verified" });
 
-	const cooldown = 60 * 1000; // 1 minutes between resend
+	const cooldown = 60 * 1000; // 1 minute between resend
 	const timeLastSent = Date.now() - user.lastUserVerificationSentAt;
 
 	if (timeLastSent < cooldown)
@@ -115,7 +119,7 @@ const handleResendEmailVerification = async (req, res) => {
 			error: "Please wait before requesting another email",
 		});
 
-	// Generate a fresh token
+	// ── Generate a fresh token ─────────────────────────────────────────────
 	const token = crypto.randomBytes(32).toString("hex");
 	const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
@@ -125,7 +129,7 @@ const handleResendEmailVerification = async (req, res) => {
 
 	await user.save();
 
-	// Send the email with the raw token (not hashed)
+	// ── Send verification email ────────────────────────────────────────────
 	try {
 		resendVerificationMail(user.email, token);
 	} catch (err) {

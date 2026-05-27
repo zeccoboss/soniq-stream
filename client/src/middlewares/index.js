@@ -13,6 +13,7 @@ import { buildLayout, getCurrentScreen } from "@zecco/layouts/buildLayout";
 import { activeLinkSwitcher } from "./navigation.middleware";
 import { rejectMiddleware } from "./reject.middleware";
 import { notFound } from "./not-found.middleware";
+import { store } from "@zecco/store/store";
 
 // This function sets up all the middleware and configurations for the router. It should be called once during the app initialization to apply all the middleware globally.
 export const applyMiddleware = () => {
@@ -21,7 +22,7 @@ export const applyMiddleware = () => {
 		.addOutlet("root", getTag("#app")) // Set root outlet for rendering pages
 		.register(routes) // Register routes from config
 		.setNotFound(notFound) // Handle unmatched routes with a 404 page
-		.setAuthChecker(() => readFromLocalStorage("token")) // Simple auth check for protected routes
+		.setAuthChecker(() => store.auth.user) // Simple auth check for protected routes
 		.setLayoutBuilder(() => buildLayout(getCurrentScreen()))
 		.use(activeLinkSwitcher) // Middleware to switch active link in navigation based on current route
 		.use(layoutSwitcher) // Middleware to switch layouts based on route or screen size

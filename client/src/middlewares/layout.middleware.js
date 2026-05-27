@@ -10,7 +10,7 @@ export const layoutSwitcher = async (ctx, next) => {
 	const root = getTag("#app");
 
 	// 1. Determine the target outlet
-	const match = router.match(ctx.path);
+	const match = router?.matcher.match(ctx.path);
 	let outlet = "root";
 
 	if (match) {

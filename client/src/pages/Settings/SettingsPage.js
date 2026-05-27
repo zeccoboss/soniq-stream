@@ -60,8 +60,8 @@ export const SettingsPage = async (ctx) => {
 			await render();
 
 			// Check auth
-			const user = store.user;
-			if (!user || !store.isAuthenticated) {
+			const user = store?.auth.user;
+			if (!user || !store?.auth.isAuthenticated) {
 				state = "auth";
 				await render();
 				return;
@@ -84,7 +84,7 @@ export const SettingsPage = async (ctx) => {
 					settingsErr,
 				);
 				// Use default preferences from store if fetch fails
-				settingsData = store.preferences;
+				settingsData = store.auth.settings;
 			}
 
 			if (!isMounted) return;

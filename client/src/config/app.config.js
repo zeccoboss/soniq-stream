@@ -11,7 +11,7 @@ class AppConfig {
 
 	get PROTECTED_ROUTES() {
 		return [
-			"/uploads",
+			"/upload",
 			"/dashboard",
 			"/profile",
 			"/settings",

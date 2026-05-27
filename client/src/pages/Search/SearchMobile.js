@@ -7,8 +7,8 @@ const genreGrid = () =>
 	GENRES.map(
 		(g) => `
 		<button class="srch-genre-card ${g.cls}" data-genre="${g.name}">
-			<span class="srch-genre-emoji">${g.emoji}</span>
-			<span class="srch-genre-name">${g.name}</span>
+			<i class="bi ${g.icon} srch-genre-icon"></i>
+			<span class="srch-genre-label">${g.name}</span>
 		</button>
 	`,
 	).join("");

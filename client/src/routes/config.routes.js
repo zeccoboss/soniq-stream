@@ -54,7 +54,7 @@ export const routes = [
 	// ── Auth-guarded pages ───────────────────────────────────
 
 	{
-		path: "/uploads",
+		path: "/upload",
 		component: UploadPage,
 		guard: "auth",
 	},
@@ -124,5 +124,11 @@ export const routes = [
 		guard: "admin",
 		lazy: true,
 		component: () => import("@zecco/pages/Admin/AdminPage.js"),
+	},
+	{
+		path: "/dashboard",
+		// guard: "admin",
+		lazy: true,
+		component: () => import("@zecco/pages/Dashboard/DashboardPage.js"),
 	},
 ];

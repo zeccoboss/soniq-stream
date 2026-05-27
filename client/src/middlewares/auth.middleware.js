@@ -1,8 +1,6 @@
 //
 
 import { appConfig } from "@zecco/config/app.config";
-import { router } from "@zecco/routes/router";
-import { readFromLocalStorage } from "@zecco/services/storage/local-storage";
 import { store } from "@zecco/store/store";
 
 export const authRedirect = async (ctx, next) => {
@@ -15,13 +13,11 @@ export const authRedirect = async (ctx, next) => {
 	console.log(isProtected);
 
 	//
-	const getUser = () => store.token;
+	const getUser = () => store.auth.user;
 
 	console.log(getUser());
 
 	if (isProtected && !getUser()) {
-		console.log(".....");
-
 		// Pass the redirect route directly into next() to let the router handle it cleanly
 		await next(`/auth/login?redirect=${encodeURIComponent(ctx.path)}`);
 		return;

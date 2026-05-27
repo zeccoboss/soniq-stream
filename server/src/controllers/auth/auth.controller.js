@@ -102,21 +102,20 @@ const handleLogin = async (req, res) => {
 			$or: [{ email: identifier }, { username: identifier }],
 		});
 
-		// Check if user exists
 		if (!foundUser) {
-			return res
-				.status(403)
-				.json({ success: false, message: "No account found" });
+			return res.status(401).json({
+				success: false,
+				message: "Invalid email/username or password",
+			});
 		}
 
-		// Check if user is banned
 		if (foundUser.isActive === false) {
 			return res.status(403).json({
+				success: false,
 				message: "This account has been suspended. Please contact support.",
 			});
 		}
 
-		// If user only has OAuth providers — no usable password
 		if (!foundUser.authProviders?.includes("local")) {
 			return res.status(403).json({
 				success: false,
@@ -124,10 +123,8 @@ const handleLogin = async (req, res) => {
 			});
 		}
 
-		// Check if email is verified
 		if (!foundUser.verified) {
 			const maskedEmail = maskEmail(foundUser.email);
-
 			return res.status(403).json({
 				success: false,
 				message: `Email not verified. A verification link was previously sent to ${maskedEmail}. Please check your inbox.`,
@@ -135,15 +132,15 @@ const handleLogin = async (req, res) => {
 			});
 		}
 
-		// Compare password
 		const match = await bcrypt.compare(password, foundUser.password);
 		if (!match) {
-			return res
-				.status(403)
-				.json({ success: false, message: "Incorrect password" });
+			return res.status(401).json({
+				success: false,
+				message: "Invalid email/username or password",
+			});
 		}
 
-		// Generate JWTs
+		// Generate JWTs with consistent _id naming
 		const accessToken = jwt.sign(
 			{
 				UserInfo: {

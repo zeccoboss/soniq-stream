@@ -4,7 +4,7 @@ const Playlist = require("../../models/playlist.model");
 
 /**
  * Fetches the complete personal library for the authenticated user.
- * Groups content into Liked Tracks, Created Playlists, and Personal Uploads.
+ * Groups content into Liked Tracks, Created Playlists, and Personal upload.
  * * @param {string} userId - The MongoDB _id of the user
  * @returns {Promise<Object>} The structured library data
  */
@@ -50,7 +50,7 @@ const getLibraryFeed = async (userId) => {
 			sections: {
 				likedTracks: userLibrary.likedTracksIds || [],
 				playlists: userLibrary.playlistIds || [],
-				uploads: userLibrary.uploadsTracksId || [],
+				upload: userLibrary.uploadsTracksId || [],
 			},
 			lastUpdated: new Date().toISOString(),
 		};

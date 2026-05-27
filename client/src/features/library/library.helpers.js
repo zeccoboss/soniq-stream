@@ -1,23 +1,40 @@
 const filterLibraryContent = (tab) => {
-	const sections = {
-		liked: document.querySelector("#lib-liked-section"),
-		uploaded: document.querySelector("#lib-uploads-section"),
-		playlists: document.querySelector("#lib-playlists-section"),
-		following: document.querySelector("#lib-following-section"),
-		recent: document.querySelector("#lib-recent-section"),
+	// Handle both desktop and mobile sections
+	const sectionIds = {
+		liked: ["lib-liked-section", "lib-liked-section-mobile"],
+		uploaded: ["lib-upload-section", "lib-upload-section-mobile"],
+		upload: ["lib-upload-section", "lib-upload-section-mobile"], // Mobile uses "upload"
+		playlists: ["lib-playlists-section", "lib-playlists-section-mobile"],
+		following: ["lib-following-section", "lib-following-section-mobile"],
+		recent: ["lib-recent-section", "lib-recent-section-mobile"],
 	};
 
-	const visibleSections = Object.values(sections).filter(Boolean);
-	if (visibleSections.length === 0) return;
+	// Get all possible section IDs for this tab
+	const targetIds = sectionIds[tab] || [];
 
-	visibleSections.forEach((section) => {
+	// Find all sections that exist on the page
+	const allSections = [];
+	Object.values(sectionIds)
+		.flat()
+		.forEach((id) => {
+			const section = document.querySelector(`#${id}`);
+			if (section) allSections.push(section);
+		});
+
+	// Hide all sections first
+	allSections.forEach((section) => {
 		section.style.display = "none";
 	});
 
-	if (tab !== "all" && sections[tab]) {
-		sections[tab].style.display = "block";
+	// Show only the sections for the selected tab
+	if (tab !== "all") {
+		targetIds.forEach((id) => {
+			const section = document.querySelector(`#${id}`);
+			if (section) section.style.display = "block";
+		});
 	} else {
-		visibleSections.forEach((section) => {
+		// Show all sections if "all" is selected
+		allSections.forEach((section) => {
 			section.style.display = "block";
 		});
 	}

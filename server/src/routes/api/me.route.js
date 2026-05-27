@@ -20,7 +20,7 @@ router.patch(
 	validate(updateSettingsSchema),
 	meController.updateSettings,
 );
-router.get("/library", meController.getMyLibrary); // Fetch user music library (liked tracks, playlists, uploads)
+router.get("/library", meController.getMyLibrary); // Fetch user music library (liked tracks, playlists, upload)
 router.post("/searches", meController.syncSearches); // Sync recent searches from client to server
 router.patch("/player", validatePlayerState, meController.savePlayerState); // Update the state (called on pause or heartbeat)
 router.get("/player", meController.getPlayerState); // Retrieve the last played track and progress

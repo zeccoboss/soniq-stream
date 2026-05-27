@@ -4,27 +4,27 @@ import "./Search.styles.css";
 
 // ── Genre data ───────────────────────────────────────────────
 // Single source — drives both default browse grid and no-results grid
-const GENRES = [
-	{ name: "Afrobeats", emoji: "🎵", cls: "gc-afrobeats" },
-	{ name: "Highlife", emoji: "🎸", cls: "gc-highlife" },
-	{ name: "Amapiano", emoji: "🥁", cls: "gc-amapiano" },
-	{ name: "Gospel", emoji: "🙏", cls: "gc-gospel" },
-	{ name: "Hip-Hop", emoji: "🎤", cls: "gc-hiphop" },
-	{ name: "Afropop", emoji: "🎺", cls: "gc-afropop" },
-	{ name: "R&B", emoji: "🎧", cls: "gc-rnb" },
-	{ name: "Reggae", emoji: "🌴", cls: "gc-reggae" },
-	{ name: "Jazz", emoji: "🎷", cls: "gc-jazz" },
-	{ name: "Electronic", emoji: "⚡", cls: "gc-electronic" },
-	{ name: "Classical", emoji: "🎻", cls: "gc-classical" },
-	{ name: "Rock", emoji: "🤘", cls: "gc-rock" },
+export const GENRES = [
+	{ name: "Afrobeats", icon: "bi-music-note", cls: "gc-afrobeats" },
+	// { name: "Highlife", icon: "bi-music", cls: "gc-highlife" },
+	{ name: "Amapiano", icon: "bi-disc", cls: "gc-amapiano" },
+	{ name: "Gospel", icon: "bi-hand-thumbs-up", cls: "gc-gospel" },
+	{ name: "Hip-Hop", icon: "bi-mic", cls: "gc-hiphop" },
+	{ name: "Afropop", icon: "bi-megaphone", cls: "gc-afropop" },
+	{ name: "R&B", icon: "bi-headphones", cls: "gc-rnb" },
+	{ name: "Reggae", icon: "bi-flower1", cls: "gc-reggae" },
+	{ name: "Jazz", icon: "bi-music-note-beamed", cls: "gc-jazz" },
+	{ name: "Electronic", icon: "bi-lightning-fill", cls: "gc-electronic" },
+	{ name: "Classical", icon: "bi-music-note-beamed", cls: "gc-classical" },
+	{ name: "Rock", icon: "bi-fire", cls: "gc-rock" },
 ];
 
 const genreGrid = () =>
 	GENRES.map(
 		(g) => `
 		<button class="srch-genre-card ${g.cls}" data-genre="${g.name}">
-			<span class="srch-genre-emoji">${g.emoji}</span>
-			<span class="srch-genre-name">${g.name}</span>
+			<i class="bi ${g.icon} srch-genre-icon"></i>
+			<span class="srch-genre-label">${g.name}</span>
 		</button>
 	`,
 	).join("");
@@ -293,4 +293,4 @@ export const SearchDesktop = async ({ state, ctx, data = {} }) => {
 	return root.getElement();
 };
 
-export { GENRES };
+export default SearchDesktop;

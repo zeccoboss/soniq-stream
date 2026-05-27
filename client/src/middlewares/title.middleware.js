@@ -7,7 +7,7 @@ const titles = {
 	"/": `Home — ${appName}`,
 	"/library": `Library — ${appName}`,
 	"/search": `Search — ${appName}`,
-	"/uploads": `Upload — ${appName}`,
+	"/upload": `Upload — ${appName}`,
 	"/settings": `Settings — ${appName}`,
 	"/dashboard": `Dashboard — ${appName}`,
 };
@@ -28,7 +28,7 @@ export const titleUpdater = async (ctx, next) => {
 	}
 
 	// set active page in store for dynamic routes
-	store.activePage = ctx.path;
+	store.ui.activePage = ctx.path;
 
 	// dynamic routes like /profile/:username
 	const segment = ctx.path.split("/").filter(Boolean)[0] ?? "";

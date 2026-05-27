@@ -88,7 +88,7 @@ export const settingsEvents = (
 			onConfirm: async () => {
 				try {
 					await setState("loading");
-					store.clearAuth();
+					store.clearAll();
 					toast({ message: "You have been logged out.", type: "info" });
 					setTimeout(() => {
 						window.location.href = "/auth/login";
@@ -158,7 +158,7 @@ export const settingsEvents = (
 
 			if (themeManager[themeMethod]) themeManager[themeMethod]();
 
-			store.updatePreference("theme", theme.toLowerCase());
+			store.auth.updateSettings("theme", theme.toLowerCase());
 			updateVisualSelection(root, theme);
 
 			const themePlaceholder = root.querySelector(
@@ -203,7 +203,7 @@ export const settingsEvents = (
 
 		try {
 			// Update local store immediately for snappiness
-			store.updatePreference(key, value);
+			store.auth.updateUser(key, value);
 			await meService.updateSettings({ [key]: value });
 			toast({
 				message: `${friendlyName} updated successfully.`,
@@ -323,7 +323,7 @@ export const settingsEvents = (
 					key: "notifications.push",
 					name: "Push Notifications",
 				},
-				"settings-notif-uploads": {
+				"settings-notif-upload": {
 					key: "notifications.email",
 					name: "Email Notifications",
 				},

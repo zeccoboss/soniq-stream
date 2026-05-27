@@ -37,11 +37,11 @@ export const ENDPOINTS = {
 	TRACKS: {
 		BASE: "/tracks",
 		TRENDING: "/tracks/trending",
-		NEW_UPLOADS: "/tracks/new-uploads",
+		NEW_UPLOADS: "/tracks/new-upload",
 		TOP_TRACKS: "/tracks/top-tracks",
 		POPULAR: "/tracks/popular",
 		SEARCH: "/tracks/search",
-		UPLOAD: "/tracks/uploads",
+		UPLOAD: "/tracks/upload",
 		LIKE: (trackId) => `/tracks/${trackId}/like`,
 		STREAM: (trackId) => `/tracks/${trackId}/stream`,
 		METADATA: (trackId) => `/tracks/${trackId}/metadata`,
@@ -91,13 +91,8 @@ export const ENDPOINTS = {
 	},
 
 	// ==================================================
-	// Uploads
+	// upload
 	// ==================================================
-
-	UPLOAD: {
-		track: "/upload/track",
-		IMAGE: "/upload/image",
-	},
 
 	// ==================================================
 	// Feeds
@@ -118,5 +113,10 @@ export const ENDPOINTS = {
 		LIBRARY: "/me/library",
 		SEARCHES: "/me/searches",
 		PLAYER: "/me/player",
+	},
+
+	UPLOAD: {
+		TRACK: "/tracks/upload", // Maps perfectly to /api/v1/tracks/upload based on your backend base router
+		IMAGE: "/upload/image",
 	},
 };

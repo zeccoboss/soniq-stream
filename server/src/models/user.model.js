@@ -127,6 +127,30 @@ const userSchema = new Schema(
 	},
 );
 
+userSchema.virtual("uploadsCount").get(function () {
+	return this.uploadsTracksId?.length || 0;
+});
+
+userSchema.virtual("followersCount").get(function () {
+	return this.followersId?.length || 0;
+});
+
+userSchema.virtual("followingCount").get(function () {
+	return this.followingId?.length || 0;
+});
+
+userSchema.virtual("likesCount").get(function () {
+	return this.likedTracksIds?.length || 0;
+});
+
+userSchema.virtual("playlistCount").get(function () {
+	return this.playlistIds?.length || 0;
+});
+
+userSchema.virtual("recentPlaysCount").get(function () {
+	return this.recentPlaysIds?.length || 0;
+});
+
 // Virtual for fullname (to support any existing backend code that relies on user.fullname)
 userSchema.virtual("fullname").get(function () {
 	return `${this.firstName} ${this.lastName}`.trim();

@@ -76,7 +76,7 @@ export const NotFoundPage = async (ctx) => {
 					<div class="nf-nav-links">
 						<a href="/library"  class="nf-nav-link">Library</a>
 						<span class="nf-nav-dot" aria-hidden="true"></span>
-						<a href="/uploads"   class="nf-nav-link">Upload</a>
+						<a href="/upload"   class="nf-nav-link">Upload</a>
 						<span class="nf-nav-dot" aria-hidden="true"></span>
 						<a href="/settings" class="nf-nav-link">Settings</a>
 					</div>

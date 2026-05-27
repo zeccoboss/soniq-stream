@@ -56,7 +56,7 @@ const LibraryDesktop = async ({ state, ctx }) => {
 				</div>
 				<h3 class="lib-auth-title">Your library awaits</h3>
 				<p class="lib-auth-sub">
-					Log in to access your liked songs, playlists, uploads, and followed artists.
+					Log in to access your liked songs, playlists, upload, and followed artists.
 				</p>
 				<div class="lib-auth-btns">
 					<a href="/auth/login" class="lib-btn-accent">Login</a>
@@ -72,7 +72,7 @@ const LibraryDesktop = async ({ state, ctx }) => {
 				<div class="lib-scroll">
 					<div class="lib-content">
 
-						<!-- ── Hero cards: Liked / Uploads / Recent ── -->
+						<!-- ── Hero cards: Liked / upload / Recent ── -->
 						<div class="lib-hero-cards" id="lib-hero-cards">
 							<div class="lib-hero-card" id="lib-hero-liked">
 								<div class="lib-hero-cover lhc-liked">
@@ -86,13 +86,13 @@ const LibraryDesktop = async ({ state, ctx }) => {
 									<i class="bi bi-play-fill"></i>
 								</button>
 							</div>
-							<div class="lib-hero-card" id="lib-hero-uploads">
-								<div class="lib-hero-cover lhc-uploads">
+							<div class="lib-hero-card" id="lib-hero-upload">
+								<div class="lib-hero-cover lhc-upload">
 									<i class="bi bi-cloud-upload-fill"></i>
 								</div>
 								<div class="lib-hero-info">
-									<p class="lib-hero-title">My Uploads</p>
-									<p class="lib-hero-sub" id="lib-uploads-meta">— tracks</p>
+									<p class="lib-hero-title">My upload</p>
+									<p class="lib-hero-sub" id="lib-upload-meta">— tracks</p>
 								</div>
 								<button class="lib-hero-play">
 									<i class="bi bi-play-fill"></i>
@@ -139,6 +139,28 @@ const LibraryDesktop = async ({ state, ctx }) => {
 								<button class="lib-sec-link" id="lib-see-all-liked">See all <i class="bi bi-arrow-right"></i></button>
 							</div>
 							<div class="lib-track-list" id="lib-liked-list">
+								<!-- Track rows injected by render-library.js -->
+							</div>
+						</div>
+
+						<!-- ── Uploaded Tracks ── -->
+						<div id="lib-upload-section">
+							<div class="lib-sec-head">
+								<span class="lib-sec-title">Your upload</span>
+								<button class="lib-sec-link" id="lib-see-all-upload">See all <i class="bi bi-arrow-right"></i></button>
+							</div>
+							<div class="lib-track-list" id="lib-upload-list">
+								<!-- Track rows injected by render-library.js -->
+							</div>
+						</div>
+
+						<!-- ── Recently Played ── -->
+						<div id="lib-recent-section">
+							<div class="lib-sec-head">
+								<span class="lib-sec-title">Recently Played</span>
+								<button class="lib-sec-link" id="lib-see-all-recent">See all <i class="bi bi-arrow-right"></i></button>
+							</div>
+							<div class="lib-track-list" id="lib-recent-list">
 								<!-- Track rows injected by render-library.js -->
 							</div>
 						</div>
