@@ -19,10 +19,12 @@ import { store } from "@zecco/store/store";
 export const applyMiddleware = () => {
 	router
 		.setGuardRejectHandler(rejectMiddleware) // Handle guard rejections globally (e.g., show toast on auth failure)
+
 		.addOutlet("root", getTag("#app")) // Set root outlet for rendering pages
 		.register(routes) // Register routes from config
 		.setNotFound(notFound) // Handle unmatched routes with a 404 page
 		.setAuthChecker(() => store.auth.user) // Simple auth check for protected routes
+		.use(authRedirect)
 		.setLayoutBuilder(() => buildLayout(getCurrentScreen()))
 		.use(activeLinkSwitcher) // Middleware to switch active link in navigation based on current route
 		.use(layoutSwitcher) // Middleware to switch layouts based on route or screen size
