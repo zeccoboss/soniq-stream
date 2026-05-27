@@ -89,6 +89,7 @@ export const settingsEvents = (
 				try {
 					await setState("loading");
 					store.clearAll();
+					// meService.l
 					toast({ message: "You have been logged out.", type: "info" });
 					setTimeout(() => {
 						window.location.href = "/auth/login";

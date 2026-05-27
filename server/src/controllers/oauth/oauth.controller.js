@@ -26,8 +26,15 @@ const SettingsModel = require("../../models/settings.model");
 
 // ── Shared: issue tokens and redirect ─────────────────────────────────────────
 const issueTokensAndRedirect = async (user, res) => {
+	// Generate JWTs with consistent _id naming
 	const accessToken = jwt.sign(
-		{ UserInfo: { _id: user._id, roles: user.roles } },
+		{
+			UserInfo: {
+				_id: user._id,
+				uuid: user.uuid,
+				roles: user.roles,
+			},
+		},
 		process.env.ACCESS_TOKEN_SECRET,
 		{ expiresIn: "15m" },
 	);
