@@ -5,6 +5,7 @@ import {
 	removeFromLocalStorage,
 	writeToLocalStorage,
 } from "@zecco/services/storage/local-storage";
+import { store } from "@zecco/store/store";
 import axios from "axios";
 
 const apiClient = axios.create({
@@ -84,6 +85,8 @@ apiClient.interceptors.response.use(
 						const newAccessToken = response.data.accessToken;
 						writeToLocalStorage("token", newAccessToken);
 
+						console.log(newAccessToken);
+
 						apiClient.defaults.headers.common["Authorization"] =
 							`Bearer ${newAccessToken}`;
 						originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
@@ -93,8 +96,9 @@ apiClient.interceptors.response.use(
 					})
 					.catch((err) => {
 						processQueue(err, null);
-						removeFromLocalStorage("token");
-						router.navigate("/login");
+						// removeFromLocalStorage("token");
+						store.auth.clear();
+						router.navigate("/auth/login");
 						reject(err);
 					})
 					.finally(() => {

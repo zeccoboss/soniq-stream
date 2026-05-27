@@ -1,12 +1,10 @@
 const TrackModel = require("../../models/track.model");
 const UserModel = require("../../models/user.model");
-const RecentPlayModel = require("../../models/recent-plays-model");
 
 const {
 	toTrackCard,
 	toArtistCard,
 } = require("../../helpers/feed-transformers.helper");
-const { rolesList } = require("../../config/roles-list.config");
 
 const IMAGE_POPULATE = {
 	path: "cover",
@@ -21,33 +19,21 @@ const AVATAR_POPULATE = {
 // ── Explore Feed ─────────────────────────────────────
 const getExploreFeed = async () => {
 	const genres = [
-		{
-			name: "Afrobeats",
-			icon: "bi-boombox",
-			colorClass: "genre-afrobeats",
-		},
-		{
-			name: "Hip Hop",
-			icon: "bi-vinyl",
-			colorClass: "genre-hiphop",
-		},
+		{ name: "Afrobeats", icon: "bi-boombox", colorClass: "genre-afrobeats" },
+		{ name: "Hip Hop", icon: "bi-vinyl", colorClass: "genre-hiphop" },
 		{
 			name: "Amapiano",
 			icon: "bi-music-note-beamed",
 			colorClass: "genre-amapiano",
 		},
-		{
-			name: "R&B",
-			icon: "bi-disc",
-			colorClass: "genre-rnb",
-		},
+		{ name: "R&B", icon: "bi-disc", colorClass: "genre-rnb" },
 	];
 
 	const [trendingArtists, newThisWeek, trendingTracks] = await Promise.all([
 		UserModel.find({ verified: true })
 			.sort({ uploadsCount: -1 })
 			.limit(10)
-			.select("username uuid uploadsCount avatar")
+			.select("username uuid uploadsCount avatar") // Explicitly targeting safe uuid fields
 			.populate(AVATAR_POPULATE)
 			.lean({ virtuals: true }),
 

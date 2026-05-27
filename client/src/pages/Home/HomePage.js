@@ -5,20 +5,13 @@ import { homeEvents } from "@zecco/features/home/home.events.js";
 import { store } from "@zecco/store/store.js";
 import { trackService } from "@zecco/services/api/track.service.js";
 
-// ── In-Memory Feed Cache Layer ──────────────────────────────
-// Placed outside the component lifecycle so it persists across internal router shifts
 let feedCache = {
 	data: null,
 	cachedAt: null,
 };
 
-// Cache lifetime window configuration (e.g., 5 minutes)
 const CACHE_DURATION = 300000;
 
-/**
- * HomePage — Home page orchestrator
- * Route: / (outlet: "main")
- */
 export const HomePage = async (ctx) => {
 	const root = document.createElement("section");
 	root.className = "home-page";
@@ -27,7 +20,6 @@ export const HomePage = async (ctx) => {
 	let isMounted = true;
 	let controller = null;
 
-	// ── Data container ───────────────────────────────────────
 	let data = {
 		user: store?.auth.user ?? null,
 		isLoggedIn: store.isLoggedIn,
@@ -37,6 +29,7 @@ export const HomePage = async (ctx) => {
 		newUploads: [],
 		trending: [],
 		topTracks: [],
+		popularRightNow: [],
 		activeGenre: "all",
 
 		// Explore
@@ -50,14 +43,12 @@ export const HomePage = async (ctx) => {
 		recentPlays: [],
 		liked: [],
 		genreRecs: [],
-		popularRightNow: [],
 		topGenre: null,
 	};
 
 	const isMobile = mobileScreen.matches;
 	const UI = isMobile ? HomeMobile : HomeDesktop;
 
-	// ── Render ───────────────────────────────────────────────
 	const render = async () => {
 		if (!isMounted) return;
 		const view = await UI({ state, ctx, data });
@@ -65,7 +56,6 @@ export const HomePage = async (ctx) => {
 		homeEvents(root, { state, setState, setData, ctx });
 	};
 
-	// ── State updater ────────────────────────────────────────
 	const setState = async (newState) => {
 		state = newState;
 		if (newState === "skeleton") {
@@ -75,22 +65,18 @@ export const HomePage = async (ctx) => {
 		}
 	};
 
-	// ── Data patcher ─────────────────────────────────────────
 	const setData = async (updates) => {
 		data = { ...data, ...updates };
-		// Sync local updates to memory cache if active
 		if (feedCache.data) {
 			feedCache.data = { ...feedCache.data, ...updates };
 		}
 		await render();
 	};
 
-	// ── Data loader ──────────────────────────────────────────
 	const loadData = async () => {
 		try {
 			if (!isMounted) return;
 
-			// 1. Evaluate Cache Availability
 			const now = Date.now();
 			if (
 				feedCache.data &&
@@ -107,20 +93,16 @@ export const HomePage = async (ctx) => {
 				return;
 			}
 
-			// Cache miss -> Trigger skeleton display layout instantly
 			state = "skeleton";
 			await render();
 
-			// Refresh user from store on every load
 			data.user = store?.auth.user ?? null;
 			data.isLoggedIn = store.isLoggedIn;
 
-			// Cancel previous in-flight requests
 			controller?.abort();
 			controller = new AbortController();
 			const { signal } = controller;
 
-			// ── Genre list ─────────────────────────────────
 			data.genres = [
 				{
 					name: "Afrobeats",
@@ -157,8 +139,6 @@ export const HomePage = async (ctx) => {
 			];
 
 			const FEED_LIMIT = 10;
-
-			// 2. Minimum display time enforcement promise (1500ms hold)
 			const skeletonDelayTimer = new Promise((resolve) =>
 				setTimeout(resolve, 1500),
 			);
@@ -171,15 +151,12 @@ export const HomePage = async (ctx) => {
 						userId: store?.user?.id ?? null,
 						signal,
 					}),
-					skeletonDelayTimer, // Bundled to force structural execution window
+					skeletonDelayTimer,
 				]);
 
-			// ── Explore Feed ────────────────────────────────
+			// ── Explore Feed Parsing ────────────────────────
 			if (exploreResult.status === "fulfilled") {
 				const exploreRes = exploreResult.value;
-
-				console.log(exploreRes);
-
 				data.trendingArtists = exploreRes.trendingArtists ?? [];
 				data.newThisWeek = exploreRes.newThisWeek ?? [];
 				data.trendingTracks = exploreRes.trendingTracks ?? [];
@@ -191,27 +168,17 @@ export const HomePage = async (ctx) => {
 				);
 			}
 
-			// ── Discover Feed ───────────────────────────────
+			// ── Discover Feed Parsing (Vastly Cleaned) ──────
 			if (discoverResult.status === "fulfilled") {
-				const discoverPayload = discoverResult.value?.value;
+				const discoverRes =
+					discoverResult.value?.value || discoverResult.value;
 
-				if (discoverPayload?.success) {
-					const discoverSections = discoverPayload.sections ?? [];
-
-					const discoverMap = Object.fromEntries(
-						discoverSections.map((section) => [
-							section.type,
-							section.items ?? [],
-						]),
-					);
-
-					data.newUploads = discoverMap.newUploads ?? [];
-					data.trending = discoverMap.trending ?? [];
-					data.topTracks = discoverMap.topTracks ?? [];
-					data.popularRightNow = discoverMap.popular ?? [];
-
-					data.activeGenre = "all";
-				}
+				// Standard properties mapped with direct lookups
+				data.newUploads = discoverRes?.newUploads ?? [];
+				data.trending = discoverRes?.trending ?? [];
+				data.topTracks = discoverRes?.topTracks ?? [];
+				data.popularRightNow = discoverRes?.popular ?? [];
+				data.activeGenre = "all";
 			} else {
 				console.error(
 					"[HomePage] Discover feed failed:",
@@ -219,14 +186,12 @@ export const HomePage = async (ctx) => {
 				);
 			}
 
-			// ── For You Feed ────────────────────────────────
+			// ── For You Feed Parsing ────────────────────────
 			if (forYouResult.status === "fulfilled") {
 				const forYouRes = forYouResult.value;
-
 				data.recentPlays = forYouRes.recentPlays ?? [];
 				data.liked = forYouRes.liked ?? [];
 				data.genreRecs = forYouRes.genreRecs ?? [];
-
 				data.popularRightNow =
 					forYouRes.popularRightNow ?? data.popularRightNow;
 				data.topGenre = forYouRes.topGenre ?? null;
@@ -240,7 +205,6 @@ export const HomePage = async (ctx) => {
 
 			if (!isMounted) return;
 
-			// 3. Hydrate cache payload configuration on successful run
 			feedCache.data = { ...data };
 			feedCache.cachedAt = Date.now();
 
@@ -255,13 +219,8 @@ export const HomePage = async (ctx) => {
 		}
 	};
 
-	// ── Boot ─────────────────────────────────────────────────
-	// Removed the accidental 'await' keyword here!
-	// This allows the element shell to immediately return to your router
-	// and mount the skeleton onto the screen while data fetches asynchronously.
 	loadData();
 
-	// ── Lifecycle ────────────────────────────────────────────
 	root.__onUnmount = () => {
 		isMounted = false;
 		controller?.abort();
@@ -270,7 +229,6 @@ export const HomePage = async (ctx) => {
 	return root;
 };
 
-// Export cache breaker utility for integration with logout events
 export const invalidateHomeCache = () => {
 	feedCache.data = null;
 	feedCache.cachedAt = null;

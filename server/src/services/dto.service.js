@@ -67,7 +67,7 @@ function sanitizeUserData(data) {
 
 	// 6. Clean settings object
 	if (doc.settings) {
-		doc.settings = stripMongoMeta(doc.settings);
+		// doc.settings = stripMongoMeta(doc.settings);
 		delete doc.settings.user;
 	}
 

@@ -1,19 +1,9 @@
 const TrackModel = require("../../models/track.model");
-const UserModel = require("../../models/user.model");
-const RecentPlayModel = require("../../models/recent-plays-model");
 
-const {
-	toTrackCard,
-	toArtistCard,
-} = require("../../helpers/feed-transformers.helper");
+const { toTrackCard } = require("../../helpers/feed-transformers.helper");
 
 const IMAGE_POPULATE = {
 	path: "cover",
-	select: "storage",
-};
-
-const AVATAR_POPULATE = {
-	path: "avatar",
 	select: "storage",
 };
 
@@ -51,25 +41,12 @@ const getDiscoverFeed = async ({ limit = 10 }) => {
 			.lean({ virtuals: true }),
 	]);
 
+	// Clean, unnested key-value structures for frontend mapping
 	return {
-		sections: [
-			{
-				type: "newUploads",
-				items: newUploads.map(toTrackCard),
-			},
-			{
-				type: "trending",
-				items: trending.map(toTrackCard),
-			},
-			{
-				type: "topTracks",
-				items: topTracks.map(toTrackCard),
-			},
-			{
-				type: "popular",
-				items: popular.map(toTrackCard),
-			},
-		],
+		newUploads: newUploads.map(toTrackCard),
+		trending: trending.map(toTrackCard),
+		topTracks: topTracks.map(toTrackCard),
+		popular: popular.map(toTrackCard),
 	};
 };
 

@@ -6,47 +6,45 @@ const FooterMobile = () => {
 
 	// Set attributes and add html content
 	footer.addClass("footer").setId("mob-footer").innerHTML = `
-		<nav class="mob-footer">
-			<ul class="footer-nav-list">
-				<li id="home" class="home mobile-nav-item">
-					<a href="/" id="home-nav-link" data-nav-link="/" class="nav-links mobile-nav-links">
-						<i class="bi bi-house nav-icons"></i>
-						<span class="mobile-nav-label">Home</span>
+		<nav class="mob-footer-nav">
+			<ul class="mob-footer-list">
+				<li class="mob-nav-item">
+					<a href="/" id="home-nav-link" data-nav-link="/" class="mob-nav-link active-nav">
+						<i class="bi bi-house-fill mob-nav-icon"></i>
+						<span class="mob-nav-label">Home</span>
 					</a>
 				</li>
 
-				<li id="/upload" class="upload">
-					<a href="/upload" id="upload-nav-link" data-nav-link="/upload" class="nav-links  mobile-nav-links">
-						<i class="bi bi-cloud-upload-fill nav-icons"></i>
-						<span class="mobile-nav-label">Upload</span>
+				<li class="mob-nav-item">
+					<a href="/search" id="search-nav-link" data-nav-link="/search" class="mob-nav-link">
+						<i class="bi bi-search mob-nav-icon"></i>
+						<span class="mob-nav-label">Search</span>
 					</a>
 				</li>
 
-				<li id="/search" class="">
-					<a href="/search" id="search-nav-link" data-nav-link="/search" class="nav-links  mobile-nav-links">
-						<i class="bi bi-search nav-icons"></i>
-						<span class="mobile-nav-label">Search</span>
+				<li class="mob-nav-item mob-nav-item--center">
+					<a href="/upload" id="upload-nav-link" data-nav-link="/upload" class="mob-nav-link mob-nav-link--primary">
+						<i class="bi bi-plus-circle-fill mob-nav-icon-lg"></i>
+						<span class="mob-nav-label-sm">New</span>
 					</a>
 				</li>
 
-				<!-- <li id="/profile" class="profile">
-					<a href="/profile" data-nav-link="/profile" class="nav-links  mobile-nav-links">
-						<i class="bi bi-person-circle nav-icons"></i>
-						<span class="mobile-nav-label">Profile</span>
+				<li class="mob-nav-item">
+					<a href="/library" id="lib-nav-link" data-nav-link="/library" class="mob-nav-link">
+						<i class="bi bi-collection mob-nav-icon"></i>
+						<span class="mob-nav-label">Library</span>
 					</a>
-				</li> -->
+				</li>
 
-				<li id="library" class="library">
-					<a href="/library"  id="lib-nav-link" data-nav-link="/library" class="nav-links  mobile-nav-links">
-						<i class="bi bi-music-note-list nav-icons"></i>
-						<span class="mobile-nav-label">Library</span>
+				<li class="mob-nav-item">
+					<a href="/profile" id="profile-nav-link" data-nav-link="/profile" class="mob-nav-link">
+						<i class="bi bi-person-circle mob-nav-icon"></i>
+						<span class="mob-nav-label">You</span>
 					</a>
 				</li>
 			</ul>
 		</nav>
 	`;
-	// biome-ignore lint/suspicious/useIterableCallbackReturn: <Making the line short >
-	footer.getChildren("svg").forEach((svg) => svg.classList.add("footer-svg"));
 
 	return footer.getElement();
 };

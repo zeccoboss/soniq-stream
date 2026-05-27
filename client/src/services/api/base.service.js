@@ -23,8 +23,6 @@ export class BaseService {
 				signal,
 			});
 
-			console.log(res);
-
 			return res.data;
 		} catch (error) {
 			this._handleError(error);

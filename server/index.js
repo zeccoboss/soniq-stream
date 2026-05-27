@@ -20,7 +20,6 @@ const app = express(); // Create App
 // VERCEL DEPLOYMENT FIX: Trust the reverse proxy
 // ==========================================
 app.set("trust proxy", 1);
-console.log("hello world");
 
 const PORT = appConfig.port; // Get PORT
 
