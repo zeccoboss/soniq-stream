@@ -13,7 +13,19 @@ const {
 const getMe = async (req, res) => {
 	try {
 		// req.user comes from verifyJWT middleware (decoded.UserInfo)
-		const user = await UserModel.findOne({ uuid: req.user.uuid })
+		const lookup = req.user?.uuid
+			? { uuid: req.user.uuid }
+			: req.user?._id
+				? { _id: req.user._id }
+				: null;
+
+		if (!lookup) {
+			return res
+				.status(401)
+				.json({ success: false, message: "Invalid session payload" });
+		}
+
+		const user = await UserModel.findOne(lookup)
 			.populate("avatar banner settings")
 			.select("-password -refreshToken")
 			.lean({ virtuals: true });
