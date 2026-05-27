@@ -33,7 +33,7 @@ export const DashboardPage = async (ctx) => {
 	let isMounted = true;
 	let controller = null;
 
-	let data = {
+	const data = {
 		user: store.auth.user ?? {},
 		stats: {},
 		recentUploads: [],
@@ -77,7 +77,6 @@ export const DashboardPage = async (ctx) => {
 
 			controller?.abort();
 			controller = new AbortController();
-			const { signal } = controller;
 
 			// TODO: replace with real API calls
 			// const [statsRes, uploadsRes] = await Promise.all([
@@ -105,13 +104,35 @@ export const DashboardPage = async (ctx) => {
 		}
 	};
 
+	// ── Store subscription ─────────────────────────────────────
+	let unsubscribeAuth = null;
+	const subscribeToAuth = () => {
+		unsubscribeAuth = store.auth.on("auth_changed", async (user) => {
+			if (!isMounted) return;
+			if (!user) {
+				router.replace("/auth/login");
+				return;
+			}
+
+			// Update locally rendered user data and reload dashboard content
+			data.user = user;
+			if (state === "content") {
+				await render();
+			} else {
+				await loadData();
+			}
+		});
+	};
+
 	// ── Boot ─────────────────────────────────────────────────
+	subscribeToAuth();
 	await loadData();
 
 	// ── Lifecycle ────────────────────────────────────────────
 	root.__onUnmount = () => {
 		isMounted = false;
 		controller?.abort();
+		unsubscribeAuth?.();
 	};
 
 	return root;

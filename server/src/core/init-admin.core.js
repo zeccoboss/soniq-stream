@@ -36,10 +36,6 @@ const initAdmin = async () => {
 		}
 
 		console.log("Creating Admin...");
-		const password =
-			process.env.NODE_ENV === "production"
-				? process.env.ADMIN_PASSWORD
-				: process.env.ADMIN_TEST_PASSWORD;
 
 		const admin = await UserModel.create({
 			uuid: uuidV4(),
@@ -48,7 +44,7 @@ const initAdmin = async () => {
 			username: process.env.ADMIN_USERNAME,
 			email: process.env.ADMIN_EMAIL,
 			fullname: process.env.ADMIN_FULLNAME,
-			password: await bcrypt.hash(password, 10),
+			password: await bcrypt.hash(process.env.ADMIN_PASSWORD, 10),
 			roles: Object.values(rolesList),
 			verified: true,
 			dob: new Date("2005-04-10"), // Admin placeholder

@@ -40,10 +40,11 @@ const streamTrack = async (req, res) => {
 				.json({ success: false, message: "Could not generate stream URL" });
 		}
 
-		// 👈 findOneAndUpdate by uuid not findByIdAndUpdate
+		//  updated to use returnDocument if you need the updated track data
 		await TrackModel.findOneAndUpdate(
 			{ uuid: req.params.uuid },
 			{ $inc: { playCount: 1 } },
+			{ returnDocument: "after" }, // Keeps Mongoose happy and clears the warning log
 		);
 
 		return res.status(200).json({

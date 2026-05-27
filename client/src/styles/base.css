@@ -8,7 +8,7 @@
 
 :root {
 	/* ── Colors ── */
-	--bg-base: hsl(220, 12%, 5%);
+	/* --bg-base: hsl(220, 12%, 5%);
 	--bg-light: rgba(255, 255, 255, 0.04);
 	--bg-dark: rgba(255, 255, 255, 0.06);
 	--bg-gradient: linear-gradient(
@@ -36,7 +36,7 @@
 
 	--text-1: hsl(210, 12%, 96%);
 	--text-2: hsl(210, 8%, 70%);
-	--text-3: hsl(210, 6%, 45%);
+	--text-3: hsl(210, 6%, 45%); */
 
 	/* ── Cover gradient (theme-aware) ── */
 	--cover-gradient-start: hsla(220, 25%, 14%, 0.96);
@@ -183,9 +183,20 @@ a {
 	-webkit-backdrop-filter: var(--blur);
 	box-shadow: var(--glass-shadow-sm);
 	transition: all 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+
+	/* Scroll behavior */
 	overflow-x: hidden;
+	overflow-y: auto; /* Ensures the sidebar itself can scroll */
+	scrollbar-width: none; /* Hides scrollbar in Firefox */
+	-ms-overflow-style: none; /* Hides scrollbar in IE 10+ */
+
 	will-change: padding, gap, width;
 	contain: layout style;
+}
+
+/* Hides scrollbar in Chrome, Safari, and modern Edge */
+.sidebar::-webkit-scrollbar {
+	display: none;
 }
 
 /* ── Sidebar Header & Toggle Button ── */
@@ -234,7 +245,7 @@ a {
 	flex-shrink: 1;
 }
 /* .logo:hover {
-	cursor: url;
+   cursor: url;
 } */
 .logo-icon {
 	width: 28px;
@@ -710,7 +721,7 @@ a {
 .track {
 	flex: 1;
 	height: 3px;
-	background: rgba(255, 255, 255, 0.08);
+	background: var(--track-bg);
 	border-radius: 2px;
 	position: relative;
 	cursor: pointer;
@@ -752,13 +763,13 @@ a {
 .vol-track {
 	width: 60px;
 	height: 3px;
-	background: rgba(255, 255, 255, 0.1);
+	background: var(--vol-track-bg);
 	border-radius: 2px;
 }
 .vol-fill {
 	width: 65%;
 	height: 100%;
-	background: rgba(255, 255, 255, 0.35);
+	background: var(--vol-fill-bg);
 	border-radius: 2px;
 }
 .queue-btn {

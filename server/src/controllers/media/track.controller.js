@@ -142,7 +142,9 @@ const getTrack = async (req, res) => {
 	try {
 		const Track = await TrackModel.findOne({
 			uuid: req.params.uuid,
-		}).populate("cover", "storage dimensions format uuid");
+		})
+			.populate("cover", "storage dimensions format uuidv")
+			.lean({ virtuals: true });
 
 		if (!Track) {
 			return res
@@ -165,6 +167,8 @@ const uploadTrack = async (req, res) => {
 			.status(400)
 			.json({ success: false, message: "No file uploaded" });
 	}
+
+	console.log(req.body);
 
 	const userId = req.user._id;
 
@@ -192,7 +196,7 @@ const uploadTrack = async (req, res) => {
 		}
 
 		// ── Process upload ─────────────────────────────────────────────────────
-		const Track = await processTrack(userId, req.file);
+		const Track = await processTrack(userId, req.file, req.body);
 
 		if (!Track) {
 			return res
@@ -205,7 +209,8 @@ const uploadTrack = async (req, res) => {
 		await User.findByIdAndUpdate(
 			userId,
 			{ $push: { uploadsTracksId: Track._id } },
-			{ new: true },
+			// Swapped out to clear the warning log
+			{ returnDocument: "after" },
 		);
 
 		return res.status(201).json({
@@ -421,8 +426,12 @@ const incrementShareCount = async (req, res) => {
 	try {
 		const { uuid } = req.params;
 
-		// Increment a "shareCount" field on the Track model
-		await Track.findOneAndUpdate({ uuid }, { $inc: { shareCount: 1 } });
+		await Track.findOneAndUpdate(
+			{ uuid },
+			{ $inc: { shareCount: 1 } },
+			// Explicitly setting this ensures no hidden warnings break your flow
+			{ returnDocument: "after" },
+		);
 
 		res.status(200).json({
 			success: true,

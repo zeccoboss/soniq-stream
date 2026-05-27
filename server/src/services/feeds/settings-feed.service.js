@@ -1,5 +1,59 @@
 const User = require("../../models/user.model");
-const Image = require("../../models/image.model");
+const Settings = require("../../models/settings.model"); // <-- Make sure to import this now!
+
+/**
+ * Helper function to flatten nested objects into MongoDB dot notation.
+ * Keeps your PATCH requests truly dynamic.
+ */
+const flattenObject = (obj, prefix = "") => {
+	return Object.keys(obj).reduce((acc, k) => {
+		const pre = prefix.length ? prefix + "." : "";
+		if (
+			typeof obj[k] === "object" &&
+			obj[k] !== null &&
+			!Array.isArray(obj[k]) &&
+			!(obj[k] instanceof Date)
+		) {
+			Object.assign(acc, flattenObject(obj[k], pre + k));
+		} else {
+			acc[pre + k] = obj[k];
+		}
+		return acc;
+	}, {});
+};
+
+/**
+ * Updates a user's settings.
+ * @param {string} userId - The database ID of the authenticated user.
+ * @param {Object} newSettings - The partial payload to update.
+ */
+const updateSettingsFeed = async (userId, newSettings) => {
+	try {
+		// 1. Fetch the user to find their specific settings ObjectId reference
+		const user = await User.findById(userId).select("settings");
+
+		if (!user || !user.settings) {
+			throw new Error("User or settings reference not found");
+		}
+
+		// 2. Convert the incoming req.body payload into a flat dot-notation object
+		// Example input:  { notifications: { email: false }, theme: "dark" }
+		// Example output: { "notifications.email": false, theme: "dark" }
+		const flattenedUpdate = flattenObject(newSettings);
+
+		// 3. Update the Settings collection directly using the user's settings ID
+		const updatedSettings = await Settings.findByIdAndUpdate(
+			user.settings,
+			{ $set: flattenedUpdate },
+			{ returnDocument: "after", runValidators: true },
+		);
+
+		return updatedSettings;
+	} catch (error) {
+		console.error("Update Settings Service Error:", error.message);
+		throw error;
+	}
+};
 
 /**
  * Fetches the public profile data for a specific user.
@@ -87,38 +141,6 @@ const getSettingsFeed = async (userId) => {
 		return user.settings;
 	} catch (error) {
 		console.error("Get Settings Service Error:", error.message);
-		throw error;
-	}
-};
-
-/**
- * Updates a user's settings.
- * @param {string} userId - The database ID of the authenticated user.
- * @param {Object} newSettings - The partial or complete settings payload to update.
- * @returns {Promise<Object>} The updated settings object.
- */
-const updateSettingsFeed = async (userId, newSettings) => {
-	try {
-		const user = await User.findById(userId);
-
-		if (!user) {
-			throw new Error("User not found");
-		}
-
-		// Merge existing settings with new updates, handling nested objects like 'notifications'
-		user.settings = {
-			...user.settings,
-			...newSettings,
-			notifications: {
-				...user.settings?.notifications,
-				...newSettings?.notifications,
-			},
-		};
-
-		await user.save();
-		return user.settings;
-	} catch (error) {
-		console.error("Update Settings Service Error:", error.message);
 		throw error;
 	}
 };

@@ -8,7 +8,7 @@ const corsOptions = {
 			callback(new Error("Not allowed by CORS"));
 		}
 	},
-	methods: ["PUT", "POST", "GET", "DELETE"],
+	methods: ["PUT", "POST", "GET", "DELETE", "PATCH"],
 	credentials: true,
 	allowedHeaders: ["Content-Type", "Authorization"],
 	maxAge: 600,

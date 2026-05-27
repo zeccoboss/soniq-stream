@@ -86,7 +86,8 @@ const updateUserRole = async (req, res) => {
 		const user = await User.findOneAndUpdate(
 			{ uuid },
 			{ $set: { roles: [Number(newRole)] } }, // Overwrites current roles
-			{ new: true },
+			// Swapped { new: true } for { returnDocument: 'after' }
+			{ returnDocument: "after" },
 		).select("-password");
 
 		if (!user) return res.status(404).json({ message: "User not found" });

@@ -8,6 +8,7 @@ import { rebuildLayout, setCurrentScreen } from "./layouts/buildLayout";
 import { router } from "./routes/router";
 import { applyMiddleware } from "./middlewares";
 import { store } from "./store/store";
+import { themeManager } from "./core/theme-manager";
 
 // ── Styles ─────────────────────────────────────────────────────────────────────────
 import "bootstrap-icons/font/bootstrap-icons.css";
@@ -16,6 +17,18 @@ import "./styles/media.css";
 // import { networkHandler } from "./core/network-handler";
 
 const bootstrap = async () => {
+	// ── Initialize the application state store ───────────────────────────────────
+	store.init();
+
+	// ── Initialize the application theme ───────────────────────────────────
+	themeManager.init();
+
+	// ── For middleware initialization and start up ───────────────────────────────────
+	applyMiddleware();
+
+	// ── Initialize network status monitoring and event handling  ───────────────────────────────────
+	// networkHandler.init();
+
 	// Determine the initial screen size based on the defined media queries
 	const screen = mobileScreen.matches
 		? "mobile"
@@ -26,15 +39,9 @@ const bootstrap = async () => {
 	setCurrentScreen(screen); // Set the initial screen size in the application state
 	await rebuildLayout(screen); // Build the initial layout based on the current screen size
 
-	// Initialize the application state store
-	store.init();
-	// networkHandler.init(); // Initialize network status monitoring and event handling
-
-	// ── For middleware initialization and start up ───────────────────────────────────
-	applyMiddleware();
-
 	const onBreakpointChange = (newScreen) => async (e) => {
 		if (!e.matches) return; // If the media query no longer matches, we don't need to do anything
+
 		setCurrentScreen(newScreen); // Update the current screen size in the application state
 		await rebuildLayout(newScreen); // Rebuild the layout for the new screen size
 

@@ -71,7 +71,7 @@ const processTrackCover = async (user, common) => {
 /**
  * Shape raw music-metadata output into a clean TrackModel payload.
  */
-const buildTrackPayload = (file, trackKey, coverId, metadata) => {
+const buildTrackPayload = (file, trackKey, coverId, metadata, data = {}) => {
 	const common = metadata?.common ?? {};
 	const format = metadata?.format ?? {};
 
@@ -79,6 +79,21 @@ const buildTrackPayload = (file, trackKey, coverId, metadata) => {
 	const trackBaseUrl = isProduction
 		? process.env.B2_ENDPOINT
 		: process.env.MINIO_ENDPOINT || "http://127.0.0.1:9000";
+
+	// Clean utility to convert any incoming format into a safe array
+	const reqGenres = Array.isArray(data.genre)
+		? data.genre
+		: data.genre
+			? [data.genre]
+			: [];
+	const metaGenres = Array.isArray(common.genre)
+		? common.genre
+		: common.genre
+			? [common.genre]
+			: [];
+
+	// Combine them into a single flat array with unique values
+	const combinedGenres = [...new Set([...reqGenres, ...metaGenres])];
 
 	return {
 		uuid: uuidV4(),
@@ -106,6 +121,8 @@ const buildTrackPayload = (file, trackKey, coverId, metadata) => {
 			baseUrl: trackBaseUrl,
 			type: "s3",
 		},
+		genre: combinedGenres.length > 0 ? combinedGenres : ["Unknown"],
+		visibility: data.visibility ?? "public",
 	};
 };
 
@@ -114,7 +131,7 @@ const buildTrackPayload = (file, trackKey, coverId, metadata) => {
 /**
  * Full pipeline: parse → upload cover → upload track → save to DB.
  */
-const processTrack = async (userId, file) => {
+const processTrack = async (userId, file, data) => {
 	if (!file || typeof file !== "object") {
 		console.error("[MetaManager] Invalid file object");
 		return null;
@@ -141,8 +158,8 @@ const processTrack = async (userId, file) => {
 		return null;
 	}
 
-	// ── 4. Build payload and persist ──────────────────────────────────────────
-	const payload = buildTrackPayload(file, trackKey, coverId, metadata);
+	// ── 4. Build payload and persist (Passing 'data' down here) ──────────────
+	const payload = buildTrackPayload(file, trackKey, coverId, metadata, data);
 
 	try {
 		const track = await TrackModel.create({ ...payload, user: userId });

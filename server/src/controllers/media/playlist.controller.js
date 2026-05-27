@@ -59,8 +59,11 @@ const updatePlaylist = async (req, res) => {
 		const updatedPlaylist = await Playlist.findOneAndUpdate(
 			{ uuid, user: req.user.id },
 			{ name, visibility, description, trackIds },
-			{ new: true, runValidators: true },
-		).populate("cover");
+			// Swapped { new: true } to { returnDocument: 'after' } alongside your validators
+			{ returnDocument: "after", runValidators: true },
+		)
+			.populate("cover")
+			.lean({ virtuals: true });
 
 		if (!updatedPlaylist)
 			return res.status(404).json({ message: "Playlist not found" });
@@ -109,7 +112,7 @@ const toggleTrackInPlaylist = async (req, res) => {
 		const playlist = await Playlist.findOneAndUpdate(
 			{ uuid: playlistUuid, user: req.user.id },
 			update,
-			{ new: true },
+			{ returnDocument: "after" },
 		).populate("trackIds");
 
 		res.status(200).json({ success: true, data: playlist });

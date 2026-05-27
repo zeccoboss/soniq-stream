@@ -58,7 +58,7 @@ const getSettings = async (req, res) => {
 // @route   PATCH /api/v1/me/settings
 const updateSettings = async (req, res) => {
 	try {
-		const updated = await updateSettingsFeed(req.user.id, req.body);
+		const updated = await updateSettingsFeed(req.user._id, req.body);
 		res.json({ success: true, data: updated });
 	} catch (error) {
 		res.status(400).json({ success: false, message: error.message });

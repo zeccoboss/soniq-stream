@@ -37,7 +37,7 @@ const uploadObject = async ({ bucket, key, buffer, mimeType }) => {
 				ContentLength: buffer.length,
 			}),
 		);
-		return key;
+		return `${bucket}/${key}`;
 	} catch (err) {
 		console.error(
 			`[Storage] Upload failed — bucket: ${bucket}, key: ${key}`,
@@ -128,6 +128,7 @@ const storeTrackCover = async (cover) => {
 		buffer: Buffer.from(cover.data),
 		mimeType: cover.format ?? "image/jpeg",
 	});
+	console.log(uploadedKey);
 	if (!uploadedKey) return null;
 	return {
 		key: uploadedKey,

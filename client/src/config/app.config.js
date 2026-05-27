@@ -64,45 +64,53 @@ class AppConfig {
 				// Additional glassmorphism support
 				"--glass-shadow": "0 8px 32px rgba(0, 0, 0, 0.3)",
 				"--glass-shadow-sm": "0 4px 16px rgba(0, 0, 0, 0.2)",
+
+				"--track-bg": "rgba(255, 255, 255, 0.08)",
+				"--vol-track-bg": "rgba(255, 255, 255, 0.10)",
+				"--vol-fill-bg": "rgba(255, 255, 255, 0.35)",
 			},
 			Light: {
-				// Base structural colors - bright & clean
-				"--bg-base": "hsl(220, 20%, 96%)",
-				"--bg-light": "rgba(0, 0, 0, 0.02)",
+				// Base structural colors — bright & clean
+				"--bg-base": "hsl(220, 20%, 97%)",
+				"--bg-light": "rgba(0, 0, 0, 0.03)",
 				"--bg-dark": "rgba(0, 0, 0, 0.05)",
 				"--bg-gradient":
-					"linear-gradient(135deg, hsl(220, 25%, 99%) 0%, hsl(220, 20%, 95%) 50%, hsl(220, 18%, 91%) 100%)",
-				"--overlay-bg": "rgba(255, 255, 255, 0.6)",
-				"--bg-surface-solid": "hsl(220, 30%, 98%)",
+					"linear-gradient(135deg, hsl(220, 25%, 98%) 0%, hsl(220, 20%, 95%) 50%, hsl(240, 15%, 93%) 100%)",
+				"--overlay-bg": "rgba(0, 0, 0, 0.35)",
+				"--bg-surface-solid": "hsl(220, 20%, 94%)",
 
-				// Accent & Brand glows - vivid
-				"--accent": "hsl(213, 95%, 52%)",
-				"--accent-soft": "hsla(213, 95%, 52%, 0.12)",
-				"--accent-glow": "hsla(213, 95%, 52%, 0.22)",
+				// Accent & Brand glows — same hue, adjusted for light bg
+				"--accent": "hsl(213, 90%, 50%)",
+				"--accent-soft": "hsla(213, 90%, 50%, 0.12)",
+				"--accent-glow": "hsla(213, 90%, 50%, 0.25)",
 
-				// Glassmorphic Frost Specs - Premium
-				"--glass": "rgba(255, 255, 255, 0.55)",
-				"--glass-hover": "rgba(255, 255, 255, 0.75)",
-				"--glass-active": "rgba(255, 255, 255, 0.85)",
-				"--glass-border": "rgba(255, 255, 255, 0.6)",
-				"--glass-border-strong": "rgba(0, 0, 0, 0.1)",
-				"--blur": "blur(40px) saturate(210%)",
+				// Glassmorphism — inverted, dark glass on light bg
+				"--glass": "rgba(0, 0, 0, 0.04)",
+				"--glass-hover": "rgba(0, 0, 0, 0.07)",
+				"--glass-active": "rgba(0, 0, 0, 0.10)",
+				"--glass-border": "rgba(0, 0, 0, 0.08)",
+				"--glass-border-strong": "rgba(0, 0, 0, 0.14)",
+				"--blur": "blur(40px) saturate(180%)",
 				"--backdrop":
-					"backdrop-filter: blur(40px) saturate(210%); -webkit-backdrop-filter: blur(40px) saturate(210%);",
+					"backdrop-filter: blur(40px) saturate(180%); -webkit-backdrop-filter: blur(40px) saturate(180%);",
 
-				// Dark high-contrast text for readability
-				"--text-1": "hsl(220, 25%, 10%)",
-				"--text-2": "hsl(220, 15%, 35%)",
-				"--text-3": "hsl(220, 10%, 55%)",
+				// Typography hierarchy — dark on light
+				"--text-1": "hsl(220, 15%, 10%)",
+				"--text-2": "hsl(220, 10%, 35%)",
+				"--text-3": "hsl(220, 8%,  55%)",
 
-				// Clean light cover context overlays
-				"--cover-gradient-start": "hsla(220, 28%, 98%, 0.96)",
-				"--cover-gradient-mid": "hsla(220, 22%, 96%, 0.94)",
-				"--cover-gradient-end": "hsla(220, 18%, 93%, 0.90)",
+				// Cover art contextual overlays — lighter washes
+				"--cover-gradient-start": "hsla(220, 25%, 95%, 0.92)",
+				"--cover-gradient-mid": "hsla(220, 20%, 93%, 0.90)",
+				"--cover-gradient-end": "hsla(220, 15%, 90%, 0.86)",
 
 				// Additional glassmorphism support
-				"--glass-shadow": "0 8px 32px rgba(0, 0, 0, 0.08)",
-				"--glass-shadow-sm": "0 4px 16px rgba(0, 0, 0, 0.06)",
+				"--glass-shadow": "0 8px 32px rgba(0, 0, 0, 0.10)",
+				"--glass-shadow-sm": "0 4px 16px rgba(0, 0, 0, 0.07)",
+
+				"--track-bg": "rgba(0, 0, 0, 0.10)",
+				"--vol-track-bg": "rgba(0, 0, 0, 0.10)",
+				"--vol-fill-bg": "rgba(0, 0, 0, 0.25)",
 			},
 		};
 	}
