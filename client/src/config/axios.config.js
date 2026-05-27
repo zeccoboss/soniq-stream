@@ -2,8 +2,6 @@ import { appConfig } from "@zecco/config/app.config";
 import { router } from "@zecco/routes/router";
 import {
 	readFromLocalStorage,
-	removeFromLocalStorage,
-	writeToLocalStorage,
 } from "@zecco/services/storage/local-storage";
 import { store } from "@zecco/store/store";
 import axios from "axios";
@@ -55,12 +53,21 @@ apiClient.interceptors.response.use(
 	(response) => response,
 	async (error) => {
 		const originalRequest = error.config;
+		if (!originalRequest) return Promise.reject(error);
 
 		// Check if it's explicitly an expired token
 		const isUnauthorized = error.response?.status === 401;
 		const isTokenExpired = error.response?.data?.code === "TOKEN_EXPIRED";
+		const isAuthMissingOrInvalid = error.response?.data?.code === "UNAUTHENTICATED";
+		const isRefreshRequest = originalRequest.url?.includes("/auth/refresh");
+		const shouldTryRefresh =
+			isUnauthorized && (isTokenExpired || isAuthMissingOrInvalid || !error.response?.data?.code);
 
-		if (isUnauthorized && isTokenExpired && !originalRequest._retry) {
+		if (
+			shouldTryRefresh &&
+			!originalRequest._retry &&
+			!isRefreshRequest
+		) {
 			if (isRefreshing) {
 				return new Promise((resolve, reject) => {
 					failedQueue.push({ resolve, reject });
@@ -82,10 +89,11 @@ apiClient.interceptors.response.use(
 						withCredentials: true,
 					})
 					.then((response) => {
-						const newAccessToken = response.data.accessToken;
-						writeToLocalStorage("token", newAccessToken);
-
-						console.log(newAccessToken);
+						const newAccessToken = response?.data?.accessToken;
+						if (!newAccessToken) {
+							throw new Error("Missing access token from refresh response");
+						}
+						store.auth.token = newAccessToken;
 
 						apiClient.defaults.headers.common["Authorization"] =
 							`Bearer ${newAccessToken}`;
@@ -96,9 +104,8 @@ apiClient.interceptors.response.use(
 					})
 					.catch((err) => {
 						processQueue(err, null);
-						// removeFromLocalStorage("token");
 						store.auth.clear();
-						router.navigate("/auth/login");
+						router.replace("/auth/login");
 						reject(err);
 					})
 					.finally(() => {

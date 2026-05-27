@@ -26,7 +26,10 @@
 	flex-direction: column;
 	gap: 0;
 	border-bottom: 1px solid var(--glass-border);
-	background: var(--bg-base);
+	background: var(--glass);
+	backdrop-filter: var(--blur);
+	-webkit-backdrop-filter: var(--blur);
+	box-shadow: var(--glass-shadow-sm);
 	position: sticky;
 	top: 0;
 	z-index: 4;
@@ -143,7 +146,10 @@
 	gap: 10px;
 	border-bottom: 1px solid var(--glass-border);
 	padding-bottom: 0;
-	background: var(--bg-base);
+	background: var(--glass);
+	backdrop-filter: var(--blur);
+	-webkit-backdrop-filter: var(--blur);
+	box-shadow: var(--glass-shadow-sm);
 	position: sticky;
 	top: 0;
 	z-index: 4;
@@ -711,23 +717,49 @@
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	gap: 6px;
+	gap: 8px;
 	cursor: pointer;
+	width: 104px;
+	padding: 10px 8px 8px;
+	border-radius: var(--radius-md);
+	background: linear-gradient(
+		180deg,
+		rgba(255, 255, 255, 0.03) 0%,
+		rgba(255, 255, 255, 0.015) 100%
+	);
+	border: 1px solid transparent;
+	transition:
+		transform 0.2s,
+		border-color 0.2s,
+		background 0.2s;
+}
+.home-artist-card:hover {
+	transform: translateY(-2px);
+	border-color: var(--glass-border);
+	background: linear-gradient(
+		180deg,
+		rgba(255, 255, 255, 0.05) 0%,
+		rgba(255, 255, 255, 0.02) 100%
+	);
 }
 .home-artist-avatar {
-	width: 68px;
-	height: 68px;
+	width: 84px;
+	height: 84px;
 	border-radius: 50%;
 	overflow: hidden;
-	border: 2px solid var(--glass-border);
+	border: 2px solid var(--glass-border-strong);
 	background: linear-gradient(135deg, var(--accent), hsl(265, 80%, 60%));
 	display: grid;
 	place-items: center;
 	position: relative;
-	transition: border-color 0.2s;
+	box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+	transition:
+		border-color 0.2s,
+		transform 0.2s;
 }
 .home-artist-card:hover .home-artist-avatar {
 	border-color: var(--glass-border-strong);
+	transform: scale(1.03);
 }
 .home-artist-img {
 	width: 100%;
@@ -744,22 +776,41 @@
 	height: 100%;
 	font-family: var(--font-head);
 	font-weight: 800;
-	font-size: 1.2rem;
+	font-size: 1.45rem;
 	color: white;
 }
 .home-artist-name {
-	font-size: 0.6rem;
-	font-weight: 600;
-	color: var(--text-2);
-	max-width: 68px;
+	font-size: 0.72rem;
+	font-weight: 700;
+	color: var(--text-1);
+	max-width: 100%;
 	text-align: center;
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
+	line-height: 1.2;
 }
 .home-artist-meta {
-	font-size: 0.52rem;
+	font-size: 0.58rem;
 	color: var(--text-3);
+	font-weight: 500;
+	letter-spacing: 0.2px;
+}
+
+/* Desktop artist cards — larger emphasis */
+.home-section .home-artist-card {
+	width: 132px;
+	padding: 12px 10px 10px;
+}
+.home-section .home-artist-avatar {
+	width: 104px;
+	height: 104px;
+}
+.home-section .home-artist-name {
+	font-size: 0.82rem;
+}
+.home-section .home-artist-meta {
+	font-size: 0.62rem;
 }
 
 /* ══════════════════════════════════════

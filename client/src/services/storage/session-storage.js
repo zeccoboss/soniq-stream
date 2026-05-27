@@ -2,7 +2,7 @@ import { appConfig } from "@zecco/config/app.config";
 
 // Helper functions to interact with session storage, namespaced with the app name to avoid conflicts with other data in session storage. Provides functions to read and write data, handling JSON parsing/stringifying and errors gracefully.
 
-const buildKey = (key) => `${appConfig.API_NAME}-${key}`;
+const buildKey = (key) => `${appConfig.APP_NAME}--${key}`;
 
 const readFromSessionStorage = (key) => {
 	try {

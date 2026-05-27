@@ -1,4 +1,5 @@
 import { buildNode } from "@zecco/utils/dom/build-node.js";
+import { formatTrackDuration } from "@zecco/utils/format-track-duration.js";
 
 /**
  * DiscoverView — Discover tab content
@@ -107,7 +108,7 @@ const trackRow = (track, index) => `
 			}
 		</div>
 		<div class="home-track-actions">
-			<span class="home-track-dur">${track.duration ?? ""}</span>
+			<span class="home-track-dur">${formatTrackDuration(track.duration)}</span>
 			<button class="home-track-more" aria-label="More options">
 				<i class="bi bi-three-dots-vertical"></i>
 			</button>

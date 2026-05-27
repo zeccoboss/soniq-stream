@@ -45,6 +45,7 @@
 		border: 1px solid var(--glass-border-strong);
 		margin: var(--space-sm);
 		flex-grow: 1;
+		box-shadow: var(--glass-shadow-sm);
 	}
 	.mini-player-thumb {
 		width: 36px;
@@ -91,11 +92,11 @@
 	.footer {
 		flex-shrink: 0;
 		padding: 8px 0 max(8px, env(safe-area-inset-bottom));
-		border-top: 2px solid var(--glass-border-strong);
-		background: rgba(30, 30, 30, 0.7);
+		border-top: 1px solid var(--glass-border-strong);
+		background: var(--glass);
 		backdrop-filter: var(--blur);
 		-webkit-backdrop-filter: var(--blur);
-		box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.3);
+		box-shadow: var(--glass-shadow);
 	}
 	.mob-footer-nav {
 		display: flex;

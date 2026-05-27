@@ -14,8 +14,8 @@ import meService from "@zecco/services/api/me.service.js";
 export const loginEvents = async (root, { render }) => {
 	// 1. Auto-save drafts on input
 	root.addEventListener("input", (e) => {
-		if (e.target.matches("input[name='email']")) {
-			saveLoginDraft({ [e.target.name]: e.target.value });
+		if (e.target.matches("#login-identifier")) {
+			saveLoginDraft({ email: e.target.value });
 		}
 	});
 
@@ -46,9 +46,13 @@ export const loginEvents = async (root, { render }) => {
 
 		// Use the component's built-in error state instead of a toast
 		if (!identifier || !password) {
+			const field = !identifier ? "identifier" : "password";
 			root.dispatchEvent(
 				new CustomEvent("login-error", {
-					detail: "Please fill in all fields",
+					detail: {
+						message: "Please fill in all fields",
+						field,
+					},
 				}),
 			);
 			return; // Stop execution
@@ -76,7 +80,11 @@ export const loginEvents = async (root, { render }) => {
 			// Adjust this condition to match exactly how your api wrapper structures error responses
 			if (err.status === 403 && err.data?.email) {
 				// Remove form error and stop loader since the modal is taking over
-				root.dispatchEvent(new CustomEvent("login-error", { detail: "" }));
+				root.dispatchEvent(
+					new CustomEvent("login-error", {
+						detail: { message: "", field: "" },
+					}),
+				);
 
 				promptLoginVerification({
 					email: err.data.email, // Passed explicitly from our updated controller[cite: 1]
@@ -88,7 +96,10 @@ export const loginEvents = async (root, { render }) => {
 			// Backend errors also use the component's built-in error state
 			root.dispatchEvent(
 				new CustomEvent("login-error", {
-					detail: err.message || "Invalid credentials",
+					detail: {
+						message: err.message || "Invalid credentials",
+						field: "identifier",
+					},
 				}),
 			);
 		}

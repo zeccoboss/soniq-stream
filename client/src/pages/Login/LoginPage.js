@@ -12,17 +12,37 @@ export const LoginPage = async (ctx) => {
 	// ── Internal State ─────────────────────────────────────────
 	let state = "idle"; // idle | loading | error
 	let error = "";
+	let errorField = "";
 	// Pull existing draft from storage
 	const draft = readFromSessionStorage("login_draft") || {};
+	let formValues = {
+		identifier: draft.email ?? "",
+		password: "",
+	};
 	let isMounted = true;
 	const controller = null;
+
+	const snapshotInputs = () => {
+		const identifierInput = root.querySelector("#login-identifier");
+		const passwordInput = root.querySelector("#login-pwd");
+
+		if (identifierInput) formValues.identifier = identifierInput.value;
+		if (passwordInput) formValues.password = passwordInput.value;
+	};
 
 	// ── Render Logic ──────────────────────────────────────────
 	const render = async () => {
 		if (!isMounted) return;
 		const UI = mobileScreen.matches ? LoginMobile : LoginDesktop;
 
-		const view = await UI({ state, error, draft, ctx });
+		const view = await UI({
+			state,
+			error,
+			errorField,
+			draft,
+			formValues,
+			ctx,
+		});
 		root.replaceChildren(view);
 
 		// Wire events (passing helpers for the orchestrator to use)
@@ -31,13 +51,18 @@ export const LoginPage = async (ctx) => {
 
 	// ── Internal Event Listeners ──────────────────────────────
 	root.addEventListener("login-loading", (e) => {
+		snapshotInputs();
 		state = "loading";
+		error = "";
+		errorField = "";
 		render();
 	});
 
 	root.addEventListener("login-error", (e) => {
+		snapshotInputs();
 		state = "error";
-		error = e.detail;
+		error = e.detail?.message ?? "";
+		errorField = e.detail?.field ?? "";
 		render();
 	});
 

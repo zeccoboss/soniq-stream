@@ -16,8 +16,42 @@ export const registerEvents = (
 	root,
 	{ step, draft, saveDraft, clearDraft, goToStep },
 ) => {
+	const clearFieldHighlights = () => {
+		root
+			.querySelectorAll(
+				".reg-input--error, .reg-input--warning, .reg-checkbox--error, .reg-genre-grid--error",
+			)
+			.forEach((el) =>
+				el.classList.remove(
+					"reg-input--error",
+					"reg-input--warning",
+					"reg-checkbox--error",
+					"reg-genre-grid--error",
+				),
+			);
+	};
+
+	const highlightFields = (selectors = [], tone = "error") => {
+		const className = tone === "warning" ? "reg-input--warning" : "reg-input--error";
+		for (const selector of selectors) {
+			root.querySelectorAll(selector).forEach((el) => {
+				if (selector.includes("terms-check")) {
+					el.classList.add("reg-checkbox--error");
+					return;
+				}
+				if (selector.includes("genre-grid")) {
+					el.classList.add("reg-genre-grid--error");
+					return;
+				}
+				el.classList.add(className);
+			});
+		}
+	};
+
 	// ── Helper: UI Error Display ──────────────────────────────────────────
-	const showError = (message) => {
+	const showError = (message, selectors = [], tone = "error") => {
+		clearFieldHighlights();
+		highlightFields(selectors, tone);
 		const errorBox = root.querySelector(
 			`#reg-step${step}-error, #reg-mob-step${step}-error`,
 		);
@@ -35,6 +69,7 @@ export const registerEvents = (
 			`#reg-step${step}-error, #reg-mob-step${step}-error`,
 		);
 		if (errorBox) errorBox.classList.add("hidden");
+		clearFieldHighlights();
 	};
 
 	// ── Helper: Map ID to Draft Key ───────────────────────────────────────
@@ -77,13 +112,22 @@ export const registerEvents = (
 			const { firstName, lastName, username, email } = draft;
 
 			if (!firstName || !lastName || !username || !email) {
-				return showError("Please fill out all fields.");
+				return showError("Please fill out all fields.", [
+					"#reg-firstname, #reg-mob-firstname",
+					"#reg-lastname, #reg-mob-lastname",
+					"#reg-username, #reg-mob-username",
+					"#reg-email, #reg-mob-email",
+				]);
 			}
 			if (username.length < 3) {
-				return showError("Username must be at least 3 characters.");
+				return showError("Username must be at least 3 characters.", [
+					"#reg-username, #reg-mob-username",
+				]);
 			}
 			if (!EMAIL_REGEX.test(email)) {
-				return showError("Please enter a valid email address.");
+				return showError("Please enter a valid email address.", [
+					"#reg-email, #reg-mob-email",
+				]);
 			}
 
 			goToStep(2);
@@ -165,12 +209,21 @@ export const registerEvents = (
 			const confirm = confirmInput.value.trim();
 
 			if (pwd.length < 8)
-				return showError("Password must be at least 8 characters.");
-			if (pwd !== confirm) return showError("Passwords do not match.");
+				return showError(
+					"Password must be at least 8 characters.",
+					["#reg-pwd, #reg-mob-pwd"],
+					"warning",
+				);
+			if (pwd !== confirm)
+				return showError("Passwords do not match.", [
+					"#reg-pwd-confirm, #reg-mob-pwd-confirm",
+				]);
 
 			if (!HAS_UPPER.test(pwd) || !HAS_NUMBER.test(pwd)) {
 				return showError(
 					"Password must include an uppercase letter and a number.",
+					["#reg-pwd, #reg-mob-pwd"],
+					"warning",
 				);
 			}
 
@@ -231,14 +284,24 @@ export const registerEvents = (
 			if (!password)
 				return showError(
 					"Password missing. Please go back to step 2 and re-enter it.",
+					["#reg-pwd, #reg-mob-pwd"],
 				);
 
 			if (!dob || !country)
-				return showError("Please provide your date of birth and country.");
+				return showError("Please provide your date of birth and country.", [
+					"#reg-dob, #reg-mob-dob",
+					"#reg-country, #reg-mob-country",
+				]);
 			if (!genres || genres.length === 0)
-				return showError("Please pick at least one genre.");
+				return showError(
+					"Please pick at least one genre.",
+					["#reg-genre-grid, #reg-mob-genre-grid"],
+					"warning",
+				);
 			if (!termsAccepted)
-				return showError("You must accept the Terms of Service.");
+				return showError("You must accept the Terms of Service.", [
+					"#reg-terms-check, #reg-mob-terms-check",
+				]);
 
 			try {
 				// UI Loading State
@@ -257,7 +320,13 @@ export const registerEvents = (
 				// Fire off API request and wait for the response
 				const registerResult = await authService.register(cleanUserData);
 
-				// Only runs if the API call was successful (200 OK)
+				// Only clear form data after backend confirms success with a message payload
+				if (!registerResult?.message) {
+					throw new Error(
+						"Registration response was incomplete. Please try again.",
+					);
+				}
+
 				clearDraft();
 
 				promptEmailVerification({

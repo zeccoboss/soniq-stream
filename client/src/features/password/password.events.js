@@ -12,8 +12,21 @@ export const passwordEvents = (
 	root,
 	{ step, state, setState, goToStep, draft, saveDraft, clearDraft },
 ) => {
+	const clearFieldHighlights = () => {
+		root
+			.querySelectorAll(".pwd-input--error, .pwd-input--warning")
+			.forEach((el) =>
+				el.classList.remove("pwd-input--error", "pwd-input--warning"),
+			);
+	};
+
 	// ── Helper: Show Error Message ────────────────────────────
-	const showError = (message) => {
+	const showError = (message, selectors = [], tone = "error") => {
+		clearFieldHighlights();
+		const className = tone === "warning" ? "pwd-input--warning" : "pwd-input--error";
+		for (const selector of selectors) {
+			root.querySelectorAll(selector).forEach((el) => el.classList.add(className));
+		}
 		const errorBox = root.querySelector(
 			`#pwd-step${step}-error, #pwd-mob-step${step}-error`,
 		);
@@ -28,6 +41,7 @@ export const passwordEvents = (
 			`#pwd-step${step}-error, #pwd-mob-step${step}-error`,
 		);
 		if (errorBox) errorBox.classList.add("hidden");
+		clearFieldHighlights();
 	};
 
 	// ── STEP 1: Email Input ──────────────────────────────────────
@@ -50,7 +64,7 @@ export const passwordEvents = (
 			// Validate email
 			const validation = validateEmail(email);
 			if (!validation.isValid) {
-				return showError(validation.message);
+				return showError(validation.message, ["#pwd-email, #pwd-mob-email"]);
 			}
 
 			try {
@@ -64,7 +78,10 @@ export const passwordEvents = (
 				saveDraft({ email });
 				goToStep(2);
 			} catch (err) {
-				setState("error", err.message || "Failed to send email.");
+				await setState("idle");
+				showError(err.message || "Failed to send email.", [
+					"#pwd-email, #pwd-mob-email",
+				]);
 			}
 		});
 	}
@@ -206,12 +223,18 @@ export const passwordEvents = (
 			// Validate new password
 			const validation = validatePassword(pwd);
 			if (!validation.isValid) {
-				return showError(validation.message);
+				return showError(
+					validation.message,
+					["#pwd-new, #pwd-mob-new"],
+					"warning",
+				);
 			}
 
 			// Validate passwords match
 			if (pwd !== confirm) {
-				return showError("Passwords do not match.");
+				return showError("Passwords do not match.", [
+					"#pwd-confirm, #pwd-mob-confirm",
+				]);
 			}
 
 			// Get token
@@ -239,7 +262,11 @@ export const passwordEvents = (
 					clearDraft();
 					goToStep(5);
 				} else {
-					setState("error", err.message || "Failed to reset password.");
+					await setState("idle");
+					showError(err.message || "Failed to reset password.", [
+						"#pwd-new, #pwd-mob-new",
+						"#pwd-confirm, #pwd-mob-confirm",
+					]);
 				}
 			}
 		});

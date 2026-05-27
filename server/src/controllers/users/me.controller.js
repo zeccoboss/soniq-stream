@@ -69,7 +69,13 @@ const updateSettings = async (req, res) => {
 // @route   GET /api/v1/me/library
 const getMyLibrary = async (req, res) => {
 	try {
-		const library = await getLibraryFeed(req.user.id);
+		const userId = req.user?._id;
+		if (!userId) {
+			return res
+				.status(401)
+				.json({ success: false, message: "Invalid session payload" });
+		}
+		const library = await getLibraryFeed(userId);
 		res.json({ success: true, data: library });
 	} catch (error) {
 		res.status(500).json({ success: false, message: "Library fetch failed" });

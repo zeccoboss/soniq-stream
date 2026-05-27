@@ -76,6 +76,10 @@
 	justify-content: space-between;
 	border-bottom: 1px solid var(--glass-border);
 	padding-bottom: 12px;
+	background: var(--glass);
+	backdrop-filter: var(--blur);
+	-webkit-backdrop-filter: var(--blur);
+	box-shadow: var(--glass-shadow-sm);
 }
 .dash-mob-header-left {
 	display: flex;

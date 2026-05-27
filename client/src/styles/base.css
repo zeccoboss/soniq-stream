@@ -8,33 +8,40 @@
 
 :root {
 	/* ── Colors ── */
-	--bg-base: hsl(220, 8%, 6%);
-	--bg-light: rgba(221, 221, 221, 0.025);
-	--bg-dark: rgba(221, 221, 221, 0.04);
-	--bg-gradient:
-		hsl(220, 10%, 12%) 10%, hsl(220, 6%, 8%) 70%, hsl(240, 3%, 8%);
+	--bg-base: hsl(220, 12%, 5%);
+	--bg-light: rgba(255, 255, 255, 0.04);
+	--bg-dark: rgba(255, 255, 255, 0.06);
+	--bg-gradient: linear-gradient(
+		135deg,
+		hsl(220, 15%, 10%) 0%,
+		hsl(220, 10%, 8%) 50%,
+		hsl(240, 8%, 6%) 100%
+	);
 
-	--overlay-bg: rgba(0, 0, 0, 0.728);
-	--bg-surface-solid: #1e1e1e;
+	--overlay-bg: rgba(0, 0, 0, 0.65);
+	--bg-surface-solid: hsl(220, 12%, 8%);
 
 	--accent: hsl(213, 95%, 65%);
-	--accent-soft: hsla(213, 95%, 65%, 0.1);
-	--accent-glow: hsla(213, 95%, 65%, 0.28);
+	--accent-soft: hsla(213, 95%, 65%, 0.15);
+	--accent-glow: hsla(213, 95%, 65%, 0.35);
 
-	--glass: rgba(255, 255, 255, 0.045);
-	--glass-hover: rgba(255, 255, 255, 0.075);
-	--glass-border: rgba(255, 255, 255, 0.07);
-	--glass-border-strong: rgba(255, 255, 255, 0.12);
-	--blur: blur(34px);
+	--glass: rgba(255, 255, 255, 0.06);
+	--glass-hover: rgba(255, 255, 255, 0.1);
+	--glass-active: rgba(255, 255, 255, 0.12);
+	--glass-border: rgba(255, 255, 255, 0.1);
+	--glass-border-strong: rgba(255, 255, 255, 0.18);
+	--blur: blur(40px) saturate(195%);
+	--glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+	--glass-shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.2);
 
-	--text-1: hsl(30, 8%, 94%);
-	--text-2: hsl(25, 5%, 60%);
-	--text-3: hsl(25, 4%, 36%);
+	--text-1: hsl(210, 12%, 96%);
+	--text-2: hsl(210, 8%, 70%);
+	--text-3: hsl(210, 6%, 45%);
 
 	/* ── Cover gradient (theme-aware) ── */
-	--cover-gradient-start: hsla(220, 20%, 16%, 0.95);
-	--cover-gradient-mid: hsla(220, 14%, 12%, 0.92);
-	--cover-gradient-end: hsla(220, 10%, 10%, 0.88);
+	--cover-gradient-start: hsla(220, 25%, 14%, 0.96);
+	--cover-gradient-mid: hsla(220, 20%, 10%, 0.94);
+	--cover-gradient-end: hsla(220, 15%, 8%, 0.9);
 
 	/* ── Feedback colors ── */
 	--error: rgb(255, 74, 74);
@@ -70,6 +77,8 @@
 body {
 	margin: 0;
 	font-family: var(--font-body);
+	background: var(--bg-base);
+	color: var(--text-1);
 }
 
 /* ══════════════════════════════════════
@@ -109,7 +118,9 @@ a {
 	display: grid;
 	color: var(--text-1);
 	background-color: var(--bg-base);
-	/* background-image: linear-gradient(var(--bg-gradient)); */
+	background-image: linear-gradient(var(--bg-gradient));
+	background-size: cover;
+	background-repeat: no-repeat;
 	position: relative;
 	scroll-behavior: smooth;
 	transition: filter 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
@@ -167,9 +178,10 @@ a {
 	flex-direction: column;
 	gap: 32px;
 	border-right: 1px solid var(--glass-border);
-	background: var(--bg-dark);
-	backdrop-filter: blur(30px);
-	-webkit-backdrop-filter: blur(30px);
+	background: var(--glass);
+	backdrop-filter: var(--blur);
+	-webkit-backdrop-filter: var(--blur);
+	box-shadow: var(--glass-shadow-sm);
 	transition: all 0.35s cubic-bezier(0.25, 1, 0.5, 1);
 	overflow-x: hidden;
 	will-change: padding, gap, width;
@@ -216,7 +228,7 @@ a {
 .logo {
 	display: flex;
 	align-items: center;
-	gap: 6px;
+	gap: 8px;
 	padding: 0 2px;
 	min-width: 0;
 	flex-shrink: 1;
@@ -227,17 +239,37 @@ a {
 .logo-icon {
 	width: 28px;
 	height: 28px;
-	border-radius: 6px;
-	background: var(--accent);
+	border-radius: 9px;
+	background: linear-gradient(150deg, #34d399 0%, #06b6d4 55%, #3b82f6 100%);
 	display: grid;
 	place-items: center;
-	font-size: 10px;
-	box-shadow: 0 0 12px var(--accent-glow);
+	font-size: 12px;
+	box-shadow:
+		0 8px 20px rgb(6 182 212 / 35%),
+		inset 0 0 0 1px rgb(255 255 255 / 18%);
 	flex-shrink: 0;
+	position: relative;
+	overflow: hidden;
 }
-.bi .bi-music-note {
-	font-size: 1.2rem;
+
+.logo-icon i {
+	font-size: 0.85rem;
+	color: #03191c;
+	z-index: 2;
 }
+
+.logo-orb-ring {
+	position: absolute;
+	inset: 3px;
+	border: 1px solid rgb(255 255 255 / 35%);
+	border-radius: 7px;
+	z-index: 1;
+}
+
+.logo-embedded {
+	filter: drop-shadow(0 1px 0 rgb(255 255 255 / 4%));
+}
+
 .logo-text {
 	font-family: var(--font-head);
 	font-weight: 800;
@@ -250,7 +282,7 @@ a {
 	min-width: 0;
 }
 .logo-text span {
-	color: var(--accent);
+	color: #06b6d4;
 }
 .nav-icons {
 	font-size: 1.1rem;
@@ -586,10 +618,11 @@ a {
 	grid-template-columns: 1fr 2fr 1fr;
 	align-items: center;
 	gap: 16px;
-	background: var(--bg-dark);
-	/* backdrop-filter: blur(var(--blur)); */
-	/* -webkit-backdrop-filter: blur(40px);
-	border-top: 1px solid var(--glass-border); */
+	background: var(--glass);
+	backdrop-filter: var(--blur);
+	-webkit-backdrop-filter: var(--blur);
+	border-top: 1px solid var(--glass-border);
+	box-shadow: var(--glass-shadow-sm);
 }
 .player-track {
 	display: flex;
@@ -920,11 +953,14 @@ a {
 	font-family: var(--font-body);
 	text-decoration: none;
 	transition: all 0.2s;
-	backdrop-filter: blur(10px);
+	backdrop-filter: var(--blur);
+	-webkit-backdrop-filter: var(--blur);
 }
 .btn-back:hover {
-	background: var(--glass-border);
+	background: var(--glass-hover);
+	border-color: var(--glass-border-strong);
 	transform: translateY(-2px);
+	box-shadow: var(--glass-shadow-sm);
 }
 .quick-links {
 	display: flex;
@@ -947,11 +983,14 @@ a {
 	text-decoration: none;
 	transition: all 0.2s;
 	font-family: var(--font-body);
+	backdrop-filter: var(--blur);
+	-webkit-backdrop-filter: var(--blur);
 }
 .quick-link:hover {
-	background: var(--accent-soft);
-	border-color: rgba(56, 152, 255, 0.22);
+	background: var(--glass-hover);
+	border-color: var(--accent-soft);
 	color: var(--accent);
+	box-shadow: 0 0 12px var(--accent-soft);
 }
 .top-logo {
 	/* position: absolute;
@@ -1048,4 +1087,42 @@ a {
 		opacity: 0;
 		transform: translateY(-40px) rotate(-5deg);
 	}
+}
+
+/* ══════════════════════════════════════
+   LIGHT THEME OVERRIDES
+══════════════════════════════════════ */
+[data-theme="light"] {
+	--bg-base: hsl(220, 20%, 96%);
+	--bg-light: rgba(255, 255, 255, 0.55);
+	--bg-dark: rgba(0, 0, 0, 0.05);
+	--bg-gradient: linear-gradient(
+		135deg,
+		hsl(220, 25%, 99%) 0%,
+		hsl(220, 20%, 95%) 50%,
+		hsl(220, 18%, 91%) 100%
+	);
+	--overlay-bg: rgba(255, 255, 255, 0.62);
+	--bg-surface-solid: hsl(220, 30%, 98%);
+
+	--accent: hsl(213, 95%, 52%);
+	--accent-soft: hsla(213, 95%, 52%, 0.12);
+	--accent-glow: hsla(213, 95%, 52%, 0.22);
+
+	--glass: rgba(255, 255, 255, 0.55);
+	--glass-hover: rgba(255, 255, 255, 0.75);
+	--glass-active: rgba(255, 255, 255, 0.85);
+	--glass-border: rgba(255, 255, 255, 0.55);
+	--glass-border-strong: rgba(0, 0, 0, 0.1);
+	--blur: blur(40px) saturate(210%);
+	--glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+	--glass-shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.06);
+
+	--text-1: hsl(220, 25%, 10%);
+	--text-2: hsl(220, 15%, 35%);
+	--text-3: hsl(220, 10%, 55%);
+
+	--cover-gradient-start: hsla(220, 28%, 98%, 0.96);
+	--cover-gradient-mid: hsla(220, 22%, 96%, 0.94);
+	--cover-gradient-end: hsla(220, 18%, 93%, 0.9);
 }

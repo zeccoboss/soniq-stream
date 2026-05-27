@@ -22,7 +22,7 @@ export const HomePage = async (ctx) => {
 
 	let data = {
 		user: store?.auth.user ?? null,
-		isLoggedIn: store.isLoggedIn,
+		isLoggedIn: store?.auth?.isLoggedIn || !!store?.auth?.user,
 
 		// Discover
 		genres: [],
@@ -86,7 +86,7 @@ export const HomePage = async (ctx) => {
 				data = {
 					...feedCache.data,
 					user: store?.auth.user ?? null,
-					isLoggedIn: store.isLoggedIn,
+					isLoggedIn: store?.auth?.isLoggedIn || !!store?.auth?.user,
 				};
 				state = "content";
 				await render();
@@ -97,7 +97,7 @@ export const HomePage = async (ctx) => {
 			await render();
 
 			data.user = store?.auth.user ?? null;
-			data.isLoggedIn = store.isLoggedIn;
+			data.isLoggedIn = store?.auth?.isLoggedIn || !!store?.auth?.user;
 
 			controller?.abort();
 			controller = new AbortController();
@@ -145,12 +145,9 @@ export const HomePage = async (ctx) => {
 
 			const [exploreResult, discoverResult, forYouResult] =
 				await Promise.allSettled([
-					trackService.getExploreFeed({ limit: FEED_LIMIT, signal }),
-					trackService.getDiscoverFeed({ limit: FEED_LIMIT, signal }),
-					trackService.getForYouFeed({
-						userId: store?.user?.id ?? null,
-						signal,
-					}),
+					trackService.getExploreFeed({ limit: FEED_LIMIT }, signal),
+					trackService.getDiscoverFeed({ limit: FEED_LIMIT }, signal),
+					trackService.getForYouFeed({}, signal),
 					skeletonDelayTimer,
 				]);
 
@@ -189,13 +186,18 @@ export const HomePage = async (ctx) => {
 			// ── For You Feed Parsing ────────────────────────
 			if (forYouResult.status === "fulfilled") {
 				const forYouRes = forYouResult.value;
+				data.isLoggedIn =
+					forYouRes?.isLoggedIn ??
+					(store?.auth?.isLoggedIn || !!store?.auth?.user);
 				data.recentPlays = forYouRes.recentPlays ?? [];
 				data.liked = forYouRes.liked ?? [];
 				data.genreRecs = forYouRes.genreRecs ?? [];
 				data.popularRightNow =
 					forYouRes.popularRightNow ?? data.popularRightNow;
 				data.topGenre = forYouRes.topGenre ?? null;
-				data.hasEnoughData = data.recentPlays.length >= 3;
+				data.hasEnoughData =
+					forYouRes?.hasEnoughData ??
+					(data.recentPlays.length > 0 || data.liked.length > 0);
 			} else {
 				console.error(
 					"[HomePage] For You feed failed:",

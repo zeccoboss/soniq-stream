@@ -43,6 +43,19 @@ const ImageSchema = new Schema(
 );
 
 ImageSchema.virtual("url").get(function () {
+	if (
+		this.storage?.type === "cloudinary" &&
+		typeof this.storage?.baseUrl === "string"
+	) {
+		return this.storage.baseUrl;
+	}
+	if (
+		typeof this.storage?.baseUrl === "string" &&
+		(this.storage.baseUrl.includes("/upload/") ||
+			this.storage.baseUrl.includes("res.cloudinary.com"))
+	) {
+		return this.storage.baseUrl;
+	}
 	return new URL(this.storage.key, this.storage.baseUrl).href;
 });
 

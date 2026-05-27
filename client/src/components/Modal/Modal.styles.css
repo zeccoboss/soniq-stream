@@ -25,18 +25,16 @@
 	width: 100%;
 	max-width: 400px;
 	padding: 32px 28px;
-	background: var(--bg-light);
-	border: 1px solid var(--glass-border);
+	background: var(--glass);
+	backdrop-filter: var(--blur);
+	-webkit-backdrop-filter: var(--blur);
+	border: 1px solid var(--glass-border-strong);
 	border-radius: var(--radius-xl);
-	box-shadow:
-		0 24px 60px rgba(0, 0, 0, 0.5),
-		0 4px 16px rgba(0, 0, 0, 0.3);
+	box-shadow: var(--glass-shadow);
 	position: relative;
 	z-index: 1;
 	animation: modal-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
 	will-change: transform, opacity;
-	background-color: var(--glass);
-	filter: blur(100%);
 }
 
 @keyframes modal-in {

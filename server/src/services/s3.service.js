@@ -83,8 +83,10 @@ const uploadToCloudinary = (buffer, folder, filename) => {
 			{ folder, public_id: filename },
 			(error, result) => {
 				if (error) return reject(error);
-				// Return secure URL or public_id depending on what you save in your DB
-				resolve(result.secure_url);
+				resolve({
+					secureUrl: result.secure_url,
+					publicId: result.public_id,
+				});
 			},
 		);
 		uploadStream.end(buffer);
@@ -97,16 +99,21 @@ const uploadToCloudinary = (buffer, folder, filename) => {
 const storeTrackCover = async (cover) => {
 	if (!cover || typeof cover !== "object") return null;
 
-	const ext = cover.format.slice(cover.format.indexOf("/") + 1);
+	const ext = (cover.format || "image/jpeg").split("/")[1] || "jpeg";
 	const filename = cover.fileName;
 
 	if (isProduction) {
 		try {
-			return await uploadToCloudinary(
+			const uploaded = await uploadToCloudinary(
 				Buffer.from(cover.data),
 				"soniq_stream/covers",
 				filename,
 			);
+			return {
+				key: uploaded.publicId,
+				baseUrl: uploaded.secureUrl,
+				type: "cloudinary",
+			};
 		} catch (err) {
 			console.error("[Cloudinary] Cover upload failed", err);
 			return null;
@@ -115,12 +122,18 @@ const storeTrackCover = async (cover) => {
 
 	// Local Fallback to S3
 	const key = `${filename}.${ext}`;
-	return uploadObject({
+	const uploadedKey = await uploadObject({
 		bucket: BUCKETS.images,
 		key,
 		buffer: Buffer.from(cover.data),
 		mimeType: cover.format ?? "image/jpeg",
 	});
+	if (!uploadedKey) return null;
+	return {
+		key: uploadedKey,
+		baseUrl: process.env.MINIO_ENDPOINT || "http://127.0.0.1:9000",
+		type: "s3",
+	};
 };
 
 /**
@@ -135,7 +148,16 @@ const storeImage = async (file, uniqueName) => {
 				file.fieldname === "avatar"
 					? "soniq_stream/avatars"
 					: "soniq_stream/banners";
-			return await uploadToCloudinary(file.buffer, folder, uniqueName);
+			const uploaded = await uploadToCloudinary(
+				file.buffer,
+				folder,
+				uniqueName,
+			);
+			return {
+				key: uploaded.publicId,
+				baseUrl: uploaded.secureUrl,
+				type: "cloudinary",
+			};
 		} catch (err) {
 			console.error("[Cloudinary] Image upload failed", err);
 			return null;
@@ -145,12 +167,18 @@ const storeImage = async (file, uniqueName) => {
 	// Local Fallback to S3
 	const ext = file.mimetype.slice(file.mimetype.indexOf("/") + 1);
 	const key = `${uniqueName}.${ext}`;
-	return uploadObject({
+	const uploadedKey = await uploadObject({
 		bucket: BUCKETS.images,
 		key,
 		buffer: file.buffer,
 		mimeType: file.mimetype,
 	});
+	if (!uploadedKey) return null;
+	return {
+		key: uploadedKey,
+		baseUrl: process.env.MINIO_ENDPOINT || "http://127.0.0.1:9000",
+		type: "s3",
+	};
 };
 
 /**

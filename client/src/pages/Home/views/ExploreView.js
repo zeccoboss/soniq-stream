@@ -77,7 +77,6 @@ const trendingArtistsSection = (artists = []) => {
 			<div class="home-artist-scroll">
 				${artists
 					.map((a) => {
-						console.log(a);
 						return `
 					<div class="home-artist-card" data-username="${a.username ?? ""}" data-uuid="${a.uuid ?? ""}">
 						<div class="home-artist-avatar">

@@ -25,7 +25,10 @@ const generateUniqueName = (prefix) => {
  * then create and return an ImageModel record.
  */
 const processTrackCover = async (user, common) => {
-	const cover = selectCover(common.picture);
+	const pictures = Array.isArray(common?.picture) ? common.picture : null;
+	if (!pictures?.length) return null;
+
+	const cover = selectCover(pictures);
 	if (!cover?.data) return null;
 
 	let dimensions = { width: 0, height: 0 };
@@ -44,20 +47,8 @@ const processTrackCover = async (user, common) => {
 	const coverName = generateUniqueName("Cover");
 	cover.fileName = coverName;
 
-	const storedKey = await storeTrackCover(cover);
-	if (!storedKey) return null;
-
-	// Determine DB payload structure based on whether it's a Cloudinary URL or MinIO key
-	const isCloudinaryUrl =
-		storedKey.startsWith("http://") || storedKey.startsWith("https://");
-
-	const storagePayload = {
-		key: isCloudinaryUrl ? `soniq_stream/covers/${coverName}` : storedKey,
-		baseUrl: isCloudinaryUrl
-			? storedKey
-			: process.env.MINIO_ENDPOINT || "http://127.0.0.1:9000",
-		type: isProduction ? "cloudinary" : "s3",
-	};
+	const storedImage = await storeTrackCover(cover);
+	if (!storedImage) return null;
 
 	try {
 		const image = await ImageModel.create({
@@ -68,7 +59,7 @@ const processTrackCover = async (user, common) => {
 			format: cover.format ?? "image/jpeg",
 			size: Buffer.byteLength(cover.data),
 			dimensions,
-			storage: storagePayload,
+			storage: storedImage,
 		});
 		return image._id;
 	} catch (err) {
@@ -81,7 +72,8 @@ const processTrackCover = async (user, common) => {
  * Shape raw music-metadata output into a clean TrackModel payload.
  */
 const buildTrackPayload = (file, trackKey, coverId, metadata) => {
-	const { common, format } = metadata;
+	const common = metadata?.common ?? {};
+	const format = metadata?.format ?? {};
 
 	// Track endpoint switches between Backblaze API and local MinIO link
 	const trackBaseUrl = isProduction
@@ -97,11 +89,13 @@ const buildTrackPayload = (file, trackKey, coverId, metadata) => {
 		album: common.album ?? null,
 		bitrate: format.bitrate ?? null,
 		codec: format.codec ?? null,
-		duration: format.duration ?? null,
-		hasAudio: format.hasAudio ?? true,
+		duration: Number.isFinite(format.duration)
+			? Math.round(format.duration)
+			: null,
+		hasAudio: format.hasAudio ?? false,
 		hasVideo: format.hasVideo ?? false,
 		hasCover: !!coverId,
-		title: common.title ?? null,
+		title: common.title ?? file.originalname ?? null,
 		sampleRate: format.sampleRate ?? null,
 		year: common.year ?? null,
 		format: file.mimetype ?? "track/mpeg",

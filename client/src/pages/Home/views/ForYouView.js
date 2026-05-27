@@ -1,4 +1,5 @@
 import { buildNode } from "@zecco/utils/dom/build-node.js";
+import { formatTrackDuration } from "@zecco/utils/format-track-duration.js";
 
 /**
  * ForYouView — For You tab content
@@ -56,7 +57,7 @@ const trackRow = (track, index) =>
 			${track.genre ? `<div class="home-track-tags"><span class="home-track-tag">${track.genre.toUpperCase()}</span></div>` : ""}
 		</div>
 		<div class="home-track-actions">
-			<span class="home-track-dur">${track.duration ?? ""}</span>
+			<span class="home-track-dur">${formatTrackDuration(track.duration)}</span>
 			<button class="home-track-more" aria-label="More options">
 				<i class="bi bi-three-dots-vertical"></i>
 			</button>

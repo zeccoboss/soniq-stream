@@ -26,7 +26,9 @@ import { appConfig } from "@zecco/config/app.config";
 export const LoginDesktop = async ({
 	state = "idle",
 	error = "",
+	errorField = "",
 	draft = {},
+	formValues = {},
 	ctx,
 }) => {
 	const root = new CreateElement("section");
@@ -94,12 +96,12 @@ export const LoginDesktop = async ({
 						<div class="login-field">
 							<label class="login-label" for="login-identifier">Email address</label>
 							<input
-								class="login-input ${state === "error" ? "login-input--error" : ""}"
+								class="login-input ${state === "error" && errorField === "identifier" ? "login-input--error" : ""}"
 								id="login-identifier"
 								type="email"
 								placeholder="ada@example.com"
 								autocomplete="email"
-								value="${draft.email ?? ""}"
+								value="${formValues.identifier ?? draft.email ?? ""}"
 								${state === "loading" ? "disabled" : ""}
 							/>
 						</div>
@@ -111,11 +113,12 @@ export const LoginDesktop = async ({
 							</div>
 							<div class="login-input-eye-wrap">
 								<input
-									class="login-input ${state === "error" ? "login-input--error" : ""}"
+									class="login-input ${state === "error" && errorField === "password" ? "login-input--error" : ""}"
 									id="login-pwd"
 									type="password"
 									placeholder="Enter your password"
 									autocomplete="current-password"
+									value="${formValues.password ?? ""}"
 									${state === "loading" ? "disabled" : ""}
 								/>
 								<button class="login-eye-btn" id="login-eye-btn" type="button"

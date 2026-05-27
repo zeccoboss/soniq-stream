@@ -21,7 +21,10 @@
 	display: grid;
 	grid-template-columns: 1fr 1fr;
 	min-height: 100dvh;
-	background: var(--bg-base);
+	background-color: var(--bg-base);
+	background-image: linear-gradient(var(--bg-gradient));
+	background-size: cover;
+	background-repeat: no-repeat;
 }
 
 /* ── Branded left panel ── */
@@ -178,7 +181,10 @@
 	display: flex;
 	flex-direction: column;
 	min-height: 100dvh;
-	background: var(--bg-base);
+	background-color: var(--bg-base);
+	background-image: linear-gradient(var(--bg-gradient));
+	background-size: cover;
+	background-repeat: no-repeat;
 	padding: 0 0 32px;
 }
 
@@ -460,6 +466,16 @@
 	background: hsla(213, 80%, 58%, 0.04);
 	box-shadow: 0 0 0 3px hsla(213, 80%, 58%, 0.1);
 }
+.reg-input--error {
+	border-color: rgba(255, 74, 74, 0.5) !important;
+	background: rgba(255, 74, 74, 0.04) !important;
+	box-shadow: 0 0 0 3px rgba(255, 74, 74, 0.08) !important;
+}
+.reg-input--warning {
+	border-color: rgba(245, 158, 11, 0.55) !important;
+	background: rgba(245, 158, 11, 0.06) !important;
+	box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.12) !important;
+}
 /* Date + select */
 .reg-input[type="date"] {
 	color-scheme: dark;
@@ -468,6 +484,16 @@
 	cursor: pointer;
 	appearance: none;
 	-webkit-appearance: none;
+	background-color: hsl(228, 20%, 13%);
+	color: var(--text-1);
+	color-scheme: dark;
+}
+.reg-select option {
+	background-color: hsl(228, 20%, 13%);
+	color: var(--text-1);
+}
+.reg-select option:disabled {
+	color: var(--text-3);
 }
 
 /* @ prefix input */
@@ -602,6 +628,16 @@
 	flex-shrink: 0;
 	margin-top: 1px;
 	accent-color: var(--accent);
+}
+.reg-checkbox--error {
+	outline: 2px solid rgba(255, 74, 74, 0.45);
+	outline-offset: 1px;
+}
+.reg-genre-grid--error {
+	padding: 10px;
+	border-radius: var(--radius-sm);
+	border: 1px solid rgba(255, 74, 74, 0.35);
+	background: rgba(255, 74, 74, 0.06);
 }
 .reg-terms-label {
 	font-size: 0.62rem;

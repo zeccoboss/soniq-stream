@@ -20,30 +20,17 @@
 }
 
 /* ── Single toast ── */
-/* .toast {
-	display: flex;
-	align-items: center;
-	gap: 10px;
-	padding: 12px 14px;
-	border-radius: var(--radius-md);
-	background: var(--bg-light);
-	border: 1px solid var(--glass-border);
-	box-shadow:
-		0 4px 16px rgba(0, 0, 0, 0.35),
-		0 1px 4px rgba(0, 0, 0, 0.2);
-	pointer-events: all;
-	animation: toast-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
-	will-change: transform, opacity;
-	min-width: 0;
-} */
 .toast {
 	display: flex;
 	align-items: center;
 	gap: 10px;
 	padding: 12px 14px;
 	border-radius: var(--radius-md);
-	background: var(--bg-surface-solid, #1e1e1e);
+	background: var(--glass);
+	backdrop-filter: var(--blur);
+	-webkit-backdrop-filter: var(--blur);
 	border: 1px solid var(--glass-border);
+	box-shadow: var(--glass-shadow-sm);
 	pointer-events: all;
 	animation: toast-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
 	will-change: transform, opacity;

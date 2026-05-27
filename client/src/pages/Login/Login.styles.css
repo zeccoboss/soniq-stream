@@ -20,7 +20,10 @@
 	display: grid;
 	grid-template-columns: 1fr 1fr;
 	min-height: 100dvh;
-	background: var(--bg-base);
+	background-color: var(--bg-base);
+	background-image: linear-gradient(var(--bg-gradient));
+	background-size: cover;
+	background-repeat: no-repeat;
 }
 
 /* ── Branded left panel ── */
@@ -186,7 +189,10 @@
 	display: flex;
 	flex-direction: column;
 	min-height: 100dvh;
-	background: var(--bg-base);
+	background-color: var(--bg-base);
+	background-image: linear-gradient(var(--bg-gradient));
+	background-size: cover;
+	background-repeat: no-repeat;
 }
 
 .login-mob-topbar {

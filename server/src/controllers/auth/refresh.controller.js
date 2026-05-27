@@ -1,6 +1,9 @@
 const jwt = require("jsonwebtoken");
 const UserModel = require("../../models/user.model");
-const { cookieOptions } = require("../../helpers/cookie-options.helper");
+const {
+	cookieOptions,
+	clearCookieOptions,
+} = require("../../helpers/cookie-options.helper");
 
 const handleRefreshToken = async (req, res) => {
 	const refreshToken = req.cookies?.jwt;
@@ -19,11 +22,7 @@ const handleRefreshToken = async (req, res) => {
 
 		if (!user) {
 			// Token not in DB — could be reuse attack, clear cookie
-			res.clearCookie("jwt", {
-				httpOnly: true,
-				sameSite: "strict",
-				secure: process.env.NODE_ENV === "production",
-			});
+			res.clearCookie("jwt", clearCookieOptions);
 			return res.status(403).json({ success: false, message: "Forbidden" });
 		}
 
@@ -32,7 +31,7 @@ const handleRefreshToken = async (req, res) => {
 			refreshToken,
 			process.env.REFRESH_TOKEN_SECRET,
 			async (err, decoded) => {
-				if (err || user._id.toString() !== decoded.id) {
+				if (err || user._id.toString() !== decoded._id) {
 					return res
 						.status(403)
 						.json({ success: false, message: "Forbidden" });
@@ -40,14 +39,20 @@ const handleRefreshToken = async (req, res) => {
 
 				// ── Issue new access token ─────────────────────────────────────────
 				const newAccessToken = jwt.sign(
-					{ UserInfo: { id: user._id, roles: user.roles } },
+					{
+						UserInfo: {
+							_id: user._id,
+							uuid: user.uuid,
+							roles: user.roles,
+						},
+					},
 					process.env.ACCESS_TOKEN_SECRET,
 					{ expiresIn: "15m" },
 				);
 
 				// ── Rotate refresh token (issue a new one, invalidate old) ─────────
 				const newRefreshToken = jwt.sign(
-					{ id: user._id },
+					{ _id: user._id, uuid: user.uuid },
 					process.env.REFRESH_TOKEN_SECRET,
 					{ expiresIn: "7d" },
 				);

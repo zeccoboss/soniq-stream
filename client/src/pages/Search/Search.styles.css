@@ -30,8 +30,10 @@
 	position: sticky;
 	top: 0;
 	z-index: 4;
-	background: var(--bg-base);
-	background-image: linear-gradient(var(--bg-gradient));
+	background: var(--glass);
+	backdrop-filter: var(--blur);
+	-webkit-backdrop-filter: var(--blur);
+	box-shadow: var(--glass-shadow-sm);
 }
 .srch-header {
 	padding: 20px 24px 0;

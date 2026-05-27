@@ -73,8 +73,8 @@ async function updateImage(req, res) {
 		const uniqueName = `${type}-${userId}-${uuid}`;
 
 		// ── Upload new image to S3 ───────────────────────────────────────────
-		const storedKey = await storeImage(file, uniqueName);
-		if (!storedKey) {
+		const storedImage = await storeImage(file, uniqueName);
+		if (!storedImage) {
 			return res.status(500).json({
 				success: false,
 				message: "Image upload to storage failed",
@@ -101,11 +101,7 @@ async function updateImage(req, res) {
 			format: file.mimetype,
 			size: file.size,
 			dimensions: { width: meta.width, height: meta.height },
-			storage: {
-				key: storedKey,
-				baseUrl: process.env.S3_ENDPOINT,
-				type: "s3",
-			},
+			storage: storedImage,
 		});
 
 		// ── Update user reference ──────────────────────────────────────────────

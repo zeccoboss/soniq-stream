@@ -1,4 +1,3 @@
-import AppLogo from "@zecco/components/AppLogo";
 import { router } from "@zecco/routes/router";
 import { store } from "@zecco/store/store";
 import {
@@ -9,9 +8,9 @@ import { buildNode } from "@zecco/utils/dom/build-node";
 import CreateElement from "@zecco/utils/dom/create-element";
 
 const Aside = () => {
-	// ── Restore collapsed state from sessionStorage ──
-	const isSidebarCollapsed =
-		readFromSessionStorage("sidebar-collapsed") === "true";
+	// ── Restore collapsed state from sessionStorage (default: collapsed) ──
+	const savedSidebarState = readFromSessionStorage("sidebar-collapsed");
+	const isSidebarCollapsed = savedSidebarState !== "false";
 
 	// Create element
 	const sidebar = new CreateElement("aside");
@@ -75,74 +74,140 @@ const Aside = () => {
 		`;
 	};
 
+	const hasAdminRole = (user) => {
+		if (!user) return false;
+
+		// Keep in sync with route guard expectation: roles includes "Admin"
+		if (Array.isArray(user.roles) && user.roles.includes("Admin")) return true;
+
+		// Fallback for payloads that may expose lowercase role strings
+		if (
+			Array.isArray(user.roles) &&
+			user.roles.some((role) => String(role).toLowerCase() === "admin")
+		) {
+			return true;
+		}
+
+		// Boolean fallback only when explicitly true boolean
+		return user.isAdmin === true;
+	};
+
+	const generateMenuContent = () => {
+		const user = store.auth.user;
+		const isLoggedIn = !!user;
+		const isAdmin = hasAdminRole(user);
+
+		return `
+			<nav class="nav">
+				<div class="nav-label">Menu</div>
+				<div class="nav-item">
+					<a href="/" id="home-nav-link" data-nav-link="/" class="nav-links active-nav">
+						<i class="bi bi-house-fill nav-icons"></i>
+						<span>Home</span>
+					</a>
+				</div>
+				<div class="nav-item">
+					<a href="/search" id="search-nav-link" data-nav-link="/search" class="nav-links">
+						<i class="bi bi-search nav-icons"></i>
+						<span>Search</span>
+					</a>
+				</div>
+				${
+					isLoggedIn
+						? `
+					<div class="nav-item">
+						<a href="/library" id="lib-nav-link" data-nav-link="/library" class="nav-links library-nav">
+							<i class="bi bi-music-note-list nav-icons"></i>
+							<span>Library</span>
+						</a>
+					</div>
+					<div class="nav-item">
+						<a href="/upload" id="upload-nav-link" data-nav-link="/upload" class="nav-links">
+							<i class="bi bi-cloud-upload nav-icons"></i>
+							<span>Upload</span>
+						</a>
+					</div>
+					<div class="nav-item">
+						<a href="/dashboard" id="dashboard-nav-link" data-nav-link="/dashboard" class="nav-links">
+							<i class="bi bi-speedometer2 nav-icons"></i>
+							<span>Dashboard</span>
+						</a>
+					</div>
+					${
+						isAdmin
+							? `
+					<div class="nav-item">
+						<a href="/admin" id="admin-nav-link" data-nav-link="/admin" class="nav-links">
+							<i class="bi bi-shield-lock nav-icons"></i>
+							<span>Admin</span>
+						</a>
+					</div>
+					`
+							: ""
+					}
+				`
+						: ""
+				}
+			</nav>
+			<nav class="nav">
+				<div class="nav-label">Account</div>
+				${
+					isLoggedIn
+						? `
+					<div class="nav-item">
+						<a href="/profile" id="profile-nav-link" data-nav-link="/profile" class="nav-links">
+							<i class="bi bi-person-circle nav-icons"></i>
+							<span>Profile</span>
+						</a>
+					</div>
+					<div class="nav-item">
+						<a href="/settings" id="settings-nav-link" data-nav-link="/settings" class="nav-links">
+							<i class="bi bi-sliders2 nav-icons"></i>
+							<span>Settings</span>
+						</a>
+					</div>
+				`
+						: `
+					<div class="nav-item">
+						<a href="/auth/login" id="login-nav-link" data-nav-link="/auth/login" class="nav-links">
+							<i class="bi bi-box-arrow-in-right nav-icons"></i>
+							<span>Login</span>
+						</a>
+					</div>
+					<div class="nav-item">
+						<a href="/auth/register/?step=1" id="register-nav-link" data-nav-link="/auth/register" class="nav-links">
+							<i class="bi bi-person-plus nav-icons"></i>
+							<span>Sign up</span>
+						</a>
+					</div>
+				`
+				}
+			</nav>
+		`;
+	};
+
 	// Create the header containing the logo and the toggle button
 	const headerNode = buildNode(`
 		<div class="sidebar-header">
-			<div id="logo-wrapper" class="logo-wrapper" title="Toggle Menu"></div>
+			<div id="logo-wrapper" class="logo-wrapper" title="Toggle Menu">
+				<div class="logo logo-embedded" id="app-logo">
+					<div class="logo-icon logo-orb">
+						<span class="logo-orb-ring"></span>
+						<i class="bi bi-soundwave"></i>
+					</div>
+					<h1 class="logo-text">Soniq<span>Stream</span></h1>
+				</div>
+			</div>
 			<button id="sidebar-toggle" class="sidebar-toggle" title="Collapse Menu">
 				<i class="bi bi-layout-sidebar-inset"></i>
 			</button>
 		</div>
 	`);
 
-	// Inject the AppLogo into the wrapper
-	headerNode.querySelector("#logo-wrapper").appendChild(AppLogo());
-
 	const content = `
-		<nav class="nav">
-			<div class="nav-label">Menu</div>
-			<div class="nav-item">
-				<a href="/" id="home-nav-link" data-nav-link="/" class="nav-links active-nav">
-					<i class="bi bi-house nav-icons"></i>
-					<span>Home</span>
-				</a>
-			</div>
-			<div class="nav-item">
-				<a href="/search" id="search-nav-link" data-nav-link="/search" class="nav-links">
-					<i class="bi bi-search nav-icons"></i>
-					<span>Search</span>
-				</a>
-			</div>
-			<div class="nav-item">
-				<a href="/library" id="lib-nav-link" data-nav-link="/library" class="nav-links library-nav">
-					<i class="bi bi-music-note-list nav-icons"></i>
-					<span>Library</span>
-				</a>
-			</div>
-			<div class="nav-item">
-				<a href="/upload" id="upload-nav-link" data-nav-link="/upload" class="nav-links">
-					<i class="bi bi-cloud-upload nav-icons"></i>
-					<span>Upload</span>
-				</a>
-			</div>
-			<div class="nav-item">
-				<a href="/dashboard" id="dashboard-nav-link" data-nav-link="/dashboard" class="nav-links">
-					<i class="bi bi-speedometer2 nav-icons"></i>
-					<span>Dashboard</span>
-				</a>
-			</div>
-			<div class="nav-item">
-				<a href="/admin" id="admin-nav-link" data-nav-link="/admin" class="nav-links">
-					<i class="bi bi-shield-lock nav-icons"></i>
-					<span>Admin</span>
-				</a>
-			</div>
-		</nav>
-		<nav class="nav">
-			<div class="nav-label">Account</div>
-			<div class="nav-item">
-				<a href="/profile" id="profile-nav-link" data-nav-link="/profile" class="nav-links">
-					<i class="bi bi-person-circle nav-icons"></i>
-					<span>Profile</span>
-				</a>
-			</div>
-			<div class="nav-item">
-				<a href="/settings" id="settings-nav-link" data-nav-link="/settings" class="nav-links">
-					<i class="bi bi-sliders2 nav-icons"></i>
-					<span>Settings</span>
-				</a>
-			</div>
-		</nav>
+		<div id="sidebar-dynamic-content">
+			${generateMenuContent()}
+		</div>
 		${generateFooterContent()}
 	`;
 
@@ -154,7 +219,7 @@ const Aside = () => {
 	requestAnimationFrame(() => {
 		const toggleBtn = sidebarElement.querySelector("#sidebar-toggle");
 		const logoWrapper = sidebarElement.querySelector("#logo-wrapper");
-		const sidebarFooter = sidebarElement.querySelector(".sidebar-footer");
+		let sidebarFooter = sidebarElement.querySelector(".sidebar-footer");
 		const appContainer = document.getElementById("app");
 
 		if (!toggleBtn || !logoWrapper) return; // Elements might not be mounted yet
@@ -164,8 +229,24 @@ const Aside = () => {
 			appContainer.classList.add("sidebar-collapsed");
 		}
 
+		// Navigate to profile on footer click
+		const handleFooterClick = () => {
+			if (!store.auth.user) {
+				router.navigate("/auth/login");
+				return;
+			}
+			router.navigate("/profile");
+		};
+
 		// ── Update footer when user changes ──
-		const updateFooter = () => {
+		const updateSidebarAuthContent = () => {
+			const navContentHost = sidebarElement.querySelector(
+				"#sidebar-dynamic-content",
+			);
+			if (navContentHost) {
+				navContentHost.innerHTML = generateMenuContent();
+			}
+
 			const newFooterHTML = generateFooterContent();
 			const footerPlaceholder =
 				sidebarElement.querySelector(".sidebar-footer");
@@ -174,24 +255,23 @@ const Aside = () => {
 				// Re-attach click listener to new footer
 				const newFooter = sidebarElement.querySelector(".sidebar-footer");
 				if (newFooter) {
+					sidebarFooter = newFooter;
 					newFooter.addEventListener("click", handleFooterClick);
 				}
 			}
 		};
 
 		// Subscribe to auth changes
-		const unsubscribeAuth = store.auth.on("auth_changed", updateFooter);
+		const unsubscribeAuth = store.auth.on(
+			"auth_changed",
+			updateSidebarAuthContent,
+		);
 
 		// Click toggle to shrink
 		const toggleCollapse = () => {
 			sidebarElement.classList.add("collapsed");
 			if (appContainer) appContainer.classList.add("sidebar-collapsed");
 			writeToSessionStorage("sidebar-collapsed", "true");
-		};
-
-		// Navigate to profile on footer click
-		const handleFooterClick = () => {
-			router.navigate("/profile");
 		};
 
 		// Toggle sidebar on logo/button click
