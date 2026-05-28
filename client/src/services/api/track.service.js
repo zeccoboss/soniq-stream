@@ -73,6 +73,7 @@ class TrackService extends BaseService {
 	async getAudioBuffer(url) {
 		try {
 			const res = await axios.get(url, {
+				withCredentials: true,
 				responseType: "arraybuffer",
 			});
 
