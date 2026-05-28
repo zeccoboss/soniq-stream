@@ -130,14 +130,13 @@ class MeService extends BaseService {
 	 * @param {Function} onProgress - Callback tracking percentage completion (0-100)
 	 * @param {AbortSignal} signal - Optional abort controller signal
 	 */
-	// Inside me.service.js
 	async uploadTrack(formData, onProgress, signal = null) {
 		return this.post(ENDPOINTS.UPLOAD.TRACK, formData, {
-			// ◄── Hits your /api/v1/tracks/upload endpoint
 			signal,
 			headers: {
-				"Content-Type": "multipart/form-data", // ◄── Tells the backend to expect a file stream
+				"Content-Type": "multipart/form-data",
 			},
+			timeout: 0, // ◄── OVERRIDES THE 15s GLOBAL TIMEOUT
 			onUploadProgress: (progressEvent) => {
 				if (progressEvent.total) {
 					const percentCompleted = Math.round(
