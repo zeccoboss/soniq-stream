@@ -14,8 +14,8 @@ import "./Dashboard.styles.css";
  * Data shape:
  *   user           { username, displayName, avatar, plan }
  *   stats          { plays, upload, followers, likes }
- *   recentUploads  [{ id, title, cover, plays, likes, genre, uploadedAt }]
- *   topTrack       { id, title, cover, plays, likes } | null
+ *   recentUploads  [{ uuid, title, cover, plays, likes, genre, uploadedAt }]
+ *   topTrack       { uuid, title, cover, plays, likes } | null
  *
  * @async
  * @param {Object} props
@@ -223,7 +223,7 @@ export const DashboardDesktop = async ({ state, ctx, data = {} }) => {
 										</span>
 									</div>
 								</div>
-								<a href="/player?track=${topTrack.id}" class="dash-top-play">
+								<a href="/player?track=${topTrack.uuid}" class="dash-top-play">
 									<i class="bi bi-play-fill"></i>
 								</a>
 							</div>
@@ -273,7 +273,7 @@ export const DashboardDesktop = async ({ state, ctx, data = {} }) => {
 									${recentUploads
 										.map(
 											(t) => `
-										<div class="dash-table-row" data-id="${t.id ?? ""}">
+										<div class="dash-table-row" data-uuid="${t.uuid ?? ""}">
 											<div class="dash-td dash-td--track">
 												<div class="dash-track-cover">
 													<img
@@ -304,7 +304,7 @@ export const DashboardDesktop = async ({ state, ctx, data = {} }) => {
 												}
 											</div>
 											<div class="dash-td">
-												<button class="dash-row-more" data-id="${t.id ?? ""}"
+												<button class="dash-row-more" data-uuid="${t.uuid ?? ""}"
 													aria-label="More options">
 													<i class="bi bi-three-dots-vertical"></i>
 												</button>

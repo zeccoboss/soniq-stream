@@ -42,11 +42,11 @@ export const ENDPOINTS = {
 		POPULAR: "/tracks/popular",
 		SEARCH: "/tracks/search",
 		UPLOAD: "/tracks/upload",
-		LIKE: (trackId) => `/tracks/${trackId}/like`,
-		STREAM: (trackId) => `/tracks/${trackId}/stream`,
-		METADATA: (trackId) => `/tracks/${trackId}/metadata`,
-		COMMENT: (trackId) => `/tracks/${trackId}/comment`,
-		SHARE: (trackId) => `/tracks/${trackId}/share`,
+		LIKE: (track_uuid) => `/tracks/${track_uuid}/like`,
+		STREAM: (track_uuid) => `/tracks/${track_uuid}/stream`,
+		METADATA: (track_uuid) => `/tracks/${track_uuid}/metadata`,
+		COMMENT: (track_uuid) => `/tracks/${track_uuid}/comment`,
+		SHARE: (track_uuid) => `/tracks/${track_uuid}/share`,
 	},
 
 	// ==================================================

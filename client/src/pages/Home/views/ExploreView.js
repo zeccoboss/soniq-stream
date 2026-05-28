@@ -39,8 +39,8 @@ const filterChips = (activeFilter = "all") => {
 			${filters
 				.map(
 					(f) => `
-				<button class="home-filter-chip ${activeFilter === f.id ? "active" : ""}"
-					data-filter="${f.id}">
+				<button class="home-filter-chip ${activeFilter === f.uuid ? "active" : ""}"
+					data-filter="${f.uuid}">
 					<i class="bi ${f.icon}"></i> ${f.label}
 				</button>`,
 				)
@@ -104,7 +104,7 @@ const trendingTracksSection = (tracks = []) => {
 				${tracks
 					.map(
 						(t) => `
-					<div class="home-track-card" data-id="${t.id ?? ""}">
+					<div class="home-track-card" data-uuid="${t.uuid ?? ""}">
 						<div class="home-track-card-cover">
 							${coverImg(t.cover, t.title)}
 							<button class="home-card-play" aria-label="Play ${t.title}">
@@ -131,7 +131,7 @@ const newThisWeekSection = (tracks = []) => {
 				${tracks
 					.map(
 						(t) => `
-					<div class="home-track-card" data-id="${t.id ?? ""}">
+					<div class="home-track-card" data-uuid="${t.uuid ?? ""}">
 						<div class="home-track-card-cover">
 							${coverImg(t.cover, t.title)}
 							<button class="home-card-play" aria-label="Play ${t.title}">
@@ -178,8 +178,8 @@ export const ExploreView = (data = {}, isMobile = false) => {
 				!hasContent
 					? exploreEmptyState()
 					: `${genreGrid(genres)}
-				   ${trendingArtistsSection(trendingArtists)}
 				   ${trendingTracksSection(trendingTracks)}
+				   ${trendingArtistsSection(trendingArtists)}
 				   ${newThisWeekSection(newThisWeek)}`
 			}
 		</div>

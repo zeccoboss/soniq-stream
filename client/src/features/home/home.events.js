@@ -1,87 +1,218 @@
-/**
- * home.events.js
- *
- * Handles user interactions for SoniqStream's home page.
- * Uses event delegation on main wrapper containers.
- */
+import { router } from "@zecco/routes/router.js";
+import { store } from "@zecco/store/store.js";
+import { toast } from "@zecco/components/Toast/Toast.js";
 
-export const homeEvents = (root, { state, setState, setData, ctx }) => {
-	// ── 1. Error State: Retry Button ─────────────────────────────
-	// Triggers a full re-fetch by setting state back to skeleton
-	const retryBtn =
-		root.querySelector("#home-retry-btn") ||
-		root.querySelector("#home-mob-retry-btn");
-	if (retryBtn) {
-		retryBtn.addEventListener("click", () => {
-			setState("skeleton");
-		});
+/**
+ * homeEvents — Home page interaction layer
+ *
+ * Wired after every render by HomePage.js.
+ * Uses event delegation wherever possible to avoid
+ * re-attaching listeners on genre/filter re-renders.
+ *
+ * Handlers:
+ * 1. Retry button          → setState("skeleton")
+ * 2. Search bars           → router.navigate("/search")
+ * 3. Genre chips           → filter tracks in-view, setData
+ * 4. Explore filter chips  → show/hide sections, setData
+ * 5. Track row click       → play via store.playTrackWithAuth
+ * 6. Track card click      → play via store.playTrackWithAuth
+ * 7. "See all" buttons     → router.navigate with correct query
+ * 8. Artist card click     → router.navigate to artist profile
+ * 9. Avatar click          → router.navigate("/profile")
+ * 10. Taste setup chips     → modal stubs (wired later)
+ * 11. For You empty banner  → router.navigate("/?tab=discover")
+ *
+ * @param {Element} root  — The rendered home section
+ * @param {Object}  api   — { state, setState, setData, ctx, data }
+ */
+export const homeEvents = (
+	root,
+	{ state, setState, setData, ctx, data = {} },
+) => {
+	if (state !== "content") {
+		// Only wire retry on non-content states
+		root
+			.querySelector("#home-retry-btn")
+			?.addEventListener("click", () => setState("skeleton"));
+		root
+			.querySelector("#home-mob-retry-btn")
+			?.addEventListener("click", () => setState("skeleton"));
+		return;
 	}
 
-	// ── 2. Global: Fake Search Bars ──────────────────────────────
-	// Pushes the user to the search route when they tap the search pill
-	const searchBars = root.querySelectorAll(
-		"#home-fake-search, #home-discover-search, #home-mob-search",
-	);
-	searchBars.forEach((bar) => {
-		bar.addEventListener("click", () => {
-			// Push to history and trigger the router
-			window.history.pushState({}, "", "/search");
-			window.dispatchEvent(new Event("popstate"));
-		});
-	});
+	// ── 1. Retry ─────────────────────────────────────────────
+	root
+		.querySelector("#home-retry-btn")
+		?.addEventListener("click", () => setState("skeleton"));
+	root
+		.querySelector("#home-mob-retry-btn")
+		?.addEventListener("click", () => setState("skeleton"));
 
-	// ── 3. Discover Tab: Genre Chips ─────────────────────────────
-	// Updates the UI state to highlight the active genre chip
+	// ── 2. Search bars → /search ─────────────────────────────
+	root
+		.querySelectorAll(
+			"#home-fake-search, #home-discover-search, #home-mob-search",
+		)
+		.forEach((bar) => {
+			bar.addEventListener("click", () => router.navigate("/search"));
+			bar.addEventListener("keydown", (e) => {
+				if (e.key === "Enter" || e.key === " ") router.navigate("/search");
+			});
+		});
+
+	// ── 3. Genre chips — filter newUploads + topTracks in-view ─
 	const genreChipsContainer = root.querySelector("#home-genre-chips");
 	if (genreChipsContainer) {
 		genreChipsContainer.addEventListener("click", (e) => {
 			const chip = e.target.closest(".home-chip");
 			if (!chip) return;
 
-			const genre = chip.dataset.genre;
-			if (genre) {
-				// Re-renders the view with the new active genre
-				setData({ activeGenre: genre });
+			const genre = chip.dataset.genre ?? "all";
 
-				// TODO: In a real scenario, you'd filter your `newUploads`
-				// and `topTracks` arrays based on this genre before rendering.
-			}
+			// Filter track lists in memory — no server call
+			const filtered =
+				genre === "all"
+					? {
+							activeGenre: "all",
+							filteredUploads: data.newUploads ?? [],
+							filteredTop: data.topTracks ?? [],
+							filteredTrending: data.trending ?? [],
+						}
+					: {
+							activeGenre: genre,
+							filteredUploads: (data.newUploads ?? []).filter(
+								(t) =>
+									normaliseGenre(t.genre) === normaliseGenre(genre),
+							),
+							filteredTop: (data.topTracks ?? []).filter(
+								(t) =>
+									normaliseGenre(t.genre) === normaliseGenre(genre),
+							),
+							filteredTrending: (data.trending ?? []).filter(
+								(t) =>
+									normaliseGenre(t.genre) === normaliseGenre(genre),
+							),
+						};
+
+			setData({
+				activeGenre: filtered.activeGenre,
+				// Pass filtered slices — views read these if present,
+				// fall back to unfiltered if genre has no matches
+				newUploads: filtered.filteredUploads.length
+					? filtered.filteredUploads
+					: genre === "all"
+						? data.newUploads
+						: [],
+				topTracks: filtered.filteredTop.length
+					? filtered.filteredTop
+					: genre === "all"
+						? data.topTracks
+						: [],
+				trending: filtered.filteredTrending.length
+					? filtered.filteredTrending
+					: genre === "all"
+						? data.trending
+						: [],
+			});
 		});
 	}
 
-	// ── 4. Explore Tab: Filter Chips ─────────────────────────────
-	// Updates active filter and smoothly scrolls to the section
+	// ── 4. Explore filter chips — show/hide sections ──────────
 	const exploreFilters = root.querySelector("#home-explore-filters");
 	if (exploreFilters) {
 		exploreFilters.addEventListener("click", (e) => {
 			const chip = e.target.closest(".home-filter-chip");
 			if (!chip) return;
 
-			const filter = chip.dataset.filter;
-			if (filter) {
-				// Updates active state of the chip
-				setData({ activeFilter: filter });
+			const filter = chip.dataset.filter ?? "all";
+			setData({ activeFilter: filter });
 
-				// If not "all", scroll smoothly to the target section
-				if (filter !== "all") {
-					const targetSection = root.querySelector(
-						`[data-section="${filter}"]`,
-					);
-					if (targetSection) {
-						// Offset slightly for the sticky header
-						const y =
-							targetSection.getBoundingClientRect().top +
-							window.scrollY -
-							120;
-						window.scrollTo({ top: y, behavior: "smooth" });
-					}
+			// Scroll to the matching section if not "all"
+			if (filter !== "all") {
+				const target = root.querySelector(`[data-section="${filter}"]`);
+				if (target) {
+					target.scrollIntoView({ behavior: "smooth", block: "start" });
 				}
 			}
 		});
 	}
 
-	// ── 5. For You Tab: Taste Setup ──────────────────────────────
-	// Hooks for the empty state taste setup
+	// ── 5 & 6. Track interaction — rows + cards ───────────────
+	// Delegated on the scroll containers so new content from
+	// genre filtering is also covered without re-attaching
+	root
+		.querySelectorAll(".home-track-list, .home-hscroll, .home-mob-scroll")
+		.forEach((container) => {
+			container.addEventListener("click", (e) => {
+				// Track row
+				const row = e.target.closest(".home-track-row");
+				if (row) {
+					// UPDATED: Use dataset.uuid instead of dataset.id
+					handleTrackPlay(row.dataset.uuid, row.dataset.index, data);
+					return;
+				}
+				// Track card
+				const card = e.target.closest(".home-track-card");
+				if (card) {
+					// UPDATED: Use dataset.uuid instead of dataset.id
+					handleTrackPlay(card.dataset.uuid, null, data);
+					return;
+				}
+				// Artist card
+				const artist = e.target.closest(".home-artist-card");
+				if (artist?.dataset.username) {
+					router.navigate(`/profile/${artist.dataset.username}`);
+					return;
+				}
+			});
+		});
+
+	// ── 7. "See all" buttons → search with query ─────────────
+	const seeAllMap = {
+		"home-see-all-uploads": "/search?filter=new",
+		"home-see-all-trending": "/search?filter=trending",
+		"home-see-all-top": "/search?filter=top",
+		"home-see-all-genres": "/search?filter=genres",
+		"home-see-all-recent": "/library?tab=recent",
+		"home-see-all-liked": "/library?tab=liked",
+		"home-see-all-popular": "/search?filter=popular",
+		"home-see-all-genre-recs": `/search?genre=${encodeURIComponent(data.topGenre ?? "")}`,
+		// Explore tab
+		"home-explore-see-all-genres": "/search?filter=genres",
+		"home-explore-see-all-artists": "/search?filter=artists",
+		"home-explore-see-all-trending": "/search?filter=trending",
+		"home-explore-see-all-new": "/search?filter=new",
+	};
+
+	Object.entries(seeAllMap).forEach(([id, path]) => {
+		root.querySelector(`#${id}`)?.addEventListener("click", () => {
+			router.navigate(path);
+		});
+	});
+
+	// Genre card clicks → search filtered by that genre
+	root.querySelectorAll(".home-genre-card").forEach((card) => {
+		card.addEventListener("click", () => {
+			const genre = card.dataset.genre;
+			if (genre)
+				router.navigate(`/search?genre=${encodeURIComponent(genre)}`);
+		});
+	});
+
+	// Genre row "see all" in discover
+	root
+		.querySelector("#home-see-all-genres")
+		?.addEventListener("click", () =>
+			router.navigate("/search?filter=genres"),
+		);
+
+	// ── 8. Avatar → /profile ─────────────────────────────────
+	root
+		.querySelector("#home-mob-avatar")
+		?.addEventListener("click", () => router.navigate("/profile"));
+
+	// ── 9. For You — taste setup chips ───────────────────────
+	// Stubs — wire to modal when modal system is integrated
 	const tasteChips = root.querySelector("#home-taste-chips");
 	if (tasteChips) {
 		tasteChips.addEventListener("click", (e) => {
@@ -89,14 +220,105 @@ export const homeEvents = (root, { state, setState, setData, ctx }) => {
 			if (!chip) return;
 
 			const action = chip.dataset.action;
-
-			if (action === "pick-genres") {
-				console.log("Trigger Pick Genres Modal");
-			} else if (action === "pick-artists") {
-				console.log("Trigger Pick Artists Modal");
-			} else if (action === "pick-moods") {
-				console.log("Trigger Pick Moods Modal");
-			}
+			// TODO: replace console.logs with showModal() calls
+			if (action === "pick-genres")
+				console.log("[Home] Open genre picker modal");
+			if (action === "pick-artists")
+				console.log("[Home] Open artist picker modal");
+			if (action === "pick-moods")
+				console.log("[Home] Open mood picker modal");
 		});
 	}
+
+	// ── 10. For You skip button ───────────────────────────────
+	root.querySelector("#home-foryou-skip")?.addEventListener("click", () => {
+		// Dismiss the taste setup section without navigating
+		const setupSection = root.querySelector("#home-foryou-setup");
+		if (setupSection) {
+			setupSection.style.display = "none";
+		}
+	});
+
+	// ── 11. Empty banner CTA → discover ──────────────────────
+	root.querySelectorAll('[href="/?tab=discover"]').forEach((el) => {
+		el.addEventListener("click", (e) => {
+			e.preventDefault();
+			router.replace("/?tab=discover");
+		});
+	});
+};
+
+// ── Helpers ──────────────────────────────────────────────────
+
+/**
+ * Normalise genre strings for comparison
+ * "Hip-Hop" === "hip-hop" === "hip hop"
+ */
+const normaliseGenre = (genre = "") =>
+	genre.toLowerCase().replace(/[\s-]/g, "");
+
+/**
+ * Find a track by id across all data sections and play it
+ */
+const handleTrackPlay = (trackUuid, indexHint, data) => {
+	if (!trackUuid) return;
+
+	// Build a flat pool from all track sections to find the track
+	const pool = [
+		...(data.newUploads ?? []),
+		...(data.trending ?? []),
+		...(data.topTracks ?? []),
+		...(data.popularRightNow ?? []),
+		...(data.recentPlays ?? []),
+		...(data.liked ?? []),
+		...(data.genreRecs ?? []),
+		...(data.trendingTracks ?? []),
+		...(data.newThisWeek ?? []),
+	];
+
+	// UPDATED: Strictly check t.uuid instead of falling back to t.id
+	const track = pool.find((t) => t.uuid === trackUuid);
+	if (!track) {
+		console.warn("[homeEvents] Track not found in data pool:", trackUuid);
+		return;
+	}
+
+	// Build a contextual queue from the same section the track belongs to
+	const queue = buildContextualQueue(trackUuid, data);
+
+	if (!store.auth.isLoggedIn) {
+		// Guest — can preview but warn after a few seconds
+		// For now just play, player.prepare handles auth
+	}
+
+	store.playTrackWithAuth(track).catch((err) => {
+		console.error("[homeEvents] Play error:", err);
+		toast({ message: "Couldn't play this track. Try again.", type: "error" });
+	});
+};
+
+/**
+ * Build a queue from the section that contains the given trackUuid.
+ * Keeps context — clicking a trending track queues all trending tracks.
+ */
+const buildContextualQueue = (trackUuid, data) => {
+	const sections = [
+		data.newUploads,
+		data.trending,
+		data.topTracks,
+		data.popularRightNow,
+		data.recentPlays,
+		data.liked,
+		data.genreRecs,
+		data.trendingTracks,
+		data.newThisWeek,
+	].filter(Boolean);
+
+	for (const section of sections) {
+		// UPDATED: Strictly check t.uuid
+		const found = section.find((t) => t.uuid === trackUuid);
+		if (found) return section;
+	}
+
+	return [];
 };

@@ -37,7 +37,7 @@ const uploadObject = async ({ bucket, key, buffer, mimeType }) => {
 				ContentLength: buffer.length,
 			}),
 		);
-		return `${bucket}/${key}`;
+		return key;
 	} catch (err) {
 		console.error(
 			`[Storage] Upload failed — bucket: ${bucket}, key: ${key}`,
@@ -120,18 +120,19 @@ const storeTrackCover = async (cover) => {
 		}
 	}
 
-	// Local Fallback to S3
+	// Local Fallback to S3 — Unified explicit path structure
 	const key = `${filename}.${ext}`;
+
 	const uploadedKey = await uploadObject({
 		bucket: BUCKETS.images,
 		key,
 		buffer: Buffer.from(cover.data),
 		mimeType: cover.format ?? "image/jpeg",
 	});
-	console.log(uploadedKey);
+
 	if (!uploadedKey) return null;
 	return {
-		key: uploadedKey,
+		key: `${BUCKETS.images}/${uploadedKey}`, // Returns "images/filename.jpeg"
 		baseUrl: process.env.MINIO_ENDPOINT || "http://127.0.0.1:9000",
 		type: "s3",
 	};
@@ -189,7 +190,7 @@ const storeTrack = async (file, trackName) => {
 	if (!file || typeof file !== "object") return null;
 
 	const ext = file.originalname.slice(file.originalname.lastIndexOf(".") + 1);
-	const key = `tracks/${trackName}.${ext}`;
+	const key = `${trackName}.${ext}`;
 
 	return uploadObject({
 		bucket: BUCKETS.tracks,
@@ -221,6 +222,6 @@ module.exports = {
 	storeTrackCover,
 	storeTrack,
 	storeImage,
-	getPresignedUrl,
+	getSignedUrl: getPresignedUrl,
 	BUCKETS,
 };

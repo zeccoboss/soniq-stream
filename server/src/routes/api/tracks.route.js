@@ -16,31 +16,33 @@ const {
 	toggleLike,
 	addComment,
 	incrementShareCount,
+	downloadTrack,
 } = require("../../controllers/media/track.controller");
-// Public routes
 
 // Public reads
 router.get("/", getAllTracks);
 router.get("/:uuid", getTrack);
 
+// Actions (resource-based)
+router.get("/:uuid/download", downloadTrack);
+router.get("/:uuid/stream", streamTrack);
+
 // All routes below require authentication
 router.use(verifyJWT); // All routes below require authentication
 
-// Actions (resource-based)
-router.post("/:uuid/like", verifyJWT, toggleLike);
-router.get("/:uuid/stream", verifyJWT, streamTrack);
+router.post("/:uuid/like", toggleLike);
 router.get("/:uuid/metadata", getTrackMetadata);
-router.post("/:uuid/comment", verifyJWT, addComment);
+router.post("/:uuid/comment", addComment);
 router.post("/:uuid/share", incrementShareCount); // Share usually just tracks metrics
 
 // router.get("/:uuid/download", verifyJWT, downloadTrack); // TODO: to be added later
 
 // Upload
-router.post("/upload", verifyJWT, uploader.single("track"), uploadTrack);
+router.post("/upload", uploader.single("track"), uploadTrack);
 
 // Mutations
-router.patch("/:uuid", verifyJWT, validate(updateTrackSchema), updateTrack);
-router.delete("/:uuid", verifyJWT, deleteTrack); //
+router.patch("/:uuid", validate(updateTrackSchema), updateTrack);
+router.delete("/:uuid", deleteTrack); //
 
 // Error handling for Multer (file upload errors)
 router.use((err, req, res, next) => {

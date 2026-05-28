@@ -35,7 +35,7 @@ const sectionHead = (title, actionId = "", actionLabel = "See all") =>
 
 // Track card — horizontal scroll
 const trackCard = (track) =>
-	`<div class="home-track-card" data-id="${track.id ?? ""}">
+	`<div class="home-track-card" data-uuid="${track.uuid ?? ""}">
 		<div class="home-track-card-cover">
 			${coverImg(track.cover, track.title)}
 			<button class="home-card-play" aria-label="Play ${track.title}">
@@ -48,7 +48,7 @@ const trackCard = (track) =>
 
 // Track row — vertical list
 const trackRow = (track, index) =>
-	`<div class="home-track-row" data-id="${track.id ?? ""}" data-index="${index}">
+	`<div class="home-track-row" data-uuid="${track.uuid ?? ""}" data-index="${index}">
 		<span class="home-track-num">${index + 1}</span>
 		<div class="home-track-cover">${coverImg(track.cover, track.title)}</div>
 		<div class="home-track-meta">

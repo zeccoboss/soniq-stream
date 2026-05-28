@@ -53,7 +53,7 @@ export const HomePage = async (ctx) => {
 		if (!isMounted) return;
 		const view = await UI({ state, ctx, data });
 		root.replaceChildren(view);
-		homeEvents(root, { state, setState, setData, ctx });
+		homeEvents(root, { state, setState, setData, ctx, data });
 	};
 
 	const setState = async (newState) => {
@@ -142,13 +142,14 @@ export const HomePage = async (ctx) => {
 			const skeletonDelayTimer = new Promise((resolve) =>
 				setTimeout(resolve, 1500),
 			);
-
-			const [exploreResult, discoverResult, forYouResult] =
-				await Promise.allSettled([
-					trackService.getExploreFeed({ limit: FEED_LIMIT }, signal),
-					trackService.getDiscoverFeed({ limit: FEED_LIMIT }, signal),
-					trackService.getForYouFeed({}, signal),
+			const [, [exploreResult, discoverResult, forYouResult]] =
+				await Promise.all([
 					skeletonDelayTimer,
+					Promise.allSettled([
+						trackService.getExploreFeed({ limit: FEED_LIMIT }, signal),
+						trackService.getDiscoverFeed({ limit: FEED_LIMIT }, signal),
+						trackService.getForYouFeed(signal),
+					]),
 				]);
 
 			// ── Explore Feed Parsing ────────────────────────

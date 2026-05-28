@@ -191,7 +191,7 @@ export const AdminMobile = async ({ state, ctx, data = {} }) => {
 					.slice(0, 5)
 					.map(
 						(u) => `
-					<div class="admin-user-row" data-id="${u.id ?? ""}">
+					<div class="admin-user-row" data-uuid="${u.uuid ?? ""}">
 						<div class="admin-user-avatar">
 							<img src="${u.avatar || defaultAvatar}" alt="${u.username}"
 								class="admin-avatar-img"
@@ -206,11 +206,11 @@ export const AdminMobile = async ({ state, ctx, data = {} }) => {
 							${
 								u.isBanned
 									? `<button class="admin-action-btn admin-action-btn--green"
-										data-action="unban" data-id="${u.id ?? ""}" title="Unban">
+										data-action="unban" data-uuid="${u.uuid ?? ""}" title="Unban">
 										<i class="bi bi-check-circle"></i>
 									</button>`
 									: `<button class="admin-action-btn admin-action-btn--red"
-										data-action="ban" data-id="${u.id ?? ""}" title="Ban">
+										data-action="ban" data-uuid="${u.uuid ?? ""}" title="Ban">
 										<i class="bi bi-slash-circle"></i>
 									</button>`
 							}
@@ -236,7 +236,7 @@ export const AdminMobile = async ({ state, ctx, data = {} }) => {
 					${recentUsers
 						.map(
 							(u) => `
-						<div class="admin-user-row" data-id="${u.id ?? ""}">
+						<div class="admin-user-row" data-uuid="${u.uuid ?? ""}">
 							<div class="admin-user-avatar">
 								<img src="${u.avatar || defaultAvatar}" alt="${u.username}"
 									class="admin-avatar-img"
@@ -252,15 +252,15 @@ export const AdminMobile = async ({ state, ctx, data = {} }) => {
 								<span class="admin-user-handle">@${u.username} · ${timeAgo(u.joinedAt)}</span>
 							</div>
 							<div class="admin-row-actions">
-								<button class="admin-action-btn" data-action="view-user" data-id="${u.id ?? ""}" title="View">
+								<button class="admin-action-btn" data-action="view-user" data-uuid="${u.uuid ?? ""}" title="View">
 									<i class="bi bi-eye"></i>
 								</button>
 								<button class="admin-action-btn ${u.isBanned ? "admin-action-btn--green" : "admin-action-btn--red"}"
-									data-action="${u.isBanned ? "unban" : "ban"}" data-id="${u.id ?? ""}">
+									data-action="${u.isBanned ? "unban" : "ban"}" data-uuid="${u.uuid ?? ""}">
 									<i class="bi bi-${u.isBanned ? "check-circle" : "slash-circle"}"></i>
 								</button>
 								<button class="admin-action-btn admin-action-btn--red"
-									data-action="delete-user" data-id="${u.id ?? ""}" title="Delete">
+									data-action="delete-user" data-uuid="${u.uuid ?? ""}" title="Delete">
 									<i class="bi bi-trash"></i>
 								</button>
 							</div>
@@ -287,7 +287,7 @@ export const AdminMobile = async ({ state, ctx, data = {} }) => {
 						.map(
 							(t) => `
 						<div class="admin-track-row ${t.flagged ? "admin-track-row--flagged" : ""}"
-							data-id="${t.id ?? ""}">
+							data-uuid="${t.uuid ?? ""}">
 							<div class="admin-track-cover">
 								<img src="${t.cover || defaultAvatar}" alt="${t.title}"
 									class="admin-avatar-img"
@@ -307,7 +307,7 @@ export const AdminMobile = async ({ state, ctx, data = {} }) => {
 							</div>
 							<div class="admin-row-actions">
 								<button class="admin-action-btn admin-action-btn--red"
-									data-action="remove-track" data-id="${t.id ?? ""}" title="Remove">
+									data-action="remove-track" data-uuid="${t.uuid ?? ""}" title="Remove">
 									<i class="bi bi-trash"></i>
 								</button>
 							</div>
@@ -338,7 +338,7 @@ export const AdminMobile = async ({ state, ctx, data = {} }) => {
 						${reports
 							.map(
 								(r) => `
-							<div class="admin-report-row" data-id="${r.id ?? ""}">
+							<div class="admin-report-row" data-uuid="${r.uuid ?? ""}">
 								<div class="admin-report-icon">
 									<i class="bi bi-${r.type === "track" ? "music-note" : "person"}"></i>
 								</div>
@@ -351,11 +351,11 @@ export const AdminMobile = async ({ state, ctx, data = {} }) => {
 								</div>
 								<div class="admin-row-actions">
 									<button class="admin-action-btn admin-action-btn--green"
-										data-action="dismiss-report" data-id="${r.id ?? ""}" title="Dismiss">
+										data-action="dismiss-report" data-uuid="${r.uuid ?? ""}" title="Dismiss">
 										<i class="bi bi-check-lg"></i>
 									</button>
 									<button class="admin-action-btn admin-action-btn--red"
-										data-action="remove-reported" data-id="${r.targetId ?? ""}" title="Remove">
+										data-action="remove-reported" data-uuid="${r.targetId ?? ""}" title="Remove">
 										<i class="bi bi-trash"></i>
 									</button>
 								</div>

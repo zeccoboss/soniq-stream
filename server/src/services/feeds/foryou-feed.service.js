@@ -5,12 +5,16 @@ const RecentPlayModel = require("../../models/recent-plays-model");
 const { toTrackCard } = require("../../helpers/feed-transformers.helper");
 
 const getForYouFeed = async (userId) => {
-	// Guest users
+	// Shared projection to exclude _id
+	const noId = "-_id";
+
+	// ── Guest users ─────────────────────────────
 	if (!userId) {
 		const popularRightNow = await TrackModel.find({ visibility: "public" })
 			.sort({ playCount: -1 })
 			.limit(10)
-			.populate("cover");
+			.select(noId)
+			.populate({ path: "cover", select: noId });
 
 		return {
 			isLoggedIn: false,
@@ -27,22 +31,27 @@ const getForYouFeed = async (userId) => {
 	const recentDocs = await RecentPlayModel.find({ userId })
 		.sort({ updatedAt: -1 })
 		.limit(10)
+		.select(noId)
 		.populate({
 			path: "TrackId",
-			populate: { path: "cover" },
+			select: noId,
+			populate: { path: "cover", select: noId },
 		});
 
 	const recentPlays = recentDocs.map((doc) => doc.TrackId).filter(Boolean);
 
 	// ── User Likes ───────────────────────────────
-	const user = await UserModel.findById(userId).populate({
-		path: "likedTracksIds",
-		populate: { path: "cover" },
-	});
+	const user = await UserModel.findById(userId)
+		.select(noId)
+		.populate({
+			path: "likedTracksIds",
+			select: noId,
+			populate: { path: "cover", select: noId },
+		});
 
 	const likedTracksIds = user?.likedTracksIds || [];
 
-	// ── Determine Top Genre ──────────────────────
+	// ── Determine Top Genre (Logic unchanged) ──────────────────────
 	const genreMap = {};
 	for (const track of [...recentPlays, ...likedTracksIds]) {
 		for (const genre of track.genre || []) {
@@ -64,14 +73,16 @@ const getForYouFeed = async (userId) => {
 		})
 			.sort({ playCount: -1 })
 			.limit(10)
-			.populate("cover");
+			.select(noId)
+			.populate({ path: "cover", select: noId });
 	}
 
 	// ── Popular Fallback ─────────────────────────
 	const popularRightNow = await TrackModel.find({ visibility: "public" })
 		.sort({ playCount: -1 })
 		.limit(10)
-		.populate("cover");
+		.select(noId)
+		.populate({ path: "cover", select: noId });
 
 	return {
 		isLoggedIn: true,

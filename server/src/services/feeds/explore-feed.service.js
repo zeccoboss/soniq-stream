@@ -30,22 +30,27 @@ const getExploreFeed = async () => {
 	];
 
 	const [trendingArtists, newThisWeek, trendingTracks] = await Promise.all([
+		// Trending Artists
 		UserModel.find({ verified: true })
 			.sort({ uploadsCount: -1 })
 			.limit(10)
-			.select("username uuid uploadsCount avatar") // Explicitly targeting safe uuid fields
+			.select("username uuid uploadsCount avatar -_id") // Added -_id
 			.populate(AVATAR_POPULATE)
 			.lean({ virtuals: true }),
 
+		// New This Week
 		TrackModel.find({ visibility: "public" })
 			.sort({ createdAt: -1 })
 			.limit(10)
+			.select("-_id") // Added -_id
 			.populate(IMAGE_POPULATE)
 			.lean({ virtuals: true }),
 
+		// Trending Tracks
 		TrackModel.find({ visibility: "public" })
 			.sort({ playCount: -1 })
 			.limit(10)
+			.select("-_id") // Added -_id
 			.populate(IMAGE_POPULATE)
 			.lean({ virtuals: true }),
 	]);

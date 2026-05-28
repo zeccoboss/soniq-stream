@@ -1,3 +1,4 @@
+import { trackService } from "@zecco/services/api/track.service";
 import { BaseStore } from "./base.store";
 
 class PlayerStore extends BaseStore {
@@ -17,7 +18,7 @@ class PlayerStore extends BaseStore {
 	#analyserNode = null;
 	#trackBuffer = null;
 	#prevTrackBuffer = null;
-	#prevTrackId = null;
+	#prevTrackUuid = null; // UPDATED: Changed from Id to Uuid
 	#startedAt = 0;
 	#pausedAt = 0;
 	#isPlaying = false;
@@ -68,7 +69,7 @@ class PlayerStore extends BaseStore {
 
 	// Playback Core Systems
 	async loadTrack(track) {
-		if (!track?.id) return;
+		if (!track?.uuid) return; // UPDATED
 		this.#originalQueue = [track];
 		this.#queue = [track];
 		this.#queueIndex = 0;
@@ -170,7 +171,7 @@ class PlayerStore extends BaseStore {
 		this.#isShuffle = !this.#isShuffle;
 		if (this.#isShuffle) {
 			const rest = this.#originalQueue.filter(
-				(t) => t.id !== this.#currentTrack.id,
+				(t) => t.uuid !== this.#currentTrack.uuid, // UPDATED
 			);
 			for (let i = rest.length - 1; i > 0; i--) {
 				const j = Math.floor(Math.random() * (i + 1));
@@ -181,7 +182,7 @@ class PlayerStore extends BaseStore {
 		} else {
 			this.#queue = [...this.#originalQueue];
 			this.#queueIndex = this.#originalQueue.findIndex(
-				(t) => t.id === this.#currentTrack.id,
+				(t) => t.uuid === this.#currentTrack.uuid, // UPDATED
 			);
 		}
 		this.emit("queue_changed", {
@@ -220,31 +221,16 @@ class PlayerStore extends BaseStore {
 		}
 		if (this.#trackBuffer && this.#currentTrack) {
 			this.#prevTrackBuffer = this.#trackBuffer;
-			this.#prevTrackId = this.#currentTrack.id;
+			this.#prevTrackUuid = this.#currentTrack.uuid; // UPDATED
 		}
 		this.#trackBuffer = null;
 	}
 
-	async prepare(track, token) {
+	async prepare(track) {
 		this.#isLoading = true;
 		this.emit("track_loading", true);
 		this.ensureAudioContext();
 		this.pause();
-
-		if (track.id === this.#prevTrackId && this.#prevTrackBuffer) {
-			const tempBuffer = this.#trackBuffer;
-			const tempId = this.#currentTrack?.id;
-			this.#trackBuffer = this.#prevTrackBuffer;
-			this.#currentTrack = track;
-			this.#prevTrackBuffer = tempBuffer;
-			this.#prevTrackId = tempId || null;
-			this.#pausedAt = 0;
-			this.#isLoading = false;
-			this.emit("track_changed", this.#currentTrack);
-			this.emit("track_loading", false);
-			this.play();
-			return;
-		}
 
 		this.rotateAudioCache();
 		this.#pausedAt = 0;
@@ -252,13 +238,17 @@ class PlayerStore extends BaseStore {
 		this.emit("track_changed", this.#currentTrack);
 
 		try {
-			const res = await fetch(`/api/media/track/${track.id}/stream`, {
-				headers: { Authorization: `Bearer ${token}` },
-			});
-			const { data } = await res.json();
-			const trackRes = await fetch(data.streamUrl);
-			const arrayBuffer = await trackRes.arrayBuffer();
+			// 1. Get the signed URL from your backend
+			const res = await trackService.streamTrack(track.uuid);
+
+			// 2. Fetch binary using the new service method
+			const arrayBuffer = await trackService.getAudioBuffer(
+				res.data.streamUrl,
+			);
+
+			// 3. Decode for Web Audio API
 			this.#trackBuffer = await this.#audioCtx.decodeAudioData(arrayBuffer);
+
 			this.#isLoading = false;
 			this.emit("track_loading", false);
 			this.play();
@@ -266,7 +256,7 @@ class PlayerStore extends BaseStore {
 			this.#isLoading = false;
 			this.emit("track_loading", false);
 			this.emit("track_error", error);
-			console.error("[PlayerStore Audio Engine Error]:", error);
+			console.error("[PlayerStore] Stream Processing Error:", error);
 		}
 	}
 
@@ -275,7 +265,7 @@ class PlayerStore extends BaseStore {
 		this.rotateAudioCache();
 		this.#trackBuffer = null;
 		this.#prevTrackBuffer = null;
-		this.#prevTrackId = null;
+		this.#prevTrackUuid = null; // UPDATED
 		this.#currentTrack = null;
 		this.#originalQueue = [];
 		this.#queue = [];

@@ -91,7 +91,7 @@ const genreCardRow = (genres = []) => `
 
 // ── Track row item (vertical list) ──────────────────────────
 const trackRow = (track, index) => `
-	<div class="home-track-row" data-id="${track.id ?? ""}" data-index="${index}">
+	<div class="home-track-row" data-uuid="${track.uuid ?? ""}" data-index="${index}">
 		<span class="home-track-num">${index + 1}</span>
 		<div class="home-track-cover">
 			${coverImg(track.cover, track.title)}
@@ -118,7 +118,7 @@ const trackRow = (track, index) => `
 
 // ── Track card (horizontal scroll card) ─────────────────────
 const trackCard = (track) => `
-	<div class="home-track-card" data-id="${track.id ?? ""}">
+	<div class="home-track-card" data-uuid="${track.uuid ?? ""}">
 		<div class="home-track-card-cover">
 			${coverImg(track.cover, track.title)}
 			<button class="home-card-play" aria-label="Play ${track.title}">
@@ -222,8 +222,8 @@ export const DiscoverView = (data = {}, isMobile = false) => {
 						${sectionHead("Browse Genres", "home-see-all-genres")}
 						${genreCardRow(genres)}
 					</div>
-					${newUploadsSection(newUploads)}
 					${trendingSection(trending)}
+					${newUploadsSection(newUploads)}
 					${topTracksSection(topTracks)}
 				`
 			}

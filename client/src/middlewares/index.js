@@ -1,7 +1,6 @@
 /** biome-ignore-all assist/source/organizeImports: <Not intentional for not sorting import> */
 import { getTag } from "@zecco/helpers/dom-helper.js";
 import { routes } from "@zecco/routes/config.routes";
-import { readFromLocalStorage } from "@zecco/services/storage/local-storage.js";
 import { authRedirect } from "./auth.middleware";
 import { loadingIndicator } from "./loading.middleware";
 import { titleUpdater } from "./title.middleware";

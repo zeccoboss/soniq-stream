@@ -208,7 +208,7 @@ export const DashboardMobile = async ({ state, ctx, data = {} }) => {
 									</span>
 								</div>
 							</div>
-							<a href="/player?track=${topTrack.id}" class="dash-top-play">
+							<a href="/player?track=${topTrack.uuid}" class="dash-top-play">
 								<i class="bi bi-play-fill"></i>
 							</a>
 						</div>
@@ -245,7 +245,7 @@ export const DashboardMobile = async ({ state, ctx, data = {} }) => {
 							${recentUploads
 								.map(
 									(t) => `
-								<div class="dash-track-row" data-id="${t.id ?? ""}">
+								<div class="dash-track-row" data-uuid="${t.uuid ?? ""}">
 									<div class="dash-track-cover">
 										<img
 											src="${t.cover || defaultAvatar}"
@@ -267,7 +267,7 @@ export const DashboardMobile = async ({ state, ctx, data = {} }) => {
 											<span class="dash-genre-badge">${t.genre ?? "—"}</span>
 										</div>
 									</div>
-									<button class="dash-row-more" data-id="${t.id ?? ""}"
+									<button class="dash-row-more" data-uuid="${t.uuid ?? ""}"
 										aria-label="More options">
 										<i class="bi bi-three-dots-vertical"></i>
 									</button>

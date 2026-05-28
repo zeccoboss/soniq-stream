@@ -99,7 +99,7 @@ const buildTrackPayload = (file, trackKey, coverId, metadata, data = {}) => {
 		uuid: uuidV4(),
 		size: String(file.size),
 		name: file.originalname ?? null,
-		artist: common.artist ?? null,
+		artist: common.artist ?? "Unknown Artist",
 		artists: common.artists ?? [],
 		album: common.album ?? null,
 		bitrate: format.bitrate ?? null,

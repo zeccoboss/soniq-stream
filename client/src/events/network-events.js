@@ -40,14 +40,14 @@ if (typeof window !== "undefined") {
 		}
 	};
 
-	// FIXED: Subscribing using your custom pub/sub engine instead of native window events
-	on("NETWORK_ONLINE", () => handleNetworkChange(true));
-	on("NETWORK_OFFLINE", () => handleNetworkChange(false));
+	// // FIXED: Subscribing using your custom pub/sub engine instead of native window events
+	// on("NETWORK_ONLINE", () => handleNetworkChange(true));
+	// on("NETWORK_OFFLINE", () => handleNetworkChange(false));
 
-	// Initial execution step to handle a user loading the app while already offline
-	window.addEventListener("DOMContentLoaded", () => {
-		if (!navigator.onLine) {
-			document.getElementById("app")?.classList.add("app-offline");
-		}
-	});
+	// // Initial execution step to handle a user loading the app while already offline
+	// window.addEventListener("DOMContentLoaded", () => {
+	// 	if (!navigator.onLine) {
+	// 		// document.getElementById("app")?.classList.add("app-offline");
+	// 	}
+	// });
 }

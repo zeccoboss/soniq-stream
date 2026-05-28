@@ -1,6 +1,11 @@
 const { v4: uuidV4 } = require("uuid");
 const { processTrack } = require("../../metadata/meta-manager.metadata");
-const { deleteObject, BUCKETS } = require("../../services/s3.service");
+const {
+	deleteObject,
+	BUCKETS,
+	getSignedUrl,
+} = require("../../services/s3.service");
+
 const TrackModel = require("../../models/track.model");
 const ImageModel = require("../../models/image.model");
 const Track = require("../../models/track.model");
@@ -167,8 +172,6 @@ const uploadTrack = async (req, res) => {
 			.status(400)
 			.json({ success: false, message: "No file uploaded" });
 	}
-
-	console.log(req.body);
 
 	const userId = req.user._id;
 
@@ -442,6 +445,36 @@ const incrementShareCount = async (req, res) => {
 	}
 };
 
+const downloadTrack = async (req, res) => {
+	try {
+		const { uuid } = req.params;
+		const track = await TrackModel.findOne({ uuid });
+
+		if (!track) {
+			return res
+				.status(404)
+				.json({ success: false, message: "Track not found" });
+		}
+
+		// Generate a temporary signed URL for the user to download
+		const downloadUrl = await getSignedUrl({
+			bucket: BUCKETS.tracks,
+			key: track.storage.key,
+			expiresIn: 3600, // URL valid for 1 hour
+		});
+
+		return res.status(200).json({
+			success: true,
+			data: { downloadUrl },
+		});
+	} catch (err) {
+		console.error("[Track] downloadTrack:", err);
+		return res
+			.status(500)
+			.json({ success: false, message: "Internal server error" });
+	}
+};
+
 // createTrack is intentionally omitted — upload go through uploadTrack
 module.exports = {
 	getAllTracks,
@@ -453,4 +486,5 @@ module.exports = {
 	getTrackMetadata,
 	addComment,
 	incrementShareCount,
+	downloadTrack,
 };
