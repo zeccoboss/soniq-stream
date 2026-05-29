@@ -88,6 +88,11 @@ class TrackService extends BaseService {
 			throw error;
 		}
 	}
+
+	// Inside track.service.js (or wherever trackService is configured)
+	async syncPlayerStateWithDatabase(payload) {
+		return await this.patch(ENDPOINTS.TRACKS.PLAY_STATE, payload);
+	}
 }
 
 export const trackService = new TrackService();

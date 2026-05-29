@@ -1,6 +1,7 @@
 import { mobileScreen } from "@zecco/core/screen-break-points";
 import { getTag } from "@zecco/helpers/dom-helper";
 import { router } from "@zecco/routes/router";
+import { store } from "@zecco/store/store";
 
 /**
  * Middleware to toggle body classes based on the route's target outlet.
@@ -23,8 +24,13 @@ export const layoutSwitcher = async (ctx, next) => {
 		}
 	}
 
-	// 2. Clean up previous layout states
-	root.classList.remove("layout-main", "layout-root", "layout-mobile");
+	// 2. Clear all relevant layout classes
+	root.classList.remove(
+		"layout-main",
+		"layout-root",
+		"layout-mobile",
+		"sidebar-collapsed",
+	);
 
 	// 3. Apply the new layout class
 	if (mobileScreen.matches) {
@@ -35,6 +41,10 @@ export const layoutSwitcher = async (ctx, next) => {
 	} else {
 		// On Desktop/Tablet, we follow the outlet name directly (layout-main or layout-root)
 		root.classList.add(`layout-${outlet}`);
+
+		if (store.ui.isSidebarCollapsed && outlet !== "root") {
+			root.classList.add("sidebar-collapsed");
+		}
 	}
 
 	// 4. Critical: Proceed to the next middleware/render pipeline

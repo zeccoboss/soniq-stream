@@ -42,6 +42,7 @@ export const ENDPOINTS = {
 		POPULAR: "/tracks/popular",
 		SEARCH: "/tracks/search",
 		UPLOAD: "/tracks/upload",
+		PLAY_STATE: "/me/player",
 		LIKE: (track_uuid) => `/tracks/${track_uuid}/like`,
 		STREAM: (track_uuid) => `/tracks/${track_uuid}/stream`,
 		METADATA: (track_uuid) => `/tracks/${track_uuid}/metadata`,

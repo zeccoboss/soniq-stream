@@ -2,29 +2,41 @@ import { trackService } from "@zecco/services/api/track.service";
 import { BaseStore } from "./base.store";
 
 class PlayerStore extends BaseStore {
-	// Core Metadata
 	#currentTrack = null;
 	#originalQueue = [];
 	#queue = [];
 	#queueIndex = 0;
 	#isShuffle = false;
-	#repeatMode = "none"; // "none" | "one" | "all"
+	#repeatMode = "none";
 	#volume = 1;
+	#playState = null;
 
-	// Audio Context Graph Nodes
 	#audioCtx = null;
 	#sourceNode = null;
 	#gainNode = null;
 	#analyserNode = null;
 	#trackBuffer = null;
 	#prevTrackBuffer = null;
-	#prevTrackUuid = null; // UPDATED: Changed from Id to Uuid
+	#prevTrackUuid = null;
 	#startedAt = 0;
 	#pausedAt = 0;
 	#isPlaying = false;
 	#isLoading = false;
 
-	// Getters
+	#dbSyncIntervalId = null;
+	#SYNC_HEARTBEAT_MS = 30000;
+
+	constructor() {
+		super();
+		window.addEventListener("beforeunload", () => this.#handleUnload());
+
+		document.addEventListener("visibilitychange", () => {
+			if (document.visibilityState === "visible") {
+				this.#syncPlayState();
+			}
+		});
+	}
+
 	get currentTrack() {
 		return this.#currentTrack;
 	}
@@ -49,10 +61,21 @@ class PlayerStore extends BaseStore {
 	get isLoading() {
 		return this.#isLoading;
 	}
+	get playState() {
+		return this.#playState;
+	}
 
 	get progress() {
 		if (!this.#audioCtx || !this.#isPlaying) return this.#pausedAt;
 		return this.#audioCtx.currentTime - this.#startedAt + this.#pausedAt;
+	}
+
+	get duration() {
+		return this.#trackBuffer?.duration ?? 0;
+	}
+
+	get queueIndex() {
+		return this.#queueIndex;
 	}
 
 	set volume(value) {
@@ -67,9 +90,40 @@ class PlayerStore extends BaseStore {
 		this.emit("volume_changed", this.#volume);
 	}
 
-	// Playback Core Systems
+	async #syncPlayState() {
+		const currentProgressMs = Math.round(this.progress * 1000);
+		this.#playState = {
+			trackUuid: this.#currentTrack ? this.#currentTrack.uuid : null,
+			progressMs: this.#currentTrack ? currentProgressMs : 0,
+			isPlaying: this.#isPlaying,
+		};
+
+		this.storageSet("play_state", this.#playState);
+
+		try {
+			await trackService.syncPlayerStateWithDatabase(this.#playState);
+		} catch (err) {
+			console.warn(
+				"[PlayerStore] Background DB sync suspended:",
+				err.message,
+			);
+		}
+	}
+
+	#handleUnload() {
+		const state = {
+			trackUuid: this.#currentTrack?.uuid || null,
+			progressMs: Math.round(this.progress * 1000),
+			isPlaying: false,
+		};
+		const blob = new Blob([JSON.stringify(state)], {
+			type: "application/json",
+		});
+		navigator.sendBeacon("/api/v1/me/player", blob);
+	}
+
 	async loadTrack(track) {
-		if (!track?.uuid) return; // UPDATED
+		if (!track?.uuid) return;
 		this.#originalQueue = [track];
 		this.#queue = [track];
 		this.#queueIndex = 0;
@@ -103,12 +157,24 @@ class PlayerStore extends BaseStore {
 		};
 
 		this.emit("play_state_changed", { isPlaying: true });
+		this.#syncPlayState();
+
+		if (this.#dbSyncIntervalId) clearInterval(this.#dbSyncIntervalId);
+		this.#dbSyncIntervalId = setInterval(
+			() => this.#syncPlayState(),
+			this.#SYNC_HEARTBEAT_MS,
+		);
 	}
 
 	pause() {
 		if (!this.#isPlaying) return;
 		this.#pausedAt += this.#audioCtx.currentTime - this.#startedAt;
 		this.#isPlaying = false;
+
+		if (this.#dbSyncIntervalId) {
+			clearInterval(this.#dbSyncIntervalId);
+			this.#dbSyncIntervalId = null;
+		}
 
 		if (this.#sourceNode) {
 			this.#sourceNode.onended = null;
@@ -117,6 +183,7 @@ class PlayerStore extends BaseStore {
 			this.#sourceNode = null;
 		}
 		this.emit("play_state_changed", { isPlaying: false });
+		this.#syncPlayState();
 	}
 
 	togglePlay() {
@@ -134,6 +201,7 @@ class PlayerStore extends BaseStore {
 			this.pause();
 			this.#pausedAt = 0;
 			this.rotateAudioCache();
+			this.#syncPlayState();
 			return;
 		}
 		this.#queueIndex = nextIndex;
@@ -148,6 +216,7 @@ class PlayerStore extends BaseStore {
 				this.pause();
 				this.play();
 			}
+			this.#syncPlayState();
 			return;
 		}
 		const prevIndex = this.#queueIndex > 0 ? this.#queueIndex - 1 : 0;
@@ -165,13 +234,14 @@ class PlayerStore extends BaseStore {
 		);
 		if (wasPlaying) this.play();
 		this.emit("seeked", this.#pausedAt);
+		this.#syncPlayState();
 	}
 
 	toggleShuffle() {
 		this.#isShuffle = !this.#isShuffle;
 		if (this.#isShuffle) {
 			const rest = this.#originalQueue.filter(
-				(t) => t.uuid !== this.#currentTrack.uuid, // UPDATED
+				(t) => t.uuid !== this.#currentTrack.uuid,
 			);
 			for (let i = rest.length - 1; i > 0; i--) {
 				const j = Math.floor(Math.random() * (i + 1));
@@ -182,7 +252,7 @@ class PlayerStore extends BaseStore {
 		} else {
 			this.#queue = [...this.#originalQueue];
 			this.#queueIndex = this.#originalQueue.findIndex(
-				(t) => t.uuid === this.#currentTrack.uuid, // UPDATED
+				(t) => t.uuid === this.#currentTrack.uuid,
 			);
 		}
 		this.emit("queue_changed", {
@@ -221,7 +291,7 @@ class PlayerStore extends BaseStore {
 		}
 		if (this.#trackBuffer && this.#currentTrack) {
 			this.#prevTrackBuffer = this.#trackBuffer;
-			this.#prevTrackUuid = this.#currentTrack.uuid; // UPDATED
+			this.#prevTrackUuid = this.#currentTrack.uuid;
 		}
 		this.#trackBuffer = null;
 	}
@@ -236,17 +306,13 @@ class PlayerStore extends BaseStore {
 		this.#pausedAt = 0;
 		this.#currentTrack = track;
 		this.emit("track_changed", this.#currentTrack);
+		this.#syncPlayState();
 
 		try {
-			// 1. Get the signed URL from your backend
 			const res = await trackService.streamTrack(track.uuid);
-
-			// 2. Fetch binary using the new service method
 			const arrayBuffer = await trackService.getAudioBuffer(
 				res.data.streamUrl,
 			);
-
-			// 3. Decode for Web Audio API
 			this.#trackBuffer = await this.#audioCtx.decodeAudioData(arrayBuffer);
 
 			this.#isLoading = false;
@@ -254,9 +320,11 @@ class PlayerStore extends BaseStore {
 			this.play();
 		} catch (error) {
 			this.#isLoading = false;
-			this.emit("track_loading", false);
-			this.emit("track_error", error);
-			console.error("[PlayerStore] Stream Processing Error:", error);
+			// Add this logic:
+			if (this.#queue.length > 1) {
+				console.warn("Stream failed, skipping to next track...");
+				this.nextTrack();
+			}
 		}
 	}
 
@@ -265,7 +333,7 @@ class PlayerStore extends BaseStore {
 		this.rotateAudioCache();
 		this.#trackBuffer = null;
 		this.#prevTrackBuffer = null;
-		this.#prevTrackUuid = null; // UPDATED
+		this.#prevTrackUuid = null;
 		this.#currentTrack = null;
 		this.#originalQueue = [];
 		this.#queue = [];
@@ -273,6 +341,24 @@ class PlayerStore extends BaseStore {
 		this.#pausedAt = 0;
 		this.#startedAt = 0;
 		this.emit("track_changed", null);
+		this.#syncPlayState();
+	}
+
+	// Inside your PlayerStore.js
+	init() {
+		const savedState = this.storageGet("play_state");
+		if (savedState) {
+			this.#playState = savedState;
+			this.#pausedAt = (savedState.progressMs || 0) / 1000;
+			this.#isPlaying = false;
+
+			if (savedState.currentTrack) {
+				this.#currentTrack = savedState.currentTrack;
+				// Trigger an update so listeners (like FooterDesktop) know data is ready
+				this.emit("track_changed", this.#currentTrack);
+			}
+		}
 	}
 }
+
 export { PlayerStore };

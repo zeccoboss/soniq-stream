@@ -1,5 +1,6 @@
 // services/user.service.js
 const UserModel = require("../models/user.model");
+const Track = require("../models/track.model");
 
 // Service functions related to user operations (recent searches, player state, etc.)
 const updateRecentSearches = async (userId, searchTerm) => {
@@ -41,23 +42,32 @@ const syncRecentSearches = async (userId, localArray) => {
 };
 
 // Update player state (current track, progress, isPlaying) - called on pause or heartbeat
-const updatePlayerState = async (userId, stateData) => {
-	const { trackId, progressMs, isPlaying } = stateData;
+const updatePlayerState = async (user_id, stateData) => {
+	const { trackUuid, progressMs, isPlaying } = stateData;
 
-	return await User.findByIdAndUpdate(
-		userId,
+	let trackObjectId = null;
+
+	// 1. Translate the public UUID to the internal MongoDB ObjectId
+	if (trackUuid) {
+		const track = await Track.findOne({ uuid: trackUuid }).select("_id");
+		if (track) {
+			trackObjectId = track._id;
+		}
+	}
+
+	// 2. Safely update the User using strict ObjectIds
+	return await UserModel.findByIdAndUpdate(
+		user_id, // This is now safely req.user._id from the controller
 		{
 			$set: {
-				"playerState.currentTrack": trackId,
+				"playerState.currentTrack": trackObjectId, // 🔑 Save the _id, not the uuid string
 				"playerState.progressMs": progressMs,
 				"playerState.isPlaying": isPlaying,
 				"playerState.lastUpdated": new Date(),
 			},
 		},
-		{ new: true },
-	)
-		.select("playerState")
-		.populate("playerState.currentTrack");
+		{ returnDocument: "after" },
+	).populate("playerState.currentTrack");
 };
 
 // Get last player state (current track, progress, isPlaying) - called on app launch to resume playback

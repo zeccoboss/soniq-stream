@@ -30,6 +30,7 @@ class AppStore extends BaseStore {
 
 	init() {
 		this.auth.init();
+		this.player.init();
 
 		const trackId = this.ui.captureDeepLink();
 		if (trackId) {

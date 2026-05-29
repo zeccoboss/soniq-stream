@@ -131,15 +131,16 @@ const syncSearches = async (req, res) => {
 
 // @desc    Save player state (current track, progress, isPlaying) - called on pause or heartbeat
 // @route   PATCH /api/v1/me/player
+// player.controller.js
 const savePlayerState = async (req, res) => {
 	try {
-		// req.user.id is provided by your protect middleware
 		const updatedState = await userService.updatePlayerState(
-			req.user.id,
+			req.user._id,
 			req.body,
 		);
 		res.status(200).json(updatedState.playerState);
 	} catch (error) {
+		console.error("RAW BACKEND ERROR:", error);
 		res.status(500).json({ message: "Failed to sync player state" });
 	}
 };

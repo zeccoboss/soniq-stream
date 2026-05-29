@@ -36,15 +36,23 @@ const validateSyncSearches = (req, res, next) => {
 // Schema for updating the player state
 const updatePlayerStateSchema = z.object({
 	body: z.object({
-		trackId: z.string().regex(/^[0-9a-fA-F]{24}$/, "Invalid Track ID format"),
+		// 🔑 Switched key to trackUuid
+		trackUuid: z
+			.string()
+			.uuid("Invalid Track UUID format")
+			.nullable()
+			.optional(),
+
 		progressMs: z
 			.number()
 			.min(0, "Progress cannot be negative")
 			.int("Progress must be an integer"),
+
 		isPlaying: z.boolean(),
 	}),
 });
 
+// Middleware wrapper
 // Middleware wrapper
 const validatePlayerState = (req, res, next) => {
 	try {
@@ -53,12 +61,23 @@ const validatePlayerState = (req, res, next) => {
 		});
 		next();
 	} catch (error) {
-		return res.status(400).json({
-			status: "fail",
-			errors: error.errors.map((err) => ({
-				field: err.path[1],
-				message: err.message,
-			})),
+		// 🛡️ Type-Guard: Only run .map() if it is actually a Zod validation error
+		if (error instanceof z.ZodError) {
+			return res.status(400).json({
+				status: "fail",
+				// .join('.') safely handles nested paths (e.g., 'body.trackId') without hardcoding indexes
+				errors: error.errors.map((err) => ({
+					field: err.path.join("."),
+					message: err.message,
+				})),
+			});
+		}
+
+		// 🛡️ Fallback: Catch any standard Node.js/Express errors gracefully
+		console.error("[Validation Middleware] Unexpected Error:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal server error during payload validation",
 		});
 	}
 };
