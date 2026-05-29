@@ -54,7 +54,7 @@ export const HomeMobile = async ({ state, ctx, data = {} }) => {
 					<!-- avatar navigates to /profile — wired by home.events.js -->
 					<a href="/profile" class="home-mob-avatar" id="home-mob-avatar" aria-label="Profile">
 						<img
-							src="${data.user?.avatar || "/src/assets/images/default-profile.png"}"
+							src="${data.user?.avatar.url || "/src/assets/images/default-profile.png"}"
 							alt="Profile"
 							class="home-mob-avatar-img"
 							onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"
