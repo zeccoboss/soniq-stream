@@ -6,36 +6,65 @@ import { UiStore } from "./ui.store";
 class AppStore extends BaseStore {
 	constructor() {
 		super();
-		// Initialize isolated sub-domain storage nodes
+
 		this.auth = new AuthStore();
 		this.player = new PlayerStore();
 		this.ui = new UiStore();
+
+		// if you actually have it, otherwise remove this line entirely
+		this.preferences = new BaseStore();
 	}
 
-	/**
-	 * Custom wrapper method inside orchestrator to cleanly wire cross-module values.
-	 * This allows the player engine to fetch the authenticated token dynamically!
-	 */
-	async playTrackWithAuth(track) {
-		const currentToken = this.auth.token;
-		await this.player.prepare(track, currentToken);
+	// -----------------------------
+	// Player orchestration
+	// -----------------------------
+
+	async playTrack(track) {
+		// no token passing needed
+		await this.player.prepare(track);
+		this.player.play();
 	}
+
+	// -----------------------------
+	// Deep link handling
+	// -----------------------------
+
+	async initDeepLink() {
+		const trackId = this.ui.captureDeepLink?.();
+
+		if (!trackId) return;
+
+		console.log(`[AppStore]: Deep link detected → ${trackId}`);
+
+		try {
+			// assuming you have a method somewhere to fetch track
+			const track = await this.player.trackService?.getTrackByUuid(trackId);
+
+			if (track) {
+				await this.player.prepare(track);
+			}
+		} catch (err) {
+			console.error("Deep link failed:", err);
+		}
+	}
+
+	// -----------------------------
+	// Lifecycle
+	// -----------------------------
 
 	clearAll() {
 		this.auth.clear();
 		this.player.clear();
 		this.ui.clear();
-		this.preferences.clear();
+
+		// safe guard
+		this.preferences?.clear?.();
 	}
 
 	init() {
 		this.auth.init();
-		this.player.init();
-
-		const trackId = this.ui.captureDeepLink();
-		if (trackId) {
-			console.log(`[Store]: Deep link track detected → ${trackId}`);
-		}
+		// this.player.init();
+		this.initDeepLink();
 	}
 }
 

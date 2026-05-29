@@ -1,9 +1,7 @@
 import { appConfig } from "@zecco/config/app.config";
 import { router } from "@zecco/routes/router";
-import {
-	readFromLocalStorage,
-} from "@zecco/services/storage/local-storage";
-import { store } from "@zecco/store/store";
+import { readFromLocalStorage } from "@zecco/services/storage/local-storage";
+import { store } from "@zecco/store/store.js";
 import axios from "axios";
 
 const apiClient = axios.create({
@@ -58,16 +56,16 @@ apiClient.interceptors.response.use(
 		// Check if it's explicitly an expired token
 		const isUnauthorized = error.response?.status === 401;
 		const isTokenExpired = error.response?.data?.code === "TOKEN_EXPIRED";
-		const isAuthMissingOrInvalid = error.response?.data?.code === "UNAUTHENTICATED";
+		const isAuthMissingOrInvalid =
+			error.response?.data?.code === "UNAUTHENTICATED";
 		const isRefreshRequest = originalRequest.url?.includes("/auth/refresh");
 		const shouldTryRefresh =
-			isUnauthorized && (isTokenExpired || isAuthMissingOrInvalid || !error.response?.data?.code);
+			isUnauthorized &&
+			(isTokenExpired ||
+				isAuthMissingOrInvalid ||
+				!error.response?.data?.code);
 
-		if (
-			shouldTryRefresh &&
-			!originalRequest._retry &&
-			!isRefreshRequest
-		) {
+		if (shouldTryRefresh && !originalRequest._retry && !isRefreshRequest) {
 			if (isRefreshing) {
 				return new Promise((resolve, reject) => {
 					failedQueue.push({ resolve, reject });
@@ -91,7 +89,9 @@ apiClient.interceptors.response.use(
 					.then((response) => {
 						const newAccessToken = response?.data?.accessToken;
 						if (!newAccessToken) {
-							throw new Error("Missing access token from refresh response");
+							throw new Error(
+								"Missing access token from refresh response",
+							);
 						}
 						store.auth.token = newAccessToken;
 
