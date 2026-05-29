@@ -1,4 +1,3 @@
-import axios from "axios";
 import { BaseService } from "./base.service";
 import { ENDPOINTS } from "./endpoints";
 
@@ -61,35 +60,11 @@ class TrackService extends BaseService {
 		return this.post(ENDPOINTS.TRACKS.SHARE(uuid), shareData);
 	}
 
-	// ── Streaming & Buffer Handling ──────────────────────────
+	// ── Streaming ────────────────────────────────────────────
 	streamTrack(uuid) {
 		return this.get(ENDPOINTS.TRACKS.STREAM(uuid));
 	}
 
-	/**
-	 * Fetches raw binary audio data from S3/MinIO.
-	 * Uses raw axios to bypass BaseService auth headers.
-	 */
-	async getAudioBuffer(url) {
-		try {
-			const res = await axios.get(url, {
-				withCredentials: true,
-				responseType: "arraybuffer",
-			});
-
-			// CRITICAL CHECK: Does the buffer actually have content?
-			if (!res.data || res.data.byteLength === 0) {
-				throw new Error("Received empty audio buffer from server");
-			}
-
-			return res.data;
-		} catch (error) {
-			console.error("[TrackService] Buffer fetch failed:", error);
-			throw error;
-		}
-	}
-
-	// Inside track.service.js (or wherever trackService is configured)
 	async syncPlayerStateWithDatabase(payload) {
 		return await this.patch(ENDPOINTS.TRACKS.PLAY_STATE, payload);
 	}
