@@ -17,6 +17,25 @@
 		grid-template-rows: 1fr auto;
 		grid-template-areas: "main" "footer";
 	}
+	#app {
+		display: grid;
+		grid-template-rows: 1fr auto auto;
+		grid-template-columns: 1fr;
+		grid-template-areas: "main" "mini-player" "footer";
+		overflow: hidden;
+	}
+
+	/* You already have this rule defined! Let's make it hide the child node */
+	#app.no-mini-player {
+		grid-template-rows: 1fr auto;
+		grid-template-areas: "main" "footer";
+	}
+
+	/* Add this hook inside your media query block */
+	#app.no-mini-player .mini-player {
+		display: none !important;
+		visibility: hidden;
+	}
 	#app.no-footer {
 		grid-template-rows: 1fr auto;
 		grid-template-areas: "main" "mini-player";

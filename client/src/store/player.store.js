@@ -26,6 +26,11 @@ class PlayerStore extends BaseStore {
 	#dbSyncIntervalId = null;
 	#SYNC_HEARTBEAT_MS = 30000;
 
+	// Sleep Timer State
+	#sleepTimeoutId = null;
+	#sleepIntervalId = null;
+	#sleepTimeRemaining = 0; // in milliseconds
+
 	constructor() {
 		super();
 		window.addEventListener("beforeunload", () => this.#handleUnload());
@@ -37,6 +42,7 @@ class PlayerStore extends BaseStore {
 		});
 	}
 
+	// --- Getters ---
 	get currentTrack() {
 		return this.#currentTrack;
 	}
@@ -64,6 +70,12 @@ class PlayerStore extends BaseStore {
 	get playState() {
 		return this.#playState;
 	}
+	get queueIndex() {
+		return this.#queueIndex;
+	}
+	get sleepTimeRemaining() {
+		return this.#sleepTimeRemaining;
+	}
 
 	get progress() {
 		if (!this.#audioCtx || !this.#isPlaying) return this.#pausedAt;
@@ -72,10 +84,6 @@ class PlayerStore extends BaseStore {
 
 	get duration() {
 		return this.#trackBuffer?.duration ?? 0;
-	}
-
-	get queueIndex() {
-		return this.#queueIndex;
 	}
 
 	set volume(value) {
@@ -90,6 +98,15 @@ class PlayerStore extends BaseStore {
 		this.emit("volume_changed", this.#volume);
 	}
 
+	/**
+	 * Helper parsing local cache tokens safely to prevent dependency loops.
+	 */
+	#isAuthenticated() {
+		const token = this.storageGet("token");
+		if (!token) return false;
+		return !!token;
+	}
+
 	async #syncPlayState() {
 		const currentProgressMs = Math.round(this.progress * 1000);
 		this.#playState = {
@@ -98,7 +115,11 @@ class PlayerStore extends BaseStore {
 			isPlaying: this.#isPlaying,
 		};
 
+		// Always update local cache state configuration
 		this.storageSet("play_state", this.#playState);
+
+		// Synchronize upstream only if verification token is valid
+		if (!this.#isAuthenticated()) return;
 
 		try {
 			await trackService.syncPlayerStateWithDatabase(this.#playState);
@@ -116,12 +137,18 @@ class PlayerStore extends BaseStore {
 			progressMs: Math.round(this.progress * 1000),
 			isPlaying: false,
 		};
-		const blob = new Blob([JSON.stringify(state)], {
-			type: "application/json",
-		});
-		navigator.sendBeacon("/api/v1/me/player", blob);
+
+		this.storageSet("play_state", state);
+
+		if (this.#isAuthenticated()) {
+			const blob = new Blob([JSON.stringify(state)], {
+				type: "application/json",
+			});
+			navigator.sendBeacon("/api/v1/me/player", blob);
+		}
 	}
 
+	// --- Queue Operations ---
 	async loadTrack(track) {
 		if (!track?.uuid) return;
 		this.#originalQueue = [track];
@@ -132,12 +159,60 @@ class PlayerStore extends BaseStore {
 
 	async loadQueue(tracks = [], startIndex = 0) {
 		if (!tracks.length) return;
-		this.#originalQueue = tracks;
+		this.#originalQueue = [...tracks];
 		this.#queue = [...tracks];
 		this.#queueIndex = startIndex;
 		await this.prepare(tracks[startIndex]);
 	}
 
+	/**
+	 * Appends an array of tracks or single track context object onto the tail edge of the queue array stack frame list structures.
+	 */
+	addToQueue(tracks) {
+		const incoming = Array.isArray(tracks) ? tracks : [tracks];
+		const validTracks = incoming.filter((t) => t?.uuid);
+		if (!validTracks.length) return;
+
+		this.#originalQueue.push(...validTracks);
+		this.#queue.push(...validTracks);
+
+		this.emit("queue_changed", {
+			queue: this.#queue,
+			isShuffle: this.#isShuffle,
+		});
+	}
+
+	/**
+	 * Places specified selection directly into the immediate next array stack index slot sequence.
+	 */
+	playNext(track) {
+		if (!track?.uuid) return;
+
+		// Clean duplicates safely across existing reference pools
+		this.#originalQueue = this.#originalQueue.filter(
+			(t) => t.uuid !== track.uuid,
+		);
+		this.#queue = this.#queue.filter((t) => t.uuid !== track.uuid);
+
+		// Re-align our index markers to historical baseline tracks if current frame moved
+		if (this.#currentTrack) {
+			this.#queueIndex = this.#queue.findIndex(
+				(t) => t.uuid === this.#currentTrack.uuid,
+			);
+		}
+
+		const insertPosition = this.#queue.length ? this.#queueIndex + 1 : 0;
+
+		this.#originalQueue.splice(insertPosition, 0, track);
+		this.#queue.splice(insertPosition, 0, track);
+
+		this.emit("queue_changed", {
+			queue: this.#queue,
+			isShuffle: this.#isShuffle,
+		});
+	}
+
+	// --- Audio Transport Control Layer Core Actions ---
 	play() {
 		if (!this.#trackBuffer || this.#isPlaying) return;
 		this.ensureAudioContext();
@@ -269,6 +344,62 @@ class PlayerStore extends BaseStore {
 		this.emit("repeat_changed", this.#repeatMode);
 	}
 
+	// --- Sleep Timer Utility Functions ---
+	/**
+	 * Sets up custom automated tracking teardown threads using standard time formats.
+	 * @param {number} value The raw length configuration value.
+	 * @param {"minutes" | "seconds" | "milliseconds"} dynamicUnit Type definition framework map selection.
+	 */
+	setSleepTimer(value, dynamicUnit = "minutes") {
+		this.clearSleepTimer();
+
+		if (typeof value !== "number" || value <= 0) return;
+
+		let ms = value;
+		if (dynamicUnit === "minutes") ms = value * 60 * 1000;
+		if (dynamicUnit === "seconds") ms = value * 1000;
+
+		this.#sleepTimeRemaining = ms;
+		this.emit("sleep_timer_started", this.#sleepTimeRemaining);
+
+		this.#sleepIntervalId = setInterval(() => {
+			this.#sleepTimeRemaining -= 1000;
+			if (this.#sleepTimeRemaining <= 0) {
+				this.#sleepTimeRemaining = 0;
+				clearInterval(this.#sleepIntervalId);
+				this.#sleepIntervalId = null;
+			}
+			this.emit("sleep_timer_tick", this.#sleepTimeRemaining);
+		}, 1000);
+
+		this.#sleepTimeoutId = setTimeout(() => {
+			this.pause();
+			this.clearSleepTimer();
+			this.emit("sleep_timer_expired");
+		}, ms);
+	}
+
+	clearSleepTimer() {
+		if (this.#sleepTimeoutId) {
+			clearTimeout(this.#sleepTimeoutId);
+			this.#sleepTimeoutId = null;
+		}
+		if (this.#sleepIntervalId) {
+			clearInterval(this.#sleepIntervalId);
+			this.#sleepIntervalId = null;
+		}
+		this.#sleepTimeRemaining = 0;
+		this.emit("sleep_timer_cleared");
+	}
+
+	// --- Social System Interaction Share Route ---
+	async shareCurrentTrack(platform = "generic") {
+		if (!this.#currentTrack?.uuid)
+			throw new Error("No active audio asset track context found to map.");
+		return await trackService.shareTrack(this.#currentTrack.uuid, platform);
+	}
+
+	// --- Audio Context Infrastructure Core State Engines ---
 	ensureAudioContext() {
 		if (!this.#audioCtx) {
 			this.#audioCtx = new (
@@ -308,6 +439,8 @@ class PlayerStore extends BaseStore {
 		this.emit("track_changed", this.#currentTrack);
 		this.#syncPlayState();
 
+		this.emit("player_status_changed", true);
+
 		try {
 			const res = await trackService.streamTrack(track.uuid);
 			const arrayBuffer = await trackService.getAudioBuffer(
@@ -320,7 +453,7 @@ class PlayerStore extends BaseStore {
 			this.play();
 		} catch (error) {
 			this.#isLoading = false;
-			// Add this logic:
+			this.emit("track_loading", false);
 			if (this.#queue.length > 1) {
 				console.warn("Stream failed, skipping to next track...");
 				this.nextTrack();
@@ -330,6 +463,7 @@ class PlayerStore extends BaseStore {
 
 	clear() {
 		this.pause();
+		this.clearSleepTimer();
 		this.rotateAudioCache();
 		this.#trackBuffer = null;
 		this.#prevTrackBuffer = null;
@@ -342,9 +476,9 @@ class PlayerStore extends BaseStore {
 		this.#startedAt = 0;
 		this.emit("track_changed", null);
 		this.#syncPlayState();
+		this.emit("player_status_changed", false);
 	}
 
-	// Inside your PlayerStore.js
 	init() {
 		const savedState = this.storageGet("play_state");
 		if (savedState) {
@@ -354,7 +488,6 @@ class PlayerStore extends BaseStore {
 
 			if (savedState.currentTrack) {
 				this.#currentTrack = savedState.currentTrack;
-				// Trigger an update so listeners (like FooterDesktop) know data is ready
 				this.emit("track_changed", this.#currentTrack);
 			}
 		}

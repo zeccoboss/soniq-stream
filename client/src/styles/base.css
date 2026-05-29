@@ -616,6 +616,74 @@ a {
 	display: none;
 }
 
+/* Player UTIL */
+/* --- Shimmer Loading Infrastructure Styles --- */
+.shimmer-loading {
+	position: relative;
+	overflow: hidden;
+	background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.shimmer-loading .track-fill,
+.shimmer-loading .progress-fill {
+	background: linear-gradient(
+		90deg,
+		rgba(255, 255, 255, 0.1) 25%,
+		rgba(255, 255, 255, 0.3) 37%,
+		rgba(255, 255, 255, 0.1) 63%
+	) !important;
+	background-size: 400% 100% !important;
+	animation: globalPlayerShimmer 1.4s ease infinite !important;
+}
+
+@keyframes globalPlayerShimmer {
+	0% {
+		background-position: 100% 50%;
+	}
+	100% {
+		background-position: 0% 50%;
+	}
+}
+
+/* --- MiniPlayer Progress Specific Adjustments --- */
+.mini-player {
+	position: relative;
+	/* Ensure your miniplayer has padding top or room for the thin bar */
+}
+.mini-player-progress {
+	position: absolute;
+	bottom: 0px;
+	/* 1. Center horizontally using left 50% and negative translate */
+	left: 50%;
+	transform: translateX(-50%);
+
+	width: 95%;
+	height: 3px;
+	background-color: rgba(
+		255,
+		255,
+		255,
+		0.1
+	); /* Slightly more visible background */
+	z-index: 10;
+
+	/* 2. CRITICAL FOR SHIMMER: Contains the animated fill inside the 95% width */
+	overflow: hidden;
+	border-radius: 4px; /* Optional: Rounds the edges of the bar */
+}
+
+/* Ensure the fill takes up the full height of the 3px bar */
+.mini-player-progress .progress-fill {
+	height: 100%;
+	width: 0%;
+	background-color: var(--accent);
+	transition: width 0.1s linear;
+}
+/* Clear progress animations when loading shimmer takes control override structural shifts */
+.mini-player-progress.shimmer-loading .progress-fill {
+	transition: none !important;
+}
+
 /* ══════════════════════════════════════
    PLAYER (FOOTER)
 ══════════════════════════════════════ */
@@ -687,6 +755,16 @@ a {
 	display: flex;
 	align-items: center;
 	gap: 14px;
+}
+.ctrl-btns .ctrl.active i {
+	color: var(--accent,);
+	/* text-shadow: 0 0 10px rgba(29, 185, 84, 0.4); */
+}
+
+/* Make tracks look interactive on hover */
+.vol-track,
+.track {
+	cursor: pointer;
 }
 .ctrl {
 	background: none;

@@ -14,6 +14,7 @@ import { themeManager } from "./core/theme-manager";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import "./styles/base.css";
 import "./styles/media.css";
+import { initGlobalPlayerTriggers } from "./events/player-events";
 // import { networkHandler } from "./core/network-handler";
 
 const bootstrap = async () => {
@@ -25,6 +26,8 @@ const bootstrap = async () => {
 
 	// ── For middleware initialization and start up ───────────────────────────────────
 	applyMiddleware();
+
+	initGlobalPlayerTriggers();
 
 	// ── Initialize network status monitoring and event handling  ───────────────────────────────────
 	// networkHandler.init();

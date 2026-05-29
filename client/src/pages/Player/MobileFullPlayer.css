@@ -9,9 +9,9 @@
 	display: flex;
 	flex-direction: column;
 	/* hidden by default — shown when track is playing */
-	transform: translateY(100%);
+	/* transform: translateY(100%);
 	transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1);
-	pointer-events: none;
+	pointer-events: none; */
 }
 .mobile-full-player.open {
 	transform: translateY(0);
@@ -656,3 +656,10 @@
 	font-size: 1.6rem;
 	opacity: 0.4;
 }
+
+/* When the player page is active via the orchestrator route, 
+   force the mobile shell to slide up immediately */
+/* .player-page .mobile-full-player {
+	transform: translateY(0);
+	pointer-events: all;
+} */

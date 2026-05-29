@@ -5,8 +5,19 @@ export class UiStore extends BaseStore {
 	#overlayOpen = false;
 	#deepLinkTrackId = null;
 	#isSidebarCollapsed = true; // Initial state
+	#playerActive = false;
 
 	// --- Active Page ---
+
+	get playerActive() {
+		return this.#playerActive;
+	}
+
+	set playerActive(active) {
+		this.#playerActive = active;
+		this.emit("player_active_changed", active);
+	}
+
 	get activePage() {
 		return this.#activePage;
 	}

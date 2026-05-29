@@ -30,6 +30,8 @@ export const layoutSwitcher = async (ctx, next) => {
 		"layout-root",
 		"layout-mobile",
 		"sidebar-collapsed",
+		"player-open-desktop",
+		"player-open-mobile",
 	);
 
 	// 3. Apply the new layout class

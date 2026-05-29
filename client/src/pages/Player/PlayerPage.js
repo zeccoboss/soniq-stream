@@ -33,15 +33,15 @@ const PlayerPage = async (ctx) => {
 
 	let isMounted = true;
 	const isMobile = mobileScreen.matches;
-	const app = document.getElementById("app");
+	// const app = document.getElementById("app");
 
-	// ── Add body class to hide footer / mini player ───────────
-	// CSS handles the rest — no JS show/hide needed.
-	if (isMobile) {
-		app?.classList.add("player-open-mobile");
-	} else {
-		app?.classList.add("player-open-desktop");
-	}
+	// // ── Add body class to hide footer / mini player ───────────
+	// // CSS handles the rest — no JS show/hide needed.
+	// if (isMobile) {
+	// 	app?.classList.add("player-open-mobile");
+	// } else {
+	// 	app?.classList.add("player-open-desktop");
+	// }
 
 	// ── Render ───────────────────────────────────────────────
 	const render = async () => {
@@ -68,8 +68,8 @@ const PlayerPage = async (ctx) => {
 	root.__onUnmount = () => {
 		isMounted = false;
 		// Remove app class — footer and mini player reappear
-		app?.classList.remove("player-open-mobile");
-		app?.classList.remove("player-open-desktop");
+		// app?.classList.remove("player-open-mobile");
+		// app?.classList.remove("player-open-desktop");
 	};
 
 	return root;

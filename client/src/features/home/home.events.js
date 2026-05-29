@@ -9,19 +9,6 @@ import { toast } from "@zecco/components/Toast/Toast.js";
  * Uses event delegation wherever possible to avoid
  * re-attaching listeners on genre/filter re-renders.
  *
- * Handlers:
- * 1. Retry button          → setState("skeleton")
- * 2. Search bars           → router.navigate("/search")
- * 3. Genre chips           → filter tracks in-view, setData
- * 4. Explore filter chips  → show/hide sections, setData
- * 5. Track row click       → play via store.playTrackWithAuth
- * 6. Track card click      → play via store.playTrackWithAuth
- * 7. "See all" buttons     → router.navigate with correct query
- * 8. Artist card click     → router.navigate to artist profile
- * 9. Avatar click          → router.navigate("/profile")
- * 10. Taste setup chips     → modal stubs (wired later)
- * 11. For You empty banner  → router.navigate("/?tab=discover")
- *
  * @param {Element} root  — The rendered home section
  * @param {Object}  api   — { state, setState, setData, ctx, data }
  */
@@ -147,14 +134,12 @@ export const homeEvents = (
 				// Track row
 				const row = e.target.closest(".home-track-row");
 				if (row) {
-					// UPDATED: Use dataset.uuid instead of dataset.id
 					handleTrackPlay(row.dataset.uuid, row.dataset.index, data);
 					return;
 				}
 				// Track card
 				const card = e.target.closest(".home-track-card");
 				if (card) {
-					// UPDATED: Use dataset.uuid instead of dataset.id
 					handleTrackPlay(card.dataset.uuid, null, data);
 					return;
 				}
@@ -259,11 +244,12 @@ const normaliseGenre = (genre = "") =>
 
 /**
  * Find a track by id across all data sections and play it
+ * UPDATED: Added indexHint back to parameter signature to match event execution calls cleanly
  */
 const handleTrackPlay = (trackUuid, indexHint, data) => {
 	if (!trackUuid) return;
 
-	// Build a flat pool from all track sections to find the track
+	// 1. Build a flat pool from all homepage sections to find the track metadata object
 	const pool = [
 		...(data.newUploads ?? []),
 		...(data.trending ?? []),
@@ -276,25 +262,27 @@ const handleTrackPlay = (trackUuid, indexHint, data) => {
 		...(data.newThisWeek ?? []),
 	];
 
-	// UPDATED: Strictly check t.uuid instead of falling back to t.id
+	// 2. Locate the track object explicitly checking the t.uuid field
 	const track = pool.find((t) => t.uuid === trackUuid);
 	if (!track) {
-		console.warn("[homeEvents] Track not found in data pool:", trackUuid);
+		console.warn("[homeEvents] Track not found in pool:", trackUuid);
 		return;
 	}
 
-	// Build a contextual queue from the same section the track belongs to
+	// 3. Extract the parent section array where this track lives to use as the playlist queue
 	const queue = buildContextualQueue(trackUuid, data);
+	const startIndex = queue.findIndex((t) => t.uuid === trackUuid);
 
-	if (!store.auth.isLoggedIn) {
-		// Guest — can preview but warn after a few seconds
-		// For now just play, player.prepare handles auth
-	}
-
-	store.playTrackWithAuth(track).catch((err) => {
-		console.error("[homeEvents] Play error:", err);
-		toast({ message: "Couldn't play this track. Try again.", type: "error" });
-	});
+	// 4. Pass the contextual queue and start index directly to your updated PlayerStore
+	store.player
+		.loadQueue(
+			queue.length ? queue : [track],
+			startIndex >= 0 ? startIndex : 0,
+		)
+		.catch((err) => {
+			console.error("[homeEvents] Play error:", err);
+			toast({ message: "Couldn't play this track.", type: "error" });
+		});
 };
 
 /**
@@ -315,7 +303,6 @@ const buildContextualQueue = (trackUuid, data) => {
 	].filter(Boolean);
 
 	for (const section of sections) {
-		// UPDATED: Strictly check t.uuid
 		const found = section.find((t) => t.uuid === trackUuid);
 		if (found) return section;
 	}

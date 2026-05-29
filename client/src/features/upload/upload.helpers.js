@@ -18,15 +18,8 @@ export const formatDuration = (seconds) => {
 };
 
 export const parseAudioMetadata = async (file) => {
-	console.log("[UploadHelper] 1. Starting parse for:", file.name);
-
 	try {
-		// 1. Log before the import
-		console.log(
-			"[UploadHelper] 2. Attempting to load music-metadata-browser...",
-		);
 		const mm = await import("music-metadata-browser");
-		console.log("[UploadHelper] 3. Library loaded. Object:", mm);
 
 		// 2. Identify parser
 		const parser = mm.parseBlob || mm.default?.parseBlob;
@@ -34,9 +27,8 @@ export const parseAudioMetadata = async (file) => {
 			throw new Error("parseBlob function missing in library export");
 
 		// 3. Log before parsing the file
-		console.log("[UploadHelper] 4. Parsing file blob...");
 		const metadata = await parser(file);
-		console.log("[UploadHelper] 5. Parse successful!");
+		console.log("[UploadHelper]: metadata", metadata);
 
 		const duration = formatDuration(metadata.format.duration);
 
@@ -52,6 +44,7 @@ export const parseAudioMetadata = async (file) => {
 			title: metadata.common.title || "",
 			artist: metadata.common.artist || "",
 			file: file,
+			cover: metadata.common?.picture?.data, // TODO: transform the data to actual image (objectUrl) that can be used to update the states that needs it
 		};
 	} catch (err) {
 		console.error("[UploadHelper] CRITICAL ERROR at step:", err);

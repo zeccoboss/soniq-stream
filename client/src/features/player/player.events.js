@@ -1,27 +1,10 @@
+/** biome-ignore-all lint/suspicious/useIterableCallbackReturn: <explanation> */
 import { store } from "@zecco/store/store.js";
 import { router } from "@zecco/routes/router.js";
 import { toast } from "@zecco/components/Toast/Toast.js";
 
 /**
- * playerEvents — Wires both the footer mini player and the full player page.
- *
- * Called from:
- *   - buildLayout.js   → for the footer mini player (always mounted)
- *   - PlayerPage.js    → for the full player (mounted on /player route)
- *
- * Store events consumed:
- *   play_state_changed  → update play/pause button icon
- *   track_changed       → update track info, cover, title, artist
- *   track_loading       → show/hide loading state on play button
- *   volume_changed      → update volume slider
- *   queue_changed       → re-render queue panel
- *   seeked              → sync progress bar
- *
- * @param {Element} root      — The player container (footer or full player section)
- * @param {Object}  options
- * @param {boolean} options.isMini     — true for footer mini player
- * @param {boolean} options.isMobile   — true for mobile layout
- * @param {Function} [options.collapse] — called when full player closes
+ * playerEvents — Wires both the footer mini player and the full player pages.
  */
 export const playerEvents = (
 	root,
@@ -29,13 +12,33 @@ export const playerEvents = (
 ) => {
 	if (!root) return;
 
-	// ── Element selectors ─────────────────────────────────────
-	// Shared between mini and full player where IDs match
+	// Inside player.events.js -> under "Mini player → open full player" section
+	if (isMini) {
+		const thumb = root.querySelector(".player-thumb");
+		const title = root.querySelector(".player-title");
+		const miniPlayerBar = root.querySelector(".mini-player-row-wrap"); // Or your specific wrapper class
+
+		const openFullPlayer = () => {
+			if (store.player.currentTrack) {
+				router.navigate("/player");
+			}
+		};
+
+		// Bind to individual elements or the entire track control container card
+		thumb?.addEventListener("click", openFullPlayer);
+		title?.addEventListener("click", openFullPlayer);
+		miniPlayerBar?.addEventListener("click", (e) => {
+			// Avoid expanding full screen if user hits play/pause or like button on mini bar
+			if (!e.target.closest(".ctrl") && !e.target.closest(".player-like")) {
+				openFullPlayer();
+			}
+		});
+	}
+
 	const $ = (id) =>
 		root.querySelector(`#${id}`) ?? document.getElementById(id);
-	const $$ = (sel) => root.querySelectorAll(sel);
 
-	// ── Progress RAF ──────────────────────────────────────────
+	// ── Progress RAF Loop ─────────────────────────────────────
 	let rafId = null;
 
 	const startProgressLoop = () => {
@@ -54,7 +57,7 @@ export const playerEvents = (
 		}
 	};
 
-	// ── Progress update ───────────────────────────────────────
+	// ── Progress & Time Synchronization ───────────────────────
 	const updateProgress = () => {
 		const progress = store.player.progress;
 		const duration = store.player.duration ?? 0;
@@ -62,7 +65,7 @@ export const playerEvents = (
 
 		const pct = Math.min((progress / duration) * 100, 100);
 
-		// Mini player
+		// 1. Mini Player UI
 		if (isMini) {
 			const fill =
 				$("player-track-fill") ?? root.querySelector(".track-fill");
@@ -73,62 +76,67 @@ export const playerEvents = (
 			return;
 		}
 
-		// Full player — desktop
-		const fill =
-			$("fp-progress-fill") ?? root.querySelector(".fp-progress-fill");
+		// 2. Full Player UIs (Desktop & Mobile)
+		const fill = $("dfp-progress-fill") ?? $("mfp-progress-fill");
 		if (fill) fill.style.width = `${pct}%`;
 
-		const bar =
-			$("fp-progress-bar") ?? root.querySelector(".fp-progress-bar");
-		if (bar) bar.style.setProperty("--pct", `${pct}%`);
-
-		const current =
-			$("fp-current-time") ?? root.querySelector(".fp-current-time");
+		const current = $("dfp-time-current") ?? $("mfp-time-current");
 		if (current) current.textContent = formatTime(progress);
 
-		const total = $("fp-duration") ?? root.querySelector(".fp-duration");
+		const total = $("dfp-time-total") ?? $("mfp-time-total");
 		if (total) total.textContent = formatTime(duration);
 	};
 
-	// ── Track info update ─────────────────────────────────────
+	// ── Track Information Updates ─────────────────────────────
 	const updateTrackInfo = (track) => {
 		if (!track) return;
 
-		// Cover
-		const covers = root.querySelectorAll(
-			".player-thumb-image, .fp-cover-img, .mob-fp-cover-img",
-		);
-		covers.forEach((img) => {
-			img.src = track.cover ?? "";
-			img.style.display = track.cover ? "block" : "none";
-		});
-
-		// Title
+		// Covers
 		root
 			.querySelectorAll(
-				".player-title, .fp-track-title, .mob-fp-track-title",
+				".player-thumb-image, #dfp-artwork-img, #mfp-artwork-img, #dfp-queue-now-img, #mfp-queue-now-img",
+			)
+			.forEach((img) => {
+				img.src = track.cover ?? "";
+				img.style.display = "block";
+			});
+
+		// Titles
+		root
+			.querySelectorAll(
+				".player-title, #dfp-track-title, #mfp-track-title, #dfp-queue-now-title, #mfp-queue-now-title",
 			)
 			.forEach((el) => {
 				el.textContent = track.title ?? "—";
 			});
 
-		// Artist
+		// Artists
 		root
 			.querySelectorAll(
-				".player-artist, .fp-track-artist, .mob-fp-track-artist",
+				".player-artist, #dfp-track-artist, #mfp-track-artist, #dfp-queue-now-artist, #mfp-queue-now-artist",
 			)
 			.forEach((el) => {
+				// Include genre string formatting if container handles text arrays
 				el.textContent = track.artist ?? "—";
 			});
 
-		// Duration
-		const dur = root.querySelector(".fp-duration, .mob-fp-duration");
+		// Genres (Desktop specifically displays this)
+		const genreLabel = $("dfp-track-genre");
+		if (genreLabel) genreLabel.textContent = track.genre ?? "Unknown";
+
+		// Durations
+		const dur = $("dfp-time-total") ?? $("mfp-time-total");
 		if (dur) dur.textContent = formatTime(store.player.duration ?? 0);
 	};
 
-	// ── Play/pause button sync ────────────────────────────────
+	// ── Play/Pause State Sync ─────────────────────────────────
 	const syncPlayButton = (isPlaying) => {
-		// Mini player — .ctrl.main
+		const playIcons = root.querySelectorAll("#dfp-play-icon, #mfp-play-icon");
+		playIcons.forEach((icon) => {
+			icon.className = isPlaying ? "bi bi-pause-fill" : "bi bi-play-fill";
+		});
+
+		// Mini player fallback handle
 		const miniPlay = root.querySelector(".ctrl.main");
 		if (miniPlay) {
 			miniPlay.innerHTML = isPlaying
@@ -136,112 +144,142 @@ export const playerEvents = (
 				: `<i class="bi bi-play-fill"></i>`;
 		}
 
-		// Full player — dedicated button
-		const fpPlay = $("fp-play-btn") ?? root.querySelector(".fp-play-btn");
-		if (fpPlay) {
-			fpPlay.innerHTML = isPlaying
-				? `<i class="bi bi-pause-fill"></i>`
-				: `<i class="bi bi-play-fill"></i>`;
-		}
-
-		// Mobile full player
-		const mobPlay =
-			$("mob-fp-play-btn") ?? root.querySelector(".mob-fp-play-btn");
-		if (mobPlay) {
-			mobPlay.innerHTML = isPlaying
-				? `<i class="bi bi-pause-fill"></i>`
-				: `<i class="bi bi-play-fill"></i>`;
-		}
-
 		isPlaying ? startProgressLoop() : stopProgressLoop();
 	};
 
-	// ── Shuffle button sync ───────────────────────────────────
+	// ── Shuffle & Repeat Sync ─────────────────────────────────
 	const syncShuffleBtn = (isShuffle) => {
-		root.querySelectorAll(".fp-shuffle-btn, .ctrl-shuffle").forEach((btn) => {
-			btn.classList.toggle("active-ctrl", isShuffle);
-		});
-	};
-
-	// ── Repeat button sync ────────────────────────────────────
-	const syncRepeatBtn = (mode) => {
-		root.querySelectorAll(".fp-repeat-btn, .ctrl-repeat").forEach((btn) => {
-			btn.classList.remove("active-ctrl", "repeat-one");
-			if (mode === "one") btn.classList.add("active-ctrl", "repeat-one");
-			if (mode === "all") btn.classList.add("active-ctrl");
-
-			const icon = btn.querySelector("i");
-			if (icon) {
-				icon.className = mode === "one" ? "bi bi-repeat-1" : "bi bi-repeat";
-			}
-		});
-	};
-
-	// ── Loading state ─────────────────────────────────────────
-	const syncLoadingState = (isLoading) => {
 		root
-			.querySelectorAll(".fp-play-btn, .mob-fp-play-btn, .ctrl.main")
+			.querySelectorAll("#dfp-shuffle-btn, #mfp-shuffle-btn, .ctrl-shuffle")
 			.forEach((btn) => {
-				btn.disabled = isLoading;
-				if (isLoading) {
-					btn.innerHTML = `<svg class="player-spinner" width="16" height="16" viewBox="0 0 24 24" fill="none">
-					<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"
-						stroke-dasharray="60" stroke-dashoffset="20" stroke-linecap="round"/>
-				</svg>`;
+				btn.classList.toggle("active", isShuffle);
+			});
+	};
+
+	const syncRepeatBtn = (mode) => {
+		root
+			.querySelectorAll("#dfp-repeat-btn, #mfp-repeat-btn, .ctrl-repeat")
+			.forEach((btn) => {
+				btn.classList.remove("active");
+				const icon = btn.querySelector("i");
+
+				if (mode === "one") {
+					btn.classList.add("active");
+					if (icon) icon.className = "bi bi-repeat-1";
+				} else if (mode === "all") {
+					btn.classList.add("active");
+					if (icon) icon.className = "bi bi-repeat";
+				} else {
+					if (icon) icon.className = "bi bi-repeat";
 				}
 			});
 	};
 
-	// ── Volume sync ───────────────────────────────────────────
-	const syncVolume = (vol) => {
-		// Mini player vol fill
-		const volFill = root.querySelector(".vol-fill");
-		if (volFill) volFill.style.width = `${vol * 100}%`;
-
-		// Full player range input
-		const volInput =
-			$("fp-volume-input") ?? root.querySelector(".fp-volume-input");
-		if (volInput) volInput.value = vol;
+	// ── Loading Spinner State ─────────────────────────────────
+	const syncLoadingState = (isLoading) => {
+		root
+			.querySelectorAll("#dfp-play-btn, #mfp-play-btn, .ctrl.main")
+			.forEach((btn) => {
+				btn.disabled = isLoading;
+				if (isLoading) {
+					btn.innerHTML = `
+               <svg class="player-spinner" width="18" height="18" viewBox="0 0 24 24" fill="none" style="animation: spin 1s linear infinite;">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2.5" stroke-dasharray="45" stroke-linecap="round"/>
+               </svg>`;
+				} else {
+					const isPlaying = store.player.isPlaying;
+					btn.innerHTML = `<i class="${isPlaying ? "bi bi-pause-fill" : "bi bi-play-fill"}" id="${btn.id ? btn.id.replace("btn", "icon") : ""}"></i>`;
+				}
+			});
 	};
 
-	// ── Queue panel update ────────────────────────────────────
+	// ── Volume Interface Matrix ───────────────────────────────
+	const syncVolume = (vol) => {
+		// Mini Player Fill
+		const miniVolFill = root.querySelector(".vol-fill");
+		if (miniVolFill) miniVolFill.style.width = `${vol * 100}%`;
+
+		// Custom Dashboard Bars
+		const volFill = $("dfp-vol-fill") ?? $("mfp-vol-fill");
+		if (volFill) volFill.style.width = `${vol * 100}%`;
+	};
+
+	// ── Queue Engine Render ───────────────────────────────────
 	const updateQueuePanel = () => {
-		const queueList =
-			$("fp-queue-list") ?? root.querySelector(".fp-queue-list");
+		const queueList = $("dfp-queue-list") ?? $("mfp-queue-list");
 		if (!queueList) return;
 
 		const queue = store.player.queue;
 		const currentIndex = store.player.queueIndex ?? 0;
 
-		queueList.innerHTML = queue
-			.map(
-				(track, i) => `
-			<div class="fp-queue-item ${i === currentIndex ? "fp-queue-item--active" : ""}"
-				data-uuid="${track.uuid ?? ""}" data-index="${i}">
-				<div class="fp-queue-cover">
-					<img src="${track.cover ?? ""}" alt="${track.title}"
-						class="fp-queue-img"
-						onerror="this.style.display='none'" />
-					<div class="fp-queue-fallback">${(track.title ?? "?").charAt(0).toUpperCase()}</div>
-				</div>
-				<div class="fp-queue-meta">
-					<span class="fp-queue-title">${track.title ?? "—"}</span>
-					<span class="fp-queue-artist">${track.artist ?? "—"}</span>
-				</div>
-				${i === currentIndex ? `<i class="bi bi-volume-up fp-queue-playing-icon"></i>` : ""}
-			</div>
-		`,
-			)
+		// Update counters
+		const countLabel = $("dfp-queue-count");
+		if (countLabel)
+			countLabel.textContent = `${queue.length} track${queue.length === 1 ? "" : "s"}`;
+
+		const pillSub = $("mfp-queue-sub");
+		if (pillSub)
+			pillSub.textContent =
+				queue.length > 0
+					? `${queue.length} tracks up next`
+					: "Nothing queued";
+
+		const emptyState = $("dfp-queue-empty") ?? $("mfp-queue-empty");
+
+		if (queue.length <= 1) {
+			if (emptyState) emptyState.style.display = "flex";
+			// Keep context header label but flush remaining old items
+			const labels = queueList.querySelectorAll(
+				".dfp-queue-section-label, .mfp-queue-section-label",
+			);
+			queueList.replaceChildren(...labels, emptyState);
+			return;
+		}
+
+		if (emptyState) emptyState.style.display = "none";
+
+		const prefix = isMobile ? "mfp" : "dfp";
+
+		// Slice out track lists to display only upcoming items
+		const upcomingTracks = queue.slice(currentIndex + 1);
+
+		const itemsHtml = upcomingTracks
+			.map((track, i) => {
+				const trueIndex = currentIndex + 1 + i;
+				return `
+            <div class="${prefix}-queue-item" data-index="${trueIndex}">
+               <div class="${prefix}-qi-drag"><i class="bi bi-grip-vertical"></i></div>
+               <div class="${prefix}-qi-cover">
+                  <img src="${track.cover ?? ""}" alt="" onerror="this.style.display='none'" />
+               </div>
+               <div class="${prefix}-qi-info">
+                  <div class="${prefix}-qi-title">${track.title ?? "—"}</div>
+                  <div class="${prefix}-qi-artist">${track.artist ?? "—"}</div>
+               </div>
+               <span class="${prefix}-qi-dur">--:--</span>
+               <button class="${prefix}-qi-more"><i class="bi bi-three-dots"></i></button>
+            </div>
+         `;
+			})
 			.join("");
 
-		// Queue item click → jump to that track
-		queueList.querySelectorAll(".fp-queue-item").forEach((item) => {
-			item.addEventListener("click", () => {
+		// Preserve label and push items
+		const labelMarkup = `<p class="${prefix}-queue-section-label ${prefix}-queue-next-label">Up Next</p>`;
+		queueList.innerHTML = labelMarkup + itemsHtml;
+
+		// Bind row clicks to skip ahead directly in the playlist array
+		queueList.querySelectorAll(`.${prefix}-queue-item`).forEach((item) => {
+			item.addEventListener("click", (e) => {
+				if (
+					e.target.closest(`.${prefix}-qi-more`) ||
+					e.target.closest(`.${prefix}-qi-drag`)
+				)
+					return;
 				const index = Number(item.dataset.index);
-				const track = queue[index];
-				if (track) {
-					store.player.prepare(track).catch((err) => {
-						toast({ message: "Couldn't play track.", type: "error" });
+				const targetTrack = queue[index];
+				if (targetTrack) {
+					store.player.prepare(targetTrack).catch(() => {
+						toast({ message: "Error changing tracks", type: "error" });
 					});
 				}
 			});
@@ -249,201 +287,137 @@ export const playerEvents = (
 	};
 
 	// ══════════════════════════════════════════════════════════
-	// STORE EVENT SUBSCRIPTIONS
+	// DELEGATED STORE EVENT BINDINGS
 	// ══════════════════════════════════════════════════════════
-	const unsubs = [];
-
-	unsubs.push(
-		store.player.on("play_state_changed", ({ isPlaying }) => {
-			syncPlayButton(isPlaying);
-		}),
-	);
-
-	unsubs.push(
+	const unsubs = [
+		store.player.on("play_state_changed", ({ isPlaying }) =>
+			syncPlayButton(isPlaying),
+		),
 		store.player.on("track_changed", (track) => {
 			updateTrackInfo(track);
 			updateQueuePanel();
-			// Reset progress bar
 			updateProgress();
 		}),
-	);
-
-	unsubs.push(
-		store.player.on("track_loading", (isLoading) => {
-			syncLoadingState(isLoading);
-		}),
-	);
-
-	unsubs.push(
-		store.player.on("volume_changed", (vol) => {
-			syncVolume(vol);
-		}),
-	);
-
-	unsubs.push(
-		store.player.on("queue_changed", () => {
-			updateQueuePanel();
-		}),
-	);
-
-	unsubs.push(
-		store.player.on("seeked", () => {
-			updateProgress();
-		}),
-	);
+		store.player.on("track_loading", (isLoading) =>
+			syncLoadingState(isLoading),
+		),
+		store.player.on("volume_changed", (vol) => syncVolume(vol)),
+		store.player.on("queue_changed", () => updateQueuePanel()),
+		store.player.on("seeked", () => updateProgress()),
+	];
 
 	// ══════════════════════════════════════════════════════════
-	// DOM EVENT LISTENERS
+	// COMPONENT DOM INTERACTION HANDLERS
 	// ══════════════════════════════════════════════════════════
 
-	// ── Play / Pause ──────────────────────────────────────────
-	const playBtns = root.querySelectorAll(
-		".ctrl.main, .fp-play-btn, .mob-fp-play-btn",
-	);
-	playBtns.forEach((btn) => {
-		btn.addEventListener("click", () => store.player.togglePlay());
-	});
-
-	// ── Next ─────────────────────────────────────────────────
+	// Playback Core Hooks
 	root
-		.querySelectorAll(".ctrl-next, .fp-next-btn, .mob-fp-next-btn")
-		.forEach((btn) => {
-			btn.addEventListener("click", () => store.player.nextTrack());
-		});
+		.querySelectorAll("#dfp-play-btn, #mfp-play-btn, .ctrl.main")
+		.forEach((btn) =>
+			btn.addEventListener("click", () => store.player.togglePlay()),
+		);
 
-	// ── Prev ─────────────────────────────────────────────────
 	root
-		.querySelectorAll(".ctrl-prev, .fp-prev-btn, .mob-fp-prev-btn")
-		.forEach((btn) => {
-			btn.addEventListener("click", () => store.player.prevTrack());
-		});
+		.querySelectorAll("#dfp-next-btn, #mfp-next-btn, .ctrl-next")
+		.forEach((btn) =>
+			btn.addEventListener("click", () => store.player.nextTrack()),
+		);
 
-	// ── Shuffle ───────────────────────────────────────────────
-	root.querySelectorAll(".fp-shuffle-btn, .ctrl-shuffle").forEach((btn) => {
-		btn.addEventListener("click", () => {
-			store.player.toggleShuffle();
-			syncShuffleBtn(store.player.isShuffle);
-		});
-	});
+	root
+		.querySelectorAll("#dfp-prev-btn, #mfp-prev-btn, .ctrl-prev")
+		.forEach((btn) =>
+			btn.addEventListener("click", () => store.player.prevTrack()),
+		);
 
-	// ── Repeat ────────────────────────────────────────────────
-	root.querySelectorAll(".fp-repeat-btn, .ctrl-repeat").forEach((btn) => {
-		btn.addEventListener("click", () => {
-			store.player.toggleRepeat();
-			syncRepeatBtn(store.player.repeatMode);
-		});
-	});
+	root
+		.querySelectorAll("#dfp-shuffle-btn, #mfp-shuffle-btn")
+		.forEach((btn) =>
+			btn.addEventListener("click", () => store.player.toggleShuffle()),
+		);
 
-	// ── Progress bar seek — mini player ──────────────────────
-	const miniTrack = root.querySelector(".track");
-	if (miniTrack) {
-		miniTrack.addEventListener("click", (e) => {
-			const rect = miniTrack.getBoundingClientRect();
-			const pct = (e.clientX - rect.left) / rect.width;
-			const dur = store.player.duration ?? 0;
-			if (dur) store.player.seekTo(pct * dur);
-		});
-	}
+	root
+		.querySelectorAll("#dfp-repeat-btn, #mfp-repeat-btn")
+		.forEach((btn) =>
+			btn.addEventListener("click", () => store.player.toggleRepeat()),
+		);
 
-	// ── Progress bar seek — full player ──────────────────────
-	const fpBar = $("fp-progress-bar") ?? root.querySelector(".fp-progress-bar");
-	if (fpBar) {
-		fpBar.addEventListener("click", (e) => {
-			const rect = fpBar.getBoundingClientRect();
-			const pct = (e.clientX - rect.left) / rect.width;
-			const dur = store.player.duration ?? 0;
-			if (dur) store.player.seekTo(pct * dur);
-		});
-
-		// Drag support
-		let dragging = false;
-		fpBar.addEventListener("mousedown", () => {
-			dragging = true;
-		});
-		window.addEventListener("mousemove", (e) => {
-			if (!dragging) return;
-			const rect = fpBar.getBoundingClientRect();
+	// Custom Timeline Scrub Seek Logic
+	const progressTrack =
+		$("dfp-progress-bar") ??
+		$("mfp-progress-bar") ??
+		root.querySelector(".track");
+	if (progressTrack) {
+		const handleSeek = (clientX) => {
+			const rect = progressTrack.getBoundingClientRect();
 			const pct = Math.min(
 				1,
-				Math.max(0, (e.clientX - rect.left) / rect.width),
+				Math.max(0, (clientX - rect.left) / rect.width),
 			);
 			const dur = store.player.duration ?? 0;
 			if (dur) store.player.seekTo(pct * dur);
-		});
-		window.addEventListener("mouseup", () => {
-			dragging = false;
-		});
+		};
 
-		// Touch seek
-		fpBar.addEventListener(
+		progressTrack.addEventListener("click", (e) => handleSeek(e.clientX));
+
+		// Mobile Touch Support
+		progressTrack.addEventListener(
 			"touchstart",
-			(e) => {
-				const rect = fpBar.getBoundingClientRect();
-				const touch = e.touches[0];
-				const pct = Math.min(
-					1,
-					Math.max(0, (touch.clientX - rect.left) / rect.width),
-				);
-				const dur = store.player.duration ?? 0;
-				if (dur) store.player.seekTo(pct * dur);
-			},
+			(e) => handleSeek(e.touches[0].clientX),
 			{ passive: true },
 		);
 	}
 
-	// ── Volume — mini player track click ─────────────────────
-	const volTrack = root.querySelector(".vol-track");
-	if (volTrack) {
-		volTrack.addEventListener("click", (e) => {
-			const rect = volTrack.getBoundingClientRect();
+	// Custom Slider Track Volume Management
+	const volumeTrack =
+		$("dfp-vol-bar") ?? $("mfp-vol-bar") ?? root.querySelector(".vol-track");
+	if (volumeTrack) {
+		const handleVolumeScrub = (clientX) => {
+			const rect = volumeTrack.getBoundingClientRect();
 			const pct = Math.min(
 				1,
-				Math.max(0, (e.clientX - rect.left) / rect.width),
+				Math.max(0, (clientX - rect.left) / rect.width),
 			);
 			store.player.volume = pct;
-		});
+		};
+
+		volumeTrack.addEventListener("click", (e) =>
+			handleVolumeScrub(e.clientX),
+		);
 	}
 
-	// ── Volume — full player range input ─────────────────────
-	const volInput =
-		$("fp-volume-input") ?? root.querySelector(".fp-volume-input");
-	if (volInput) {
-		volInput.addEventListener("input", (e) => {
-			store.player.volume = Number(e.target.value);
-		});
-	}
-
-	// ── Volume icon mute toggle ───────────────────────────────
-	root.querySelectorAll(".vol-icon, .fp-vol-icon").forEach((icon) => {
-		icon.addEventListener("click", () => {
-			store.player.volume = store.player.volume > 0 ? 0 : 1;
-			syncVolume(store.player.volume);
-		});
-	});
-
-	// ── Mini player → open full player ───────────────────────
-	if (isMini) {
-		const thumb = root.querySelector(".player-thumb");
-		const title = root.querySelector(".player-title");
-		[thumb, title].forEach((el) => {
-			el?.addEventListener("click", () => {
-				if (store.player.currentTrack) router.navigate("/player");
+	// Toggle Mute Action
+	root
+		.querySelectorAll(".vol-icon, .dfp-vol-icon, .mfp-vol-icon")
+		.forEach((icon) => {
+			icon.addEventListener("click", () => {
+				store.player.volume = store.player.volume > 0 ? 0 : 0.7;
 			});
 		});
 
-		// Like button in mini player
-		root.querySelector(".player-like")?.addEventListener("click", () => {
-			// TODO: wire to library/likes API
-			toast({ message: "Liked!", type: "success", duration: 1500 });
-		});
+	// View Navigation Closures
+	if (isMini) {
+		const thumb = root.querySelector(".player-thumb");
+		const title = root.querySelector(".player-title");
+		[thumb, title].forEach((el) =>
+			el?.addEventListener("click", () => {
+				if (store.player.currentTrack) router.navigate("/player");
+			}),
+		);
 	}
 
-	// ── Full player collapse ──────────────────────────────────
-	root
-		.querySelector("#fp-close-btn, .fp-close-btn")
-		?.addEventListener("click", () => collapse?.());
+	$("dfp-back-btn")?.addEventListener("click", () => collapse?.());
+	$("mfp-collapse-btn")?.addEventListener("click", () => router.replace("/"));
 
-	// Mobile swipe down to collapse
+	// Mobile View-Layer Slides (Dashboard ↔ Queue Layout Container)
+	$("mfp-queue-pill-btn")?.addEventListener("click", () => {
+		$("mfp-queue-view")?.classList.add("active-mfp-view");
+	});
+
+	$("mfp-queue-close-btn")?.addEventListener("click", () => {
+		$("mfp-queue-view")?.classList.remove("active-mfp-view");
+	});
+
+	// Swipe down gesture to exit on mobile hardware
 	if (isMobile && !isMini) {
 		let touchStartY = 0;
 		root.addEventListener(
@@ -457,33 +431,17 @@ export const playerEvents = (
 			"touchend",
 			(e) => {
 				const diff = e.changedTouches[0].clientY - touchStartY;
-				if (diff > 80) collapse?.(); // swipe down 80px → collapse
+				if (diff > 80 && !e.target.closest("#mfp-queue-list")) collapse?.();
 			},
 			{ passive: true },
 		);
 	}
 
-	// ── Full player queue toggle ──────────────────────────────
-	root
-		.querySelector("#fp-queue-toggle, .fp-queue-toggle")
-		?.addEventListener("click", () => {
-			const panel = root.querySelector(".fp-queue-panel");
-			if (panel) panel.classList.toggle("fp-queue-panel--open");
-		});
-
-	// ── Like button — full player ─────────────────────────────
-	root
-		.querySelector("#fp-like-btn, .fp-like-btn")
-		?.addEventListener("click", () => {
-			// TODO: wire to library/likes API
-			toast({ message: "Liked!", type: "success", duration: 1500 });
-		});
-
-	// ── Keyboard shortcuts (full player only) ─────────────────
+	// Keyboard System Infrastructure Shortcuts
 	if (!isMini) {
 		const onKeyDown = (e) => {
-			// Don't fire if focus is in an input
-			if (e.target.tagName === "INPUT") return;
+			if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")
+				return;
 
 			switch (e.code) {
 				case "Space":
@@ -496,18 +454,6 @@ export const playerEvents = (
 				case "ArrowLeft":
 					store.player.seekTo(store.player.progress - 5);
 					break;
-				case "ArrowUp":
-					store.player.volume = Math.min(1, store.player.volume + 0.1);
-					break;
-				case "ArrowDown":
-					store.player.volume = Math.max(0, store.player.volume - 0.1);
-					break;
-				case "KeyN":
-					store.player.nextTrack();
-					break;
-				case "KeyP":
-					store.player.prevTrack();
-					break;
 				case "Escape":
 					collapse?.();
 					break;
@@ -518,7 +464,7 @@ export const playerEvents = (
 	}
 
 	// ══════════════════════════════════════════════════════════
-	// BOOT — sync UI with current store state on mount
+	// SYSTEM BOOT COLD START SYNC
 	// ══════════════════════════════════════════════════════════
 	const track = store.player.currentTrack;
 	if (track) {
@@ -533,7 +479,7 @@ export const playerEvents = (
 	}
 
 	// ══════════════════════════════════════════════════════════
-	// CLEANUP — returned for caller to invoke on unmount
+	// DISPOSAL UNMOUNT LIFECYCLE
 	// ══════════════════════════════════════════════════════════
 	return () => {
 		stopProgressLoop();
@@ -541,7 +487,6 @@ export const playerEvents = (
 	};
 };
 
-// ── Helpers ───────────────────────────────────────────────────
 const formatTime = (seconds = 0) => {
 	const s = Math.floor(seconds);
 	const m = Math.floor(s / 60);

@@ -9,22 +9,21 @@
 	grid-template-columns: 1fr 340px;
 	overflow: hidden;
 	/* hidden by default */
-	opacity: 0;
+	/* opacity: 0;
 	pointer-events: none;
-	transition: opacity 0.25s ease;
-	visibility: hidden;
+	transition: opacity 0.25s ease; */
 }
 .desktop-full-player.open {
 	opacity: 1;
 	pointer-events: all;
-	visibility: visible;
+	/* visibility: visible; */
 }
 
-#app.player-open-desktop .desktop-full-player {
+/* #app.player-open-desktop .desktop-full-player {
 	opacity: 1;
 	pointer-events: all;
 	visibility: visible;
-}
+} */
 
 /* ══════════════════════════════════════
    AMBIENT BACKGROUND
