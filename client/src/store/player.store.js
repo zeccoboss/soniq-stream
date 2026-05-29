@@ -113,9 +113,14 @@ class PlayerStore extends BaseStore {
 
 	ensureAudioContext() {
 		if (!this.#audioCtx) {
-			this.#audioCtx = new (
-				window.AudioContext || window.webkitAudioContext
-			)();
+			// Use standard or webkit for older iOS
+			const AudioContextClass =
+				window.AudioContext || window.webkitAudioContext;
+			this.#audioCtx = new AudioContextClass();
+
+			// This is crucial for mobile:
+			// By default, some iOS versions don't route correctly to speakers
+			// if the context isn't tied to the interaction chain.
 			this.#sourceNode = this.#audioCtx.createMediaElementSource(
 				this.#audio,
 			);
@@ -129,8 +134,12 @@ class PlayerStore extends BaseStore {
 			this.#gainNode.gain.value = this.#volume;
 		}
 
+		// iOS/Mobile: This is the magic line.
+		// It must be called after a user touch event.
 		if (this.#audioCtx.state === "suspended") {
-			this.#audioCtx.resume();
+			this.#audioCtx.resume().then(() => {
+				console.log("AudioContext resumed successfully");
+			});
 		}
 	}
 

@@ -12,11 +12,10 @@ export const playerEvents = (
 ) => {
 	if (!root) return;
 
-	// Inside player.events.js -> under "Mini player → open full player" section
 	if (isMini) {
 		const thumb = root.querySelector(".player-thumb");
 		const title = root.querySelector(".player-title");
-		const miniPlayerBar = root.querySelector(".mini-player-row-wrap"); // Or your specific wrapper class
+		const miniPlayerBar = root.querySelector(".mini-player-row-wrap");
 
 		const openFullPlayer = () => {
 			if (store.player.currentTrack) {
@@ -24,11 +23,9 @@ export const playerEvents = (
 			}
 		};
 
-		// Bind to individual elements or the entire track control container card
 		thumb?.addEventListener("click", openFullPlayer);
 		title?.addEventListener("click", openFullPlayer);
 		miniPlayerBar?.addEventListener("click", (e) => {
-			// Avoid expanding full screen if user hits play/pause or like button on mini bar
 			if (!e.target.closest(".ctrl") && !e.target.closest(".player-like")) {
 				openFullPlayer();
 			}
@@ -38,7 +35,6 @@ export const playerEvents = (
 	const $ = (id) =>
 		root.querySelector(`#${id}`) ?? document.getElementById(id);
 
-	// ── Progress RAF Loop ─────────────────────────────────────
 	let rafId = null;
 
 	const startProgressLoop = () => {
@@ -57,7 +53,6 @@ export const playerEvents = (
 		}
 	};
 
-	// ── Progress & Time Synchronization ───────────────────────
 	const updateProgress = () => {
 		const progress = store.player.progress;
 		const duration = store.player.duration ?? 0;
@@ -65,7 +60,6 @@ export const playerEvents = (
 
 		const pct = Math.min((progress / duration) * 100, 100);
 
-		// 1. Mini Player UI
 		if (isMini) {
 			const fill =
 				$("player-track-fill") ?? root.querySelector(".track-fill");
@@ -76,7 +70,6 @@ export const playerEvents = (
 			return;
 		}
 
-		// 2. Full Player UIs (Desktop & Mobile)
 		const fill = $("dfp-progress-fill") ?? $("mfp-progress-fill");
 		if (fill) fill.style.width = `${pct}%`;
 
@@ -87,11 +80,9 @@ export const playerEvents = (
 		if (total) total.textContent = formatTime(duration);
 	};
 
-	// ── Track Information Updates ─────────────────────────────
 	const updateTrackInfo = (track) => {
 		if (!track) return;
 
-		// Covers
 		root
 			.querySelectorAll(
 				".player-thumb-image, #dfp-artwork-img, #mfp-artwork-img, #dfp-queue-now-img, #mfp-queue-now-img",
@@ -101,7 +92,6 @@ export const playerEvents = (
 				img.style.display = "block";
 			});
 
-		// Titles
 		root
 			.querySelectorAll(
 				".player-title, #dfp-track-title, #mfp-track-title, #dfp-queue-now-title, #mfp-queue-now-title",
@@ -110,33 +100,27 @@ export const playerEvents = (
 				el.textContent = track.title ?? "—";
 			});
 
-		// Artists
 		root
 			.querySelectorAll(
 				".player-artist, #dfp-track-artist, #mfp-track-artist, #dfp-queue-now-artist, #mfp-queue-now-artist",
 			)
 			.forEach((el) => {
-				// Include genre string formatting if container handles text arrays
 				el.textContent = track.artist ?? "—";
 			});
 
-		// Genres (Desktop specifically displays this)
 		const genreLabel = $("dfp-track-genre");
 		if (genreLabel) genreLabel.textContent = track.genre ?? "Unknown";
 
-		// Durations
 		const dur = $("dfp-time-total") ?? $("mfp-time-total");
 		if (dur) dur.textContent = formatTime(store.player.duration ?? 0);
 	};
 
-	// ── Play/Pause State Sync ─────────────────────────────────
 	const syncPlayButton = (isPlaying) => {
 		const playIcons = root.querySelectorAll("#dfp-play-icon, #mfp-play-icon");
 		playIcons.forEach((icon) => {
 			icon.className = isPlaying ? "bi bi-pause-fill" : "bi bi-play-fill";
 		});
 
-		// Mini player fallback handle
 		const miniPlay = root.querySelector(".ctrl.main");
 		if (miniPlay) {
 			miniPlay.innerHTML = isPlaying
@@ -147,7 +131,6 @@ export const playerEvents = (
 		isPlaying ? startProgressLoop() : stopProgressLoop();
 	};
 
-	// ── Shuffle & Repeat Sync ─────────────────────────────────
 	const syncShuffleBtn = (isShuffle) => {
 		root
 			.querySelectorAll("#dfp-shuffle-btn, #mfp-shuffle-btn, .ctrl-shuffle")
@@ -175,7 +158,6 @@ export const playerEvents = (
 			});
 	};
 
-	// ── Loading Spinner State ─────────────────────────────────
 	const syncLoadingState = (isLoading) => {
 		root
 			.querySelectorAll("#dfp-play-btn, #mfp-play-btn, .ctrl.main")
@@ -193,18 +175,14 @@ export const playerEvents = (
 			});
 	};
 
-	// ── Volume Interface Matrix ───────────────────────────────
 	const syncVolume = (vol) => {
-		// Mini Player Fill
 		const miniVolFill = root.querySelector(".vol-fill");
 		if (miniVolFill) miniVolFill.style.width = `${vol * 100}%`;
 
-		// Custom Dashboard Bars
 		const volFill = $("dfp-vol-fill") ?? $("mfp-vol-fill");
 		if (volFill) volFill.style.width = `${vol * 100}%`;
 	};
 
-	// ── Queue Engine Render ───────────────────────────────────
 	const updateQueuePanel = () => {
 		const queueList = $("dfp-queue-list") ?? $("mfp-queue-list");
 		if (!queueList) return;
@@ -212,7 +190,6 @@ export const playerEvents = (
 		const queue = store.player.queue;
 		const currentIndex = store.player.queueIndex ?? 0;
 
-		// Update counters
 		const countLabel = $("dfp-queue-count");
 		if (countLabel)
 			countLabel.textContent = `${queue.length} track${queue.length === 1 ? "" : "s"}`;
@@ -228,7 +205,6 @@ export const playerEvents = (
 
 		if (queue.length <= 1) {
 			if (emptyState) emptyState.style.display = "flex";
-			// Keep context header label but flush remaining old items
 			const labels = queueList.querySelectorAll(
 				".dfp-queue-section-label, .mfp-queue-section-label",
 			);
@@ -240,7 +216,6 @@ export const playerEvents = (
 
 		const prefix = isMobile ? "mfp" : "dfp";
 
-		// Slice out track lists to display only upcoming items
 		const upcomingTracks = queue.slice(currentIndex + 1);
 
 		const itemsHtml = upcomingTracks
@@ -263,11 +238,9 @@ export const playerEvents = (
 			})
 			.join("");
 
-		// Preserve label and push items
 		const labelMarkup = `<p class="${prefix}-queue-section-label ${prefix}-queue-next-label">Up Next</p>`;
 		queueList.innerHTML = labelMarkup + itemsHtml;
 
-		// Bind row clicks to skip ahead directly in the playlist array
 		queueList.querySelectorAll(`.${prefix}-queue-item`).forEach((item) => {
 			item.addEventListener("click", (e) => {
 				if (
@@ -275,20 +248,17 @@ export const playerEvents = (
 					e.target.closest(`.${prefix}-qi-drag`)
 				)
 					return;
+
+				// Fix: Force audio context on gesture & use playAt for index tracking
+				store.player.ensureAudioContext();
 				const index = Number(item.dataset.index);
-				const targetTrack = queue[index];
-				if (targetTrack) {
-					store.player.prepare(targetTrack).catch(() => {
-						toast({ message: "Error changing tracks", type: "error" });
-					});
-				}
+				store.player.playAt(index).catch(() => {
+					toast({ message: "Error changing tracks", type: "error" });
+				});
 			});
 		});
 	};
 
-	// ══════════════════════════════════════════════════════════
-	// DELEGATED STORE EVENT BINDINGS
-	// ══════════════════════════════════════════════════════════
 	const unsubs = [
 		store.player.on("play_state_changed", ({ isPlaying }) =>
 			syncPlayButton(isPlaying),
@@ -306,15 +276,13 @@ export const playerEvents = (
 		store.player.on("seeked", () => updateProgress()),
 	];
 
-	// ══════════════════════════════════════════════════════════
-	// COMPONENT DOM INTERACTION HANDLERS
-	// ══════════════════════════════════════════════════════════
-
-	// Playback Core Hooks
 	root
 		.querySelectorAll("#dfp-play-btn, #mfp-play-btn, .ctrl.main")
 		.forEach((btn) =>
-			btn.addEventListener("click", () => store.player.togglePlay()),
+			btn.addEventListener("click", () => {
+				store.player.ensureAudioContext();
+				store.player.togglePlay();
+			}),
 		);
 
 	root
@@ -341,7 +309,6 @@ export const playerEvents = (
 			btn.addEventListener("click", () => store.player.toggleRepeat()),
 		);
 
-	// Custom Timeline Scrub Seek Logic
 	const progressTrack =
 		$("dfp-progress-bar") ??
 		$("mfp-progress-bar") ??
@@ -359,7 +326,6 @@ export const playerEvents = (
 
 		progressTrack.addEventListener("click", (e) => handleSeek(e.clientX));
 
-		// Mobile Touch Support
 		progressTrack.addEventListener(
 			"touchstart",
 			(e) => handleSeek(e.touches[0].clientX),
@@ -367,7 +333,6 @@ export const playerEvents = (
 		);
 	}
 
-	// Custom Slider Track Volume Management
 	const volumeTrack =
 		$("dfp-vol-bar") ?? $("mfp-vol-bar") ?? root.querySelector(".vol-track");
 	if (volumeTrack) {
@@ -385,16 +350,14 @@ export const playerEvents = (
 		);
 	}
 
-	// Toggle Mute Action
 	root
 		.querySelectorAll(".vol-icon, .dfp-vol-icon, .mfp-vol-icon")
 		.forEach((icon) => {
 			icon.addEventListener("click", () => {
-				store.player.volume = store.player.volume > 0 ? 0 : 0.7;
+				store.player.toggleMute();
 			});
 		});
 
-	// View Navigation Closures
 	if (isMini) {
 		const thumb = root.querySelector(".player-thumb");
 		const title = root.querySelector(".player-title");
@@ -408,7 +371,6 @@ export const playerEvents = (
 	$("dfp-back-btn")?.addEventListener("click", () => collapse?.());
 	$("mfp-collapse-btn")?.addEventListener("click", () => router.replace("/"));
 
-	// Mobile View-Layer Slides (Dashboard ↔ Queue Layout Container)
 	$("mfp-queue-pill-btn")?.addEventListener("click", () => {
 		$("mfp-queue-view")?.classList.add("active-mfp-view");
 	});
@@ -417,7 +379,6 @@ export const playerEvents = (
 		$("mfp-queue-view")?.classList.remove("active-mfp-view");
 	});
 
-	// Swipe down gesture to exit on mobile hardware
 	if (isMobile && !isMini) {
 		let touchStartY = 0;
 		root.addEventListener(
@@ -437,7 +398,6 @@ export const playerEvents = (
 		);
 	}
 
-	// Keyboard System Infrastructure Shortcuts
 	if (!isMini) {
 		const onKeyDown = (e) => {
 			if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")
@@ -463,9 +423,6 @@ export const playerEvents = (
 		unsubs.push(() => document.removeEventListener("keydown", onKeyDown));
 	}
 
-	// ══════════════════════════════════════════════════════════
-	// SYSTEM BOOT COLD START SYNC
-	// ══════════════════════════════════════════════════════════
 	const track = store.player.currentTrack;
 	if (track) {
 		updateTrackInfo(track);
@@ -478,9 +435,6 @@ export const playerEvents = (
 		if (store.player.isPlaying) startProgressLoop();
 	}
 
-	// ══════════════════════════════════════════════════════════
-	// DISPOSAL UNMOUNT LIFECYCLE
-	// ══════════════════════════════════════════════════════════
 	return () => {
 		stopProgressLoop();
 		unsubs.forEach((unsub) => typeof unsub === "function" && unsub());
