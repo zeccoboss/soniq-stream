@@ -11,6 +11,7 @@ const ImageModel = require("../../models/image.model");
 const Track = require("../../models/track.model");
 const Comment = require("../../models/comment.model");
 const User = require("../../models/user.model");
+const { createStreamPayload } = require("../../services/media.service");
 
 // ── GET /api/media/track ───────────────────────────────────────────────────────
 // Query params:
@@ -388,6 +389,10 @@ const getTrackMetadata = async (req, res) => {
 				message: "Track metadata not found",
 			});
 		}
+
+		track.media = await createStreamPayload({
+			storageKey: track.storage_key,
+		});
 
 		res.status(200).json({
 			success: true,

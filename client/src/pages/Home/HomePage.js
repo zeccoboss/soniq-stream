@@ -5,7 +5,7 @@ import { homeEvents } from "@zecco/features/home/home.events.js";
 import { store } from "@zecco/store/store.js";
 import { trackService } from "@zecco/services/api/track.service.js";
 
-let feedCache = {
+const feedCache = {
 	data: null,
 	cachedAt: null,
 };
@@ -151,6 +151,8 @@ export const HomePage = async (ctx) => {
 						trackService.getForYouFeed(signal),
 					]),
 				]);
+
+			console.log(exploreResult);
 
 			// ── Explore Feed Parsing ────────────────────────
 			if (exploreResult.status === "fulfilled") {

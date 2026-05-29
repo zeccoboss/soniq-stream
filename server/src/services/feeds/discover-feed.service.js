@@ -1,5 +1,5 @@
 const TrackModel = require("../../models/track.model");
-const { toTrackCard } = require("../../helpers/feed-transformers.helper");
+const { toTrackPayload } = require("../../helpers/feed-transformers.helper");
 
 const IMAGE_POPULATE = {
 	path: "cover",
@@ -31,10 +31,10 @@ const getDiscoverFeed = async ({ limit = 10 }) => {
 	]);
 
 	return {
-		newUploads: newUploads.map(toTrackCard),
-		trending: trending.map(toTrackCard),
-		topTracks: topTracks.map(toTrackCard),
-		popular: popular.map(toTrackCard),
+		newUploads: await Promise.all(newUploads.map(toTrackPayload)),
+		trending: await Promise.all(trending.map(toTrackPayload)),
+		topTracks: await Promise.all(topTracks.map(toTrackPayload)),
+		popular: await Promise.all(popular.map(toTrackPayload)),
 	};
 };
 

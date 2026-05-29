@@ -2,7 +2,7 @@ const TrackModel = require("../../models/track.model");
 const UserModel = require("../../models/user.model");
 
 const {
-	toTrackCard,
+	toTrackPayload,
 	toArtistCard,
 } = require("../../helpers/feed-transformers.helper");
 
@@ -58,8 +58,8 @@ const getExploreFeed = async () => {
 	return {
 		genres,
 		trendingArtists: trendingArtists.map(toArtistCard),
-		newThisWeek: newThisWeek.map(toTrackCard),
-		trendingTracks: trendingTracks.map(toTrackCard),
+		newThisWeek: await await Promise.all(newThisWeek.map(toTrackPayload)),
+		trendingTracks: await Promise.all(trendingTracks.map(toTrackPayload)),
 		activeFilter: "all",
 	};
 };

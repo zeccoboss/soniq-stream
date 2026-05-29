@@ -1,3 +1,5 @@
+const { createStreamPayload } = require("../services/media.service");
+
 const getImageUrl = (image) => {
 	if (!image?.storage) return null;
 	if (image.storage.type === "cloudinary" && image.storage.baseUrl) {
@@ -42,9 +44,9 @@ const cleanTitle = (title) => {
 	return clean.replace(/\s+/g, " ").trim();
 };
 
-const toTrackCard = (track) => ({
+const toTrackPayload = async (track) => ({
 	uuid: track.uuid,
-	title: cleanTitle(track.title || track.name), // Dynamically cleans titles or fallback file names
+	title: cleanTitle(track.title || track.name),
 	name: track.name ?? null,
 	artist: track.artist?.username || track.artist || "Unknown Artist",
 	album: track.album ?? null,
@@ -53,7 +55,11 @@ const toTrackCard = (track) => ({
 	plays: track.playCount ?? 0,
 	genre: track.genre?.[0] ?? null,
 	duration: track.duration ?? 0,
-	storage: track.storage ?? {},
+
+	// Get the stream payload
+	media: await createStreamPayload({
+		storageKey: track.storage.key,
+	}),
 });
 
 const toArtistCard = (artist) => ({
@@ -64,7 +70,7 @@ const toArtistCard = (artist) => ({
 });
 
 module.exports = {
-	toTrackCard,
+	toTrackPayload,
 	toArtistCard,
 	getImageUrl,
 };

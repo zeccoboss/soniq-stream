@@ -2,7 +2,7 @@ const TrackModel = require("../../models/track.model");
 const UserModel = require("../../models/user.model");
 const RecentPlayModel = require("../../models/recent-plays-model");
 
-const { toTrackCard } = require("../../helpers/feed-transformers.helper");
+const { toTrackPayload } = require("../../helpers/feed-transformers.helper");
 
 const getForYouFeed = async (userId) => {
 	// Shared projection to exclude _id
@@ -22,7 +22,7 @@ const getForYouFeed = async (userId) => {
 			recentPlays: [],
 			liked: [],
 			genreRecs: [],
-			popularRightNow: popularRightNow.map(toTrackCard),
+			popularRightNow: popularRightNow.map(toTrackPayload),
 			topGenre: null,
 		};
 	}
@@ -87,10 +87,10 @@ const getForYouFeed = async (userId) => {
 	return {
 		isLoggedIn: true,
 		hasEnoughData: recentPlays.length > 0 || likedTracksIds.length > 0,
-		recentPlays: recentPlays.map(toTrackCard),
-		liked: likedTracksIds.map(toTrackCard),
-		genreRecs: genreRecs.map(toTrackCard),
-		popularRightNow: popularRightNow.map(toTrackCard),
+		recentPlays: await Promise.all(recentPlays.map(toTrackPayload)),
+		liked: await Promise.all(likedTracksIds.map(toTrackPayload)),
+		genreRecs: await Promise.all(genreRecs.map(toTrackPayload)),
+		popularRightNow: await Promise.all(popularRightNow.map(toTrackPayload)),
 		topGenre,
 	};
 };
