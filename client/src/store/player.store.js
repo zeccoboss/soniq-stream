@@ -8,43 +8,61 @@ import { BaseStore } from "./base.store";
  * Mobile/iOS fix summary
  * ──────────────────────
  * Problem 1 — iOS kills the gesture chain on async awaits.
- *   The old prepare() fetched a stream URL (async network call) before
- *   calling audio.play(). By the time play() ran, iOS had already discarded
- *   the user-gesture token → silent failure.
+ * The old prepare() fetched a stream URL (async network call) before
+ * calling audio.play(). By the time play() ran, iOS had already discarded
+ * the user-gesture token → silent failure.
  *
- *   Fix: Call audio.play() IMMEDIATELY inside ensureAudioContext() / the
- *   gesture handler to "unlock" the element, then swap the src while it is
- *   already "playing" (even if it is playing silence for a moment). iOS allows
- *   src changes on an already-unlocked element without a new gesture.
+ * Fix: Call audio.play() IMMEDIATELY inside ensureAudioContext() / the
+ * gesture handler to "unlock" the element, then swap the src while it is
+ * already "playing" (even if it is playing silence for a moment). iOS allows
+ * src changes on an already-unlocked element without a new gesture.
  *
  * Problem 2 — AudioContext created outside a gesture.
- *   Web Audio API on iOS requires the context to be constructed AND resumed
- *   inside a synchronous user-gesture handler.
+ * Web Audio API on iOS requires the context to be constructed AND resumed
+ * inside a synchronous user-gesture handler.
  *
- *   Fix: ensureAudioContext() is now safe to call multiple times but only
- *   wires the MediaElementSource once. The context.resume() call is always
- *   made synchronously when the method is entered from a gesture.
+ * Fix: ensureAudioContext() is now safe to call multiple times but only
+ * wires the MediaElementSource once. The context.resume() call is always
+ * made synchronously when the method is entered from a gesture.
  *
  * Problem 3 — createMediaElementSource() wired before audio.src is set.
- *   On some Android WebViews this causes a silent "no source" state.
+ * On some Android WebViews this causes a silent "no source" state.
  *
- *   Fix: The source node is now wired once, lazily, inside ensureAudioContext().
- *   The <audio> element's src is managed independently; the Web Audio graph
- *   reads through the element regardless of which src is loaded.
+ * Fix: The source node is now wired once, lazily, inside ensureAudioContext().
+ * The <audio> element's src is managed independently; the Web Audio graph
+ * reads through the element regardless of which src is loaded.
  *
  * Problem 4 — audio.load() not called after src swap on Android.
- *   Some Android browsers need an explicit load() call to pick up a new src.
+ * Some Android browsers need an explicit load() call to pick up a new src.
  *
- *   Fix: audio.load() is always called after setting audio.src.
+ * Fix: audio.load() is always called after setting audio.src.
  *
  * Problem 5 — Initial playback on page load fails on iOS.
- *   prepare() was called without gesture context, and by the time it reached
- *   audio.play(), the gesture token was lost.
+ * prepare() was called without gesture context, and by the time it reached
+ * audio.play(), the gesture token was lost.
  *
- *   Fix: prepare() no longer auto-plays. It only loads metadata and prepares
- *   the track. The user must click play (which goes through playerEvents and
- *   ensureAudioContext()) to start playback. This keeps the gesture inside
- *   the synchronous event handler.
+ * Fix: prepare() no longer auto-plays. It only loads metadata and prepares
+ * the track. The user must click play (which goes through playerEvents and
+ * ensureAudioContext()) to start playback. This keeps the gesture inside
+ * the synchronous event handler.
+ *
+ * Playback API — which methods auto-play?
+ * ────────────────────────────────────────
+ * AUTO-PLAY (shouldPlay=true):
+ * • loadTrack(track)             — Single track click
+ * • loadQueue(tracks, index)     — Queue load from user action
+ * • playAt(index)                — Queue item click
+ * • playByUuid(uuid)             — UUID-based track selection
+ * • nextTrack()                  — Next button click
+ * • prevTrack()                  — Prev button click
+ * • play()                       — Play button click
+ *
+ * NO AUTO-PLAY (shouldPlay=false):
+ * • prepare(track)               — Generic preparation, used internally
+ * • NONE — all public entry points auto-play when from user gestures
+ *
+ * Key rule: All user-triggered playback paths call ensureAudioContext()
+ * BEFORE async work, ensuring the gesture token is valid when play() is called.
  */
 
 class PlayerStore extends BaseStore {
@@ -181,13 +199,13 @@ class PlayerStore extends BaseStore {
 	 * (click / touchend). Safe to call multiple times.
 	 *
 	 * On iOS:
-	 *   1. Creates the AudioContext on the first call.
-	 *   2. Wires the MediaElementSource → Analyser → Gain → Destination
-	 *      graph exactly once.
-	 *   3. Resumes the context (required after browser autoplay suspension).
-	 *   4. "Unlocks" the audio element by calling play() + immediately pause()
-	 *      if we haven't successfully played yet. This seeds the element with
-	 *      a gesture token so later async play() calls succeed.
+	 * 1. Creates the AudioContext on the first call.
+	 * 2. Wires the MediaElementSource → Analyser → Gain → Destination
+	 * graph exactly once.
+	 * 3. Resumes the context (required after browser autoplay suspension).
+	 * 4. "Unlocks" the audio element by calling play() + immediately pause()
+	 * if we haven't successfully played yet. This seeds the element with
+	 * a gesture token so later async play() calls succeed.
 	 */
 	ensureAudioContext() {
 		// ── 1. Build the context once ─────────────────────────
@@ -439,7 +457,8 @@ class PlayerStore extends BaseStore {
 		this.#originalQueue = [track];
 		this.#queue = [track];
 		this.#queueIndex = 0;
-		await this.prepare(track, false, true); // ← Add true here
+		// Ensured shouldPlay is true here
+		await this.prepare(track, false, true);
 	}
 
 	async loadQueue(tracks = [], startIndex = 0) {
@@ -447,14 +466,16 @@ class PlayerStore extends BaseStore {
 		this.#originalQueue = [...tracks];
 		this.#queue = [...tracks];
 		this.#queueIndex = startIndex;
-		await this.prepare(tracks[startIndex], false, true); // ← Add true here
+		// Ensured shouldPlay is true here
+		await this.prepare(tracks[startIndex], false, true);
 	}
 
 	async playAt(index) {
 		if (index < 0 || index >= this.#queue.length) return;
 		this.#queueIndex = index;
 		this.#sessionId++;
-		await this.prepare(this.#queue[index]);
+		// Auto-play because playAt() is only called from user gestures (queue clicks, etc)
+		await this.prepare(this.#queue[index], false, true);
 	}
 
 	async playByUuid(uuid) {
@@ -482,13 +503,13 @@ class PlayerStore extends BaseStore {
 	 *
 	 * Mobile-safe flow:
 	 *
-	 *  1.  Emit loading state immediately.
-	 *  2.  Ensure AudioContext is set up (synchronously safe).
-	 *  3.  Set track metadata synchronously (UI updates before network).
-	 *  4.  Fetch the stream URL (async — gesture chain may break here on iOS).
-	 *  5.  Assign audio.src and call audio.load().
-	 *  6.  Wait for "canplay" or a short timeout (whichever comes first).
-	 *  7.  Call play() only if shouldPlay=true (from a gesture context).
+	 * 1.  Emit loading state immediately.
+	 * 2.  Ensure AudioContext is set up (synchronously safe).
+	 * 3.  Set track metadata synchronously (UI updates before network).
+	 * 4.  Fetch the stream URL (async — gesture chain may break here on iOS).
+	 * 5.  Assign audio.src and call audio.load().
+	 * 6.  Wait for "canplay" or a short timeout (whichever comes first).
+	 * 7.  Call play() only if shouldPlay=true (from a gesture context).
 	 *
 	 * KEY FIX: prepare() no longer auto-plays on initial load. It only loads
 	 * metadata and prepares the track. The user must click play (which goes

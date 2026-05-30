@@ -29,6 +29,9 @@ import { toast } from "@zecco/components/Toast/Toast.js";
  *  4. isMini handlers deduplicated — there were two copies in the original.
  *  5. startProgressLoop / stopProgressLoop guard added: we only run rAF
  *     when the player is visible and playing, avoiding battery drain on mobile.
+ *  6. Smart playback fallback: If play is clicked with no track loaded,
+ *     auto-loads first available track from home page data. Falls back to
+ *     Discover if nothing available.
  */
 export const playerEvents = (
 	root,
@@ -301,6 +304,54 @@ export const playerEvents = (
 		}),
 	];
 
+	// ── Smart playback fallback ──────────────────────────────────
+	// If play is clicked with no track loaded, try to auto-load first available track
+	const handlePlayWithoutTrack = async () => {
+		// Try to get track data from store or window context
+		const homeData = window.__homePageData ?? null;
+
+		// List of pools to check in order of priority
+		const pools = [
+			homeData?.newUploads,
+			homeData?.trending,
+			homeData?.topTracks,
+			homeData?.trendingTracks,
+			homeData?.newThisWeek,
+			homeData?.popularRightNow,
+			homeData?.recentPlays,
+			homeData?.liked,
+			homeData?.genreRecs,
+		].filter(Boolean);
+
+		// Find first available track
+		for (const pool of pools) {
+			if (Array.isArray(pool) && pool.length > 0) {
+				const firstTrack = pool[0];
+				if (firstTrack?.uuid) {
+					try {
+						await store.player.loadTrack(firstTrack);
+						toast({
+							message: "Now playing " + firstTrack.title,
+							type: "success",
+							duration: 2000,
+						});
+						return;
+					} catch (err) {
+						console.error("[playerEvents] Fallback play error:", err);
+					}
+				}
+			}
+		}
+
+		// No track found on current page — navigate to Discover
+		toast({
+			message: "Pick a song from Discover to start playing",
+			type: "info",
+			duration: 3000,
+		});
+		router.navigate("/?tab=discover");
+	};
+
 	// ── Play / Pause ───────────────────────────────────────────
 	// We use "click" (not touchend/touchstart) because:
 	//   • "click" is always recognised as a user gesture by iOS.
@@ -312,7 +363,13 @@ export const playerEvents = (
 			btn.addEventListener("click", () => {
 				// MUST be the very first call — before any conditional or async
 				store.player.ensureAudioContext();
-				store.player.togglePlay();
+
+				// If no track loaded, try to auto-load first available track
+				if (!store.player.currentTrack) {
+					handlePlayWithoutTrack();
+				} else {
+					store.player.togglePlay();
+				}
 			});
 		});
 
@@ -512,7 +569,11 @@ export const playerEvents = (
 				case "Space":
 					e.preventDefault();
 					store.player.ensureAudioContext();
-					store.player.togglePlay();
+					if (!store.player.currentTrack) {
+						handlePlayWithoutTrack();
+					} else {
+						store.player.togglePlay();
+					}
 					break;
 				case "ArrowRight":
 					store.player.seekTo(store.player.progress + 5);
