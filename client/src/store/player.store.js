@@ -36,6 +36,15 @@ import { BaseStore } from "./base.store";
  *   Some Android browsers need an explicit load() call to pick up a new src.
  *
  *   Fix: audio.load() is always called after setting audio.src.
+ *
+ * Problem 5 — Initial playback on page load fails on iOS.
+ *   prepare() was called without gesture context, and by the time it reached
+ *   audio.play(), the gesture token was lost.
+ *
+ *   Fix: prepare() no longer auto-plays. It only loads metadata and prepares
+ *   the track. The user must click play (which goes through playerEvents and
+ *   ensureAudioContext()) to start playback. This keeps the gesture inside
+ *   the synchronous event handler.
  */
 
 class PlayerStore extends BaseStore {
@@ -469,23 +478,27 @@ class PlayerStore extends BaseStore {
 	}
 
 	/**
-	 * prepare(track, isRetry)
+	 * prepare(track, isRetry, shouldPlay)
 	 *
 	 * Mobile-safe flow:
 	 *
 	 *  1.  Emit loading state immediately.
-	 *  2.  Set track metadata synchronously (UI updates before network).
-	 *  3.  Fetch the stream URL (async — gesture chain may break here on iOS).
-	 *  4.  Assign audio.src and call audio.load().
-	 *  5.  Wait for "canplay" or a short timeout (whichever comes first).
-	 *  6.  Call play() — safe because ensureAudioContext() was already called
-	 *      synchronously from the button handler in playerEvents.js.
+	 *  2.  Ensure AudioContext is set up (synchronously safe).
+	 *  3.  Set track metadata synchronously (UI updates before network).
+	 *  4.  Fetch the stream URL (async — gesture chain may break here on iOS).
+	 *  5.  Assign audio.src and call audio.load().
+	 *  6.  Wait for "canplay" or a short timeout (whichever comes first).
+	 *  7.  Call play() only if shouldPlay=true (from a gesture context).
 	 *
-	 * The key insight: ensureAudioContext() in playerEvents.js runs INSIDE
-	 * the click/touchend handler (synchronous), so iOS grants the gesture
-	 * token before we ever enter the async network chain.
+	 * KEY FIX: prepare() no longer auto-plays on initial load. It only loads
+	 * metadata and prepares the track. The user must click play (which goes
+	 * through playerEvents and calls ensureAudioContext() first in the gesture
+	 * handler), ensuring the gesture token remains valid when play() is called.
+	 *
+	 * This prevents iOS silent failures on page load while keeping all gesture
+	 * requirements intact.
 	 */
-	async prepare(track, isRetry = false) {
+	async prepare(track, isRetry = false, shouldPlay = false) {
 		if (!track?.uuid) return;
 
 		const session = ++this.#sessionId;
@@ -496,6 +509,11 @@ class PlayerStore extends BaseStore {
 
 		// Pause whatever is currently playing
 		if (!this.#audio.paused) this.#audio.pause();
+
+		// ── Setup audio context early (iOS safety) ────────────
+		// This is synchronous and idempotent, safe to call here.
+		// Ensures Web Audio graph exists before any async gaps.
+		this.ensureAudioContext();
 
 		// ── Update track metadata synchronously ────────────────
 		this.#currentTrack = track;
@@ -526,15 +544,19 @@ class PlayerStore extends BaseStore {
 
 			if (session !== this.#sessionId) return;
 
-			// ── Play ───────────────────────────────────────────
-			// At this point:
-			//   • ensureAudioContext() has already been called (gesture).
-			//   • The AudioContext is running (not suspended).
-			//   • The audio element was unlocked by the silent play() trick.
-			//   → audio.play() will succeed even on iOS.
-			await this.play();
-
-			this.emit("player_status_changed", true);
+			// ── Play only if explicitly requested ───────────────
+			// shouldPlay=true when called from a gesture context (next/prev/etc).
+			// shouldPlay=false on initial load (page load, queue restoration).
+			// User must click play button, which goes through playerEvents and
+			// ensures the gesture context is alive.
+			if (shouldPlay) {
+				await this.play();
+				this.emit("player_status_changed", true);
+			} else {
+				// Track is ready but not playing yet
+				this.#isLoading = false;
+				this.emit("track_loading", false);
+			}
 
 			// Warm up the next track in the background
 			this.#prefetchNext();
@@ -544,7 +566,7 @@ class PlayerStore extends BaseStore {
 
 			if (!isRetry && (isExpiredStream || !err)) {
 				this.#prefetchCache.delete(track.uuid);
-				return this.prepare(track, true);
+				return this.prepare(track, true, shouldPlay);
 			}
 
 			console.error("[PlayerStore] prepare failed permanently:", err);
@@ -686,7 +708,7 @@ class PlayerStore extends BaseStore {
 			if (predicted) {
 				this.#queueIndex++;
 				this.#sessionId++;
-				return this.prepare(predicted);
+				return this.prepare(predicted, false, true);
 			}
 		}
 
@@ -701,7 +723,7 @@ class PlayerStore extends BaseStore {
 		}
 
 		this.#sessionId++;
-		await this.prepare(this.#queue[this.#queueIndex]);
+		await this.prepare(this.#queue[this.#queueIndex], false, true);
 	}
 
 	async prevTrack() {
@@ -712,7 +734,7 @@ class PlayerStore extends BaseStore {
 		this.#isLoading = false;
 		this.#queueIndex = Math.max(0, this.#queueIndex - 1);
 		this.#sessionId++;
-		await this.prepare(this.#queue[this.#queueIndex]);
+		await this.prepare(this.#queue[this.#queueIndex], false, true);
 	}
 
 	// ═══════════════════════════════════════════════════════════
