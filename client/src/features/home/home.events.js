@@ -249,6 +249,9 @@ const normaliseGenre = (genre = "") =>
 const handleTrackPlay = (trackUuid, indexHint, data) => {
 	if (!trackUuid) return;
 
+	// ── Gesture unlock FIRST (synchronously in the click handler) ──
+	store.player.ensureAudioContext();
+
 	// 1. Build a flat pool from all homepage sections to find the track metadata object
 	const pool = [
 		...(data.newUploads ?? []),
@@ -284,7 +287,6 @@ const handleTrackPlay = (trackUuid, indexHint, data) => {
 			toast({ message: "Couldn't play this track.", type: "error" });
 		});
 };
-
 /**
  * Build a queue from the section that contains the given trackUuid.
  * Keeps context — clicking a trending track queues all trending tracks.

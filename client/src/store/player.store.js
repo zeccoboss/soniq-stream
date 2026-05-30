@@ -439,7 +439,7 @@ class PlayerStore extends BaseStore {
 		this.#originalQueue = [track];
 		this.#queue = [track];
 		this.#queueIndex = 0;
-		await this.prepare(track);
+		await this.prepare(track, false, true); // ← Add true here
 	}
 
 	async loadQueue(tracks = [], startIndex = 0) {
@@ -447,7 +447,7 @@ class PlayerStore extends BaseStore {
 		this.#originalQueue = [...tracks];
 		this.#queue = [...tracks];
 		this.#queueIndex = startIndex;
-		await this.prepare(tracks[startIndex]);
+		await this.prepare(tracks[startIndex], false, true); // ← Add true here
 	}
 
 	async playAt(index) {
@@ -509,11 +509,6 @@ class PlayerStore extends BaseStore {
 
 		// Pause whatever is currently playing
 		if (!this.#audio.paused) this.#audio.pause();
-
-		// ── Setup audio context early (iOS safety) ────────────
-		// This is synchronous and idempotent, safe to call here.
-		// Ensures Web Audio graph exists before any async gaps.
-		this.ensureAudioContext();
 
 		// ── Update track metadata synchronously ────────────────
 		this.#currentTrack = track;
