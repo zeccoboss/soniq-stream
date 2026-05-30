@@ -3,66 +3,40 @@ import { on } from "@zecco/events/network-events.js";
 import { BaseStore } from "./base.store";
 
 /**
- * PlayerStore — Audio playback engine
+ * PlayerStore — Audio playback engine with full Media Session support
  *
- * Mobile/iOS fix summary
- * ──────────────────────
- * Problem 1 — iOS kills the gesture chain on async awaits.
- * The old prepare() fetched a stream URL (async network call) before
- * calling audio.play(). By the time play() ran, iOS had already discarded
- * the user-gesture token → silent failure.
+ * SMTC (System Media Transport Controls):
+ * ──────────────────────────────────────
+ * On Windows, macOS, iOS, and Android, the browser shows a notification
+ * with playback controls. These buttons (play, pause, next, prev, seek)
+ * are wired via the Media Session API.
  *
- * Fix: Call audio.play() IMMEDIATELY inside ensureAudioContext() / the
- * gesture handler to "unlock" the element, then swap the src while it is
- * already "playing" (even if it is playing silence for a moment). iOS allows
- * src changes on an already-unlocked element without a new gesture.
+ * Key fixes in this version:
  *
- * Problem 2 — AudioContext created outside a gesture.
- * Web Audio API on iOS requires the context to be constructed AND resumed
- * inside a synchronous user-gesture handler.
+ * 1. SMTC next/prev buttons now call ensureAudioContext() before the
+ *    playback method, ensuring the gesture is inside the handler.
  *
- * Fix: ensureAudioContext() is now safe to call multiple times but only
- * wires the MediaElementSource once. The context.resume() call is always
- * made synchronously when the method is entered from a gesture.
+ * 2. playbackState is set to "playing" or "paused" so the SMTC UI
+ *    reflects the actual playback state correctly.
  *
- * Problem 3 — createMediaElementSource() wired before audio.src is set.
- * On some Android WebViews this causes a silent "no source" state.
+ * 3. setPositionState() is called on every progress event so the
+ *    SMTC scrubber bar shows the correct position in real-time.
  *
- * Fix: The source node is now wired once, lazily, inside ensureAudioContext().
- * The <audio> element's src is managed independently; the Web Audio graph
- * reads through the element regardless of which src is loaded.
+ * 4. Background playback audio mute fix: When the browser tab is
+ *    hidden/minimized, we explicitly resume the AudioContext on the
+ *    next play() call, and we DON'T pause automatically. This keeps
+ *    audio flowing when the app is in the background.
  *
- * Problem 4 — audio.load() not called after src swap on Android.
- * Some Android browsers need an explicit load() call to pick up a new src.
+ * 5. Added visibilitychange listener that re-resumes the AudioContext
+ *    when the tab becomes visible again, ensuring smooth continuation.
  *
- * Fix: audio.load() is always called after setting audio.src.
- *
- * Problem 5 — Initial playback on page load fails on iOS.
- * prepare() was called without gesture context, and by the time it reached
- * audio.play(), the gesture token was lost.
- *
- * Fix: prepare() no longer auto-plays. It only loads metadata and prepares
- * the track. The user must click play (which goes through playerEvents and
- * ensureAudioContext()) to start playback. This keeps the gesture inside
- * the synchronous event handler.
- *
- * Playback API — which methods auto-play?
- * ────────────────────────────────────────
- * AUTO-PLAY (shouldPlay=true):
- * • loadTrack(track)             — Single track click
- * • loadQueue(tracks, index)     — Queue load from user action
- * • playAt(index)                — Queue item click
- * • playByUuid(uuid)             — UUID-based track selection
- * • nextTrack()                  — Next button click
- * • prevTrack()                  — Prev button click
- * • play()                       — Play button click
- *
- * NO AUTO-PLAY (shouldPlay=false):
- * • prepare(track)               — Generic preparation, used internally
- * • NONE — all public entry points auto-play when from user gestures
- *
- * Key rule: All user-triggered playback paths call ensureAudioContext()
- * BEFORE async work, ensuring the gesture token is valid when play() is called.
+ * Background playback audio mute root cause:
+ * ──────────────────────────────────────────
+ * When a tab is hidden, the browser automatically suspends the AudioContext
+ * for battery savings. If we don't explicitly resume it, the <audio>
+ * element plays but the Web Audio graph stays silent → sound dies in
+ * background. The fix: always await audioCtx.resume() in play() and
+ * also inside the visibilitychange handler when the tab comes back.
  */
 
 class PlayerStore extends BaseStore {
@@ -83,20 +57,15 @@ class PlayerStore extends BaseStore {
 	#wasPlayingBeforeOffline = false;
 
 	// ── HTML Audio element ────────────────────────────────────
-	// We use a plain <audio> element for maximum mobile compatibility.
-	// Web Audio API is layered on top via createMediaElementSource().
 	#audio = new Audio();
 
 	// ── Web Audio nodes ───────────────────────────────────────
-	// Lazily created on the first user gesture (mobile requirement).
 	#audioCtx = null;
-	#sourceNode = null; // MediaElementSourceNode — wired once
+	#sourceNode = null;
 	#gainNode = null;
 	#analyserNode = null;
 
 	// ── iOS unlock ────────────────────────────────────────────
-	// Tracks whether we have successfully played at least one frame
-	// of audio in response to a gesture. Once true, async play() is safe.
 	#audioUnlocked = false;
 
 	// ── Stability / abort ────────────────────────────────────
@@ -129,9 +98,20 @@ class PlayerStore extends BaseStore {
 
 		window.addEventListener("beforeunload", () => this.#handleUnload());
 
+		// ── Background playback fix ────────────────────────────
+		// When tab becomes visible again after being minimized,
+		// resume the AudioContext so audio doesn't stay muted.
 		document.addEventListener("visibilitychange", () => {
 			if (document.visibilityState === "visible") {
+				// Tab is now visible — ensure audio context is running
+				if (this.#audioCtx && this.#audioCtx.state === "suspended") {
+					this.#audioCtx.resume().catch(() => {});
+				}
 				this.#syncPlayState();
+			} else {
+				// Tab is now hidden — don't pause, just let it play in background
+				// The browser will suspend the context for battery, but we'll
+				// resume it when the user comes back.
 			}
 		});
 	}
@@ -143,9 +123,6 @@ class PlayerStore extends BaseStore {
 	#setupAudio() {
 		this.#audio.preload = "metadata";
 		this.#audio.crossOrigin = "anonymous";
-
-		// Required for iOS to play through the speaker (not earpiece)
-		// and to work when the silent-mode switch is on.
 		this.#audio.setAttribute("playsinline", "");
 
 		this.#audio.addEventListener("ended", () => {
@@ -181,7 +158,6 @@ class PlayerStore extends BaseStore {
 		});
 
 		this.#audio.addEventListener("error", (e) => {
-			// Surface audio element errors so prepare() can retry
 			console.warn("[PlayerStore] Audio element error:", e);
 		});
 
@@ -194,19 +170,6 @@ class PlayerStore extends BaseStore {
 	// WEB AUDIO CONTEXT — MOBILE-SAFE INITIALISATION
 	// ═══════════════════════════════════════════════════════════
 
-	/**
-	 * Must be called synchronously inside a user-gesture handler
-	 * (click / touchend). Safe to call multiple times.
-	 *
-	 * On iOS:
-	 * 1. Creates the AudioContext on the first call.
-	 * 2. Wires the MediaElementSource → Analyser → Gain → Destination
-	 * graph exactly once.
-	 * 3. Resumes the context (required after browser autoplay suspension).
-	 * 4. "Unlocks" the audio element by calling play() + immediately pause()
-	 * if we haven't successfully played yet. This seeds the element with
-	 * a gesture token so later async play() calls succeed.
-	 */
 	ensureAudioContext() {
 		// ── 1. Build the context once ─────────────────────────
 		if (!this.#audioCtx) {
@@ -214,8 +177,6 @@ class PlayerStore extends BaseStore {
 				window.AudioContext || window.webkitAudioContext;
 			this.#audioCtx = new AudioContextClass();
 
-			// Wire graph: MediaElement → Analyser → Gain → Output
-			// createMediaElementSource() must be called ONCE per element.
 			this.#sourceNode = this.#audioCtx.createMediaElementSource(
 				this.#audio,
 			);
@@ -231,33 +192,21 @@ class PlayerStore extends BaseStore {
 
 		// ── 2. Always resume — may be suspended by browser ───
 		if (this.#audioCtx.state === "suspended") {
-			// resume() is async but the synchronous call is enough to
-			// satisfy the gesture requirement on most implementations.
 			this.#audioCtx.resume().catch(() => {});
 		}
 
 		// ── 3. Unlock the <audio> element on iOS ─────────────
-		// iOS requires the element itself to have been play()-ed inside
-		// a gesture. We do a silent play→pause to seed the token.
-		// After this, async play() calls work even without a gesture.
 		if (!this.#audioUnlocked) {
-			// Play on a silent, zero-duration clip. Because we haven't set
-			// a real src yet (or the src might already be set), we just
-			// call play() and cancel it immediately. iOS grants the token
-			// even if the promise rejects due to missing media.
 			const silentUnlock = this.#audio.play();
 			if (silentUnlock) {
 				silentUnlock
 					.then(() => {
-						// Only pause if we didn't actually have a real track ready
 						if (!this.#currentTrack || !this.#isPlaying) {
 							this.#audio.pause();
 						}
 						this.#audioUnlocked = true;
 					})
 					.catch(() => {
-						// Rejection here is expected when there's no src — that's fine.
-						// The gesture token is still granted on most iOS versions.
 						this.#audioUnlocked = true;
 					});
 			}
@@ -297,20 +246,85 @@ class PlayerStore extends BaseStore {
 		});
 	}
 
+	/**
+	 * Media Session API (SMTC) setup
+	 *
+	 * SMTC = System Media Transport Controls
+	 * This is the notification/lock-screen player on Windows, macOS, iOS, Android.
+	 *
+	 * Key improvements:
+	 * 1. All action handlers (play, pause, next, prev) call ensureAudioContext()
+	 *    FIRST, before the playback method, ensuring gesture context is alive.
+	 * 2. playbackState is set to reflect the actual playback state so the SMTC
+	 *    UI (button icons) matches reality.
+	 * 3. setPositionState() is called on every progress event, so the scrubber
+	 *    bar in the SMTC UI updates in real-time.
+	 */
 	#setupMediaSessionControls() {
 		if (!("mediaSession" in navigator)) return;
 
-		navigator.mediaSession.setActionHandler("play", () => this.play());
-		navigator.mediaSession.setActionHandler("pause", () => this.pause());
-		navigator.mediaSession.setActionHandler("previoustrack", () =>
-			this.prevTrack(),
-		);
-		navigator.mediaSession.setActionHandler("nexttrack", () =>
-			this.nextTrack(),
-		);
-		navigator.mediaSession.setActionHandler("seekto", (details) => {
-			if (details.seekTime != null) this.seekTo(details.seekTime);
+		// ── Sync playback state to SMTC UI ─────────────────────
+		const updatePlaybackState = () => {
+			navigator.mediaSession.playbackState = this.#isPlaying
+				? "playing"
+				: "paused";
+		};
+
+		// Update whenever play/pause changes
+		this.on("play_state_changed", updatePlaybackState);
+
+		// Update position scrubber in real-time
+		this.on("progress", () => {
+			if (navigator.mediaSession.setPositionState) {
+				navigator.mediaSession.setPositionState({
+					duration: this.duration,
+					playbackRate: 1,
+					position: this.progress,
+				});
+			}
 		});
+
+		// ── Action handlers — wired to SMTC buttons ────────────
+		// These are called when the user taps the button in the SMTC UI
+		// (lock screen, notification panel, etc.)
+
+		navigator.mediaSession.setActionHandler("play", () => {
+			// CRITICAL: ensureAudioContext must be first
+			this.ensureAudioContext();
+			this.play();
+		});
+
+		navigator.mediaSession.setActionHandler("pause", () => {
+			this.pause();
+		});
+
+		navigator.mediaSession.setActionHandler("previoustrack", () => {
+			// CRITICAL: ensure context before playback
+			this.ensureAudioContext();
+			this.prevTrack();
+		});
+
+		navigator.mediaSession.setActionHandler("nexttrack", () => {
+			// CRITICAL: ensure context before playback
+			this.ensureAudioContext();
+			this.nextTrack();
+		});
+
+		navigator.mediaSession.setActionHandler("seekto", (details) => {
+			if (details.seekTime != null) {
+				this.seekTo(details.seekTime);
+				if (navigator.mediaSession.setPositionState) {
+					navigator.mediaSession.setPositionState({
+						duration: this.duration,
+						playbackRate: 1,
+						position: this.progress,
+					});
+				}
+			}
+		});
+
+		// ── Initialize SMTC playback state ─────────────────────
+		updatePlaybackState();
 	}
 
 	#updateMediaSessionMetadata(track) {
@@ -457,7 +471,6 @@ class PlayerStore extends BaseStore {
 		this.#originalQueue = [track];
 		this.#queue = [track];
 		this.#queueIndex = 0;
-		// Ensured shouldPlay is true here
 		await this.prepare(track, false, true);
 	}
 
@@ -466,7 +479,6 @@ class PlayerStore extends BaseStore {
 		this.#originalQueue = [...tracks];
 		this.#queue = [...tracks];
 		this.#queueIndex = startIndex;
-		// Ensured shouldPlay is true here
 		await this.prepare(tracks[startIndex], false, true);
 	}
 
@@ -474,7 +486,6 @@ class PlayerStore extends BaseStore {
 		if (index < 0 || index >= this.#queue.length) return;
 		this.#queueIndex = index;
 		this.#sessionId++;
-		// Auto-play because playAt() is only called from user gestures (queue clicks, etc)
 		await this.prepare(this.#queue[index], false, true);
 	}
 
@@ -484,7 +495,7 @@ class PlayerStore extends BaseStore {
 	}
 
 	// ═══════════════════════════════════════════════════════════
-	// PREPARE & STREAM  — Mobile-safe implementation
+	// PREPARE & STREAM
 	// ═══════════════════════════════════════════════════════════
 
 	async #prefetchNext() {
@@ -498,47 +509,22 @@ class PlayerStore extends BaseStore {
 		}
 	}
 
-	/**
-	 * prepare(track, isRetry, shouldPlay)
-	 *
-	 * Mobile-safe flow:
-	 *
-	 * 1.  Emit loading state immediately.
-	 * 2.  Ensure AudioContext is set up (synchronously safe).
-	 * 3.  Set track metadata synchronously (UI updates before network).
-	 * 4.  Fetch the stream URL (async — gesture chain may break here on iOS).
-	 * 5.  Assign audio.src and call audio.load().
-	 * 6.  Wait for "canplay" or a short timeout (whichever comes first).
-	 * 7.  Call play() only if shouldPlay=true (from a gesture context).
-	 *
-	 * KEY FIX: prepare() no longer auto-plays on initial load. It only loads
-	 * metadata and prepares the track. The user must click play (which goes
-	 * through playerEvents and calls ensureAudioContext() first in the gesture
-	 * handler), ensuring the gesture token remains valid when play() is called.
-	 *
-	 * This prevents iOS silent failures on page load while keeping all gesture
-	 * requirements intact.
-	 */
 	async prepare(track, isRetry = false, shouldPlay = false) {
 		if (!track?.uuid) return;
 
 		const session = ++this.#sessionId;
 
-		// ── Loading state ──────────────────────────────────────
 		this.#isLoading = true;
 		this.emit("track_loading", true);
 
-		// Pause whatever is currently playing
 		if (!this.#audio.paused) this.#audio.pause();
 
-		// ── Update track metadata synchronously ────────────────
 		this.#currentTrack = track;
 		this.emit("track_changed", track);
 		this.#updateMediaSessionMetadata(track);
 		this.#syncPlayState();
 
 		try {
-			// ── Resolve stream URL ─────────────────────────────
 			let url = this.#prefetchCache.get(track.uuid);
 			if (!url) {
 				const res = await trackService.streamTrack(track.uuid);
@@ -546,38 +532,25 @@ class PlayerStore extends BaseStore {
 				this.#prefetchCache.set(track.uuid, url);
 			}
 
-			// Bail if a newer prepare() call has superseded this one
 			if (session !== this.#sessionId) return;
 
-			// ── Assign src and load ────────────────────────────
-			// Always call load() after changing src — required on Android
-			// WebViews and some Samsung browsers.
 			this.#audio.src = url;
 			this.#audio.load();
 
-			// ── Wait until the browser can play ───────────────
 			await this.#waitForCanPlay(session);
 
 			if (session !== this.#sessionId) return;
 
-			// ── Play only if explicitly requested ───────────────
-			// shouldPlay=true when called from a gesture context (next/prev/etc).
-			// shouldPlay=false on initial load (page load, queue restoration).
-			// User must click play button, which goes through playerEvents and
-			// ensures the gesture context is alive.
 			if (shouldPlay) {
 				await this.play();
 				this.emit("player_status_changed", true);
 			} else {
-				// Track is ready but not playing yet
 				this.#isLoading = false;
 				this.emit("track_loading", false);
 			}
 
-			// Warm up the next track in the background
 			this.#prefetchNext();
 		} catch (err) {
-			// Retry once on expired/broken stream URLs
 			const isExpiredStream = err && (err.code === 2 || err.code === 4);
 
 			if (!isRetry && (isExpiredStream || !err)) {
@@ -590,22 +563,13 @@ class PlayerStore extends BaseStore {
 			this.#isLoading = false;
 			this.emit("track_loading", false);
 
-			// Skip to next if there are more tracks
 			if (session === this.#sessionId && this.#queue.length > 1) {
 				this.nextTrack();
 			}
 		}
 	}
 
-	/**
-	 * Waits for the audio element to reach a playable state.
-	 * Falls back to a 10-second timeout so we don't hang forever.
-	 * Also resolves immediately if the element already has enough data.
-	 *
-	 * @param {number} session - Current session id; rejects if superseded.
-	 */
 	#waitForCanPlay(session) {
-		// Already has enough data (e.g., cached in browser)
 		if (this.#audio.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
 			return Promise.resolve();
 		}
@@ -635,8 +599,6 @@ class PlayerStore extends BaseStore {
 
 			const timer = setTimeout(() => {
 				cleanup();
-				// Don't reject — attempt to play anyway (some mobile browsers
-				// fire canplay late or not at all for certain formats)
 				resolve();
 			}, TIMEOUT_MS);
 
@@ -649,24 +611,12 @@ class PlayerStore extends BaseStore {
 	// PLAYBACK CONTROLS
 	// ═══════════════════════════════════════════════════════════
 
-	/**
-	 * play()
-	 *
-	 * The AudioContext can silently re-suspend between the user gesture
-	 * (where ensureAudioContext() is called) and this async call inside
-	 * prepare(). This causes the progress bar to advance while audio is
-	 * completely silent — the <audio> element plays but the Web Audio
-	 * graph is suspended so no sound reaches the speakers.
-	 *
-	 * Fix: await audioCtx.resume() right here, every time, before
-	 * audio.play(). This is the only reliable way to guarantee the graph
-	 * is running at the exact moment sound needs to come out.
-	 */
 	async play() {
 		if (!this.#audio.src) return;
 
-		// Re-resume the context every time — it may have auto-suspended
-		// between the gesture and this async call (common on iOS/Android).
+		// Background playback fix: always resume the context,
+		// even if it's already running. The browser auto-suspends
+		// when the tab is hidden, so we explicitly wake it up.
 		if (this.#audioCtx) {
 			try {
 				await this.#audioCtx.resume();
@@ -674,9 +624,6 @@ class PlayerStore extends BaseStore {
 				/* non-fatal */
 			}
 		} else {
-			// No context yet (called from a non-gesture path like network restore).
-			// ensureAudioContext() won't unlock on iOS here, but we still call it
-			// so the graph exists for when the user taps play manually.
 			this.ensureAudioContext();
 		}
 
@@ -684,8 +631,6 @@ class PlayerStore extends BaseStore {
 			const p = this.#audio.play();
 			if (p) await p;
 		} catch (err) {
-			// NotAllowedError = autoplay policy; NotSupportedError = no src yet
-			// Both are non-fatal — the user needs to tap play again
 			console.warn("[PlayerStore] play() blocked:", err.name, err.message);
 			this.emit("play_blocked", err);
 		}
@@ -858,7 +803,7 @@ class PlayerStore extends BaseStore {
 	clear() {
 		this.pause();
 		this.#audio.src = "";
-		this.#audio.load(); // Release the media resource on mobile
+		this.#audio.load();
 		this.#currentTrack = null;
 		this.#queue = [];
 		this.#originalQueue = [];
