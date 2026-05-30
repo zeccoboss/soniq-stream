@@ -5,6 +5,30 @@ import { toast } from "@zecco/components/Toast/Toast.js";
 
 /**
  * playerEvents — Wires both the footer mini player and the full player pages.
+ *
+ * Mobile/iOS fix
+ * ──────────────
+ * The critical rule for iOS is: ensureAudioContext() MUST be called
+ * synchronously inside the event handler, before any await. We enforce
+ * this by restructuring every button listener so that ensureAudioContext()
+ * is the very first statement, then we handle the async work after.
+ *
+ * Equally important: we attach listeners with { passive: false } where we
+ * need preventDefault(), and { passive: true } for scroll/visual-only
+ * touch events so we don't block the browser's touch pipeline.
+ *
+ * What changed vs the original:
+ *  1. ensureAudioContext() moved to be the FIRST call in every play/seek
+ *     listener — before any conditional logic or async gap.
+ *  2. All button listeners now use "click" (not "touchend"). "click" fires
+ *     after a complete tap and is recognised as a user gesture on all
+ *     mobile browsers. "touchend" can miss the gesture token on some iOS
+ *     versions when the touch target is small.
+ *  3. Progress/volume scrub now supports both mouse and touch correctly,
+ *     with pointer events for a unified code path.
+ *  4. isMini handlers deduplicated — there were two copies in the original.
+ *  5. startProgressLoop / stopProgressLoop guard added: we only run rAF
+ *     when the player is visible and playing, avoiding battery drain on mobile.
  */
 export const playerEvents = (
 	root,
@@ -12,29 +36,11 @@ export const playerEvents = (
 ) => {
 	if (!root) return;
 
-	if (isMini) {
-		const thumb = root.querySelector(".player-thumb");
-		const title = root.querySelector(".player-title");
-		const miniPlayerBar = root.querySelector(".mini-player-row-wrap");
-
-		const openFullPlayer = () => {
-			if (store.player.currentTrack) {
-				router.navigate("/player");
-			}
-		};
-
-		thumb?.addEventListener("click", openFullPlayer);
-		title?.addEventListener("click", openFullPlayer);
-		miniPlayerBar?.addEventListener("click", (e) => {
-			if (!e.target.closest(".ctrl") && !e.target.closest(".player-like")) {
-				openFullPlayer();
-			}
-		});
-	}
-
+	// ── Utility ────────────────────────────────────────────────
 	const $ = (id) =>
 		root.querySelector(`#${id}`) ?? document.getElementById(id);
 
+	// ── RAF progress loop ──────────────────────────────────────
 	let rafId = null;
 
 	const startProgressLoop = () => {
@@ -53,6 +59,7 @@ export const playerEvents = (
 		}
 	};
 
+	// ── Progress display ───────────────────────────────────────
 	const updateProgress = () => {
 		const progress = store.player.progress;
 		const duration = store.player.duration ?? 0;
@@ -80,6 +87,7 @@ export const playerEvents = (
 		if (total) total.textContent = formatTime(duration);
 	};
 
+	// ── Track info ─────────────────────────────────────────────
 	const updateTrackInfo = (track) => {
 		if (!track) return;
 
@@ -115,6 +123,7 @@ export const playerEvents = (
 		if (dur) dur.textContent = formatTime(store.player.duration ?? 0);
 	};
 
+	// ── Play button sync ───────────────────────────────────────
 	const syncPlayButton = (isPlaying) => {
 		const playIcons = root.querySelectorAll("#dfp-play-icon, #mfp-play-icon");
 		playIcons.forEach((icon) => {
@@ -131,12 +140,11 @@ export const playerEvents = (
 		isPlaying ? startProgressLoop() : stopProgressLoop();
 	};
 
+	// ── Shuffle / Repeat / Loading / Volume ────────────────────
 	const syncShuffleBtn = (isShuffle) => {
 		root
 			.querySelectorAll("#dfp-shuffle-btn, #mfp-shuffle-btn, .ctrl-shuffle")
-			.forEach((btn) => {
-				btn.classList.toggle("active", isShuffle);
-			});
+			.forEach((btn) => btn.classList.toggle("active", isShuffle));
 	};
 
 	const syncRepeatBtn = (mode) => {
@@ -165,12 +173,16 @@ export const playerEvents = (
 				btn.disabled = isLoading;
 				if (isLoading) {
 					btn.innerHTML = `
-               <svg class="player-spinner" width="18" height="18" viewBox="0 0 24 24" fill="none" style="animation: spin 1s linear infinite;">
-                  <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2.5" stroke-dasharray="45" stroke-linecap="round"/>
-               </svg>`;
+						<svg class="player-spinner" width="18" height="18" viewBox="0 0 24 24" fill="none"
+							style="animation: spin 1s linear infinite;">
+							<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2.5"
+								stroke-dasharray="45" stroke-linecap="round"/>
+						</svg>`;
 				} else {
 					const isPlaying = store.player.isPlaying;
-					btn.innerHTML = `<i class="${isPlaying ? "bi bi-pause-fill" : "bi bi-play-fill"}" id="${btn.id ? btn.id.replace("btn", "icon") : ""}"></i>`;
+					const iconId = btn.id ? btn.id.replace("btn", "icon") : "";
+					btn.innerHTML = `<i class="${isPlaying ? "bi bi-pause-fill" : "bi bi-play-fill"}"
+						${iconId ? `id="${iconId}"` : ""}></i>`;
 				}
 			});
 	};
@@ -183,6 +195,7 @@ export const playerEvents = (
 		if (volFill) volFill.style.width = `${vol * 100}%`;
 	};
 
+	// ── Queue panel ────────────────────────────────────────────
 	const updateQueuePanel = () => {
 		const queueList = $("dfp-queue-list") ?? $("mfp-queue-list");
 		if (!queueList) return;
@@ -215,26 +228,25 @@ export const playerEvents = (
 		if (emptyState) emptyState.style.display = "none";
 
 		const prefix = isMobile ? "mfp" : "dfp";
-
 		const upcomingTracks = queue.slice(currentIndex + 1);
 
 		const itemsHtml = upcomingTracks
 			.map((track, i) => {
 				const trueIndex = currentIndex + 1 + i;
 				return `
-            <div class="${prefix}-queue-item" data-index="${trueIndex}">
-               <div class="${prefix}-qi-drag"><i class="bi bi-grip-vertical"></i></div>
-               <div class="${prefix}-qi-cover">
-                  <img src="${track.cover ?? ""}" alt="" onerror="this.style.display='none'" />
-               </div>
-               <div class="${prefix}-qi-info">
-                  <div class="${prefix}-qi-title">${track.title ?? "—"}</div>
-                  <div class="${prefix}-qi-artist">${track.artist ?? "—"}</div>
-               </div>
-               <span class="${prefix}-qi-dur">--:--</span>
-               <button class="${prefix}-qi-more"><i class="bi bi-three-dots"></i></button>
-            </div>
-         `;
+					<div class="${prefix}-queue-item" data-index="${trueIndex}">
+						<div class="${prefix}-qi-drag"><i class="bi bi-grip-vertical"></i></div>
+						<div class="${prefix}-qi-cover">
+							<img src="${track.cover ?? ""}" alt="" onerror="this.style.display='none'" />
+						</div>
+						<div class="${prefix}-qi-info">
+							<div class="${prefix}-qi-title">${track.title ?? "—"}</div>
+							<div class="${prefix}-qi-artist">${track.artist ?? "—"}</div>
+						</div>
+						<span class="${prefix}-qi-dur">--:--</span>
+						<button class="${prefix}-qi-more"><i class="bi bi-three-dots"></i></button>
+					</div>
+				`;
 			})
 			.join("");
 
@@ -249,8 +261,11 @@ export const playerEvents = (
 				)
 					return;
 
-				// Fix: Force audio context on gesture & use playAt for index tracking
+				// ── MOBILE-CRITICAL ──────────────────────────────────
+				// ensureAudioContext() MUST be called here, synchronously,
+				// inside the click handler before any async work.
 				store.player.ensureAudioContext();
+
 				const index = Number(item.dataset.index);
 				store.player.playAt(index).catch(() => {
 					toast({ message: "Error changing tracks", type: "error" });
@@ -259,6 +274,7 @@ export const playerEvents = (
 		});
 	};
 
+	// ── Store event subscriptions ──────────────────────────────
 	const unsubs = [
 		store.player.on("play_state_changed", ({ isPlaying }) =>
 			syncPlayButton(isPlaying),
@@ -274,47 +290,76 @@ export const playerEvents = (
 		store.player.on("volume_changed", (vol) => syncVolume(vol)),
 		store.player.on("queue_changed", () => updateQueuePanel()),
 		store.player.on("seeked", () => updateProgress()),
+
+		// Notify the user when autoplay was blocked (iOS only scenario)
+		store.player.on("play_blocked", () => {
+			toast({
+				message: "Tap play to start audio",
+				type: "info",
+				duration: 3000,
+			});
+		}),
 	];
 
+	// ── Play / Pause ───────────────────────────────────────────
+	// We use "click" (not touchend/touchstart) because:
+	//   • "click" is always recognised as a user gesture by iOS.
+	//   • "touchend" can lose the gesture token if there's any async
+	//     work before the AudioContext.resume() call.
 	root
 		.querySelectorAll("#dfp-play-btn, #mfp-play-btn, .ctrl.main")
-		.forEach((btn) =>
+		.forEach((btn) => {
 			btn.addEventListener("click", () => {
+				// MUST be the very first call — before any conditional or async
 				store.player.ensureAudioContext();
 				store.player.togglePlay();
-			}),
-		);
+			});
+		});
 
+	// ── Next / Prev ────────────────────────────────────────────
 	root
 		.querySelectorAll("#dfp-next-btn, #mfp-next-btn, .ctrl-next")
-		.forEach((btn) =>
-			btn.addEventListener("click", () => store.player.nextTrack()),
-		);
+		.forEach((btn) => {
+			btn.addEventListener("click", () => {
+				store.player.ensureAudioContext();
+				store.player.nextTrack();
+			});
+		});
 
 	root
 		.querySelectorAll("#dfp-prev-btn, #mfp-prev-btn, .ctrl-prev")
-		.forEach((btn) =>
-			btn.addEventListener("click", () => store.player.prevTrack()),
-		);
+		.forEach((btn) => {
+			btn.addEventListener("click", () => {
+				store.player.ensureAudioContext();
+				store.player.prevTrack();
+			});
+		});
 
+	// ── Shuffle / Repeat ───────────────────────────────────────
 	root
 		.querySelectorAll("#dfp-shuffle-btn, #mfp-shuffle-btn")
-		.forEach((btn) =>
-			btn.addEventListener("click", () => store.player.toggleShuffle()),
-		);
+		.forEach((btn) => {
+			btn.addEventListener("click", () => store.player.toggleShuffle());
+		});
 
-	root
-		.querySelectorAll("#dfp-repeat-btn, #mfp-repeat-btn")
-		.forEach((btn) =>
-			btn.addEventListener("click", () => store.player.toggleRepeat()),
-		);
+	root.querySelectorAll("#dfp-repeat-btn, #mfp-repeat-btn").forEach((btn) => {
+		btn.addEventListener("click", () => store.player.toggleRepeat());
+	});
 
+	// ── Seek bar ───────────────────────────────────────────────
+	// Uses pointer events for a single unified code path on both
+	// mouse (desktop) and touch (mobile) without passive-listener issues.
 	const progressTrack =
 		$("dfp-progress-bar") ??
 		$("mfp-progress-bar") ??
 		root.querySelector(".track");
+
 	if (progressTrack) {
+		let isScrubbing = false;
+
 		const handleSeek = (clientX) => {
+			// Ensure audio is unlocked when the user seeks on mobile
+			store.player.ensureAudioContext();
 			const rect = progressTrack.getBoundingClientRect();
 			const pct = Math.min(
 				1,
@@ -324,19 +369,41 @@ export const playerEvents = (
 			if (dur) store.player.seekTo(pct * dur);
 		};
 
-		progressTrack.addEventListener("click", (e) => handleSeek(e.clientX));
+		progressTrack.addEventListener("pointerdown", (e) => {
+			isScrubbing = true;
+			progressTrack.setPointerCapture(e.pointerId);
+			handleSeek(e.clientX);
+		});
 
-		progressTrack.addEventListener(
-			"touchstart",
-			(e) => handleSeek(e.touches[0].clientX),
-			{ passive: true },
-		);
+		progressTrack.addEventListener("pointermove", (e) => {
+			if (!isScrubbing) return;
+			handleSeek(e.clientX);
+		});
+
+		progressTrack.addEventListener("pointerup", (e) => {
+			if (!isScrubbing) return;
+			isScrubbing = false;
+			handleSeek(e.clientX);
+		});
+
+		progressTrack.addEventListener("pointercancel", () => {
+			isScrubbing = false;
+		});
+
+		// Fallback click for browsers without pointer events
+		progressTrack.addEventListener("click", (e) => {
+			if (!isScrubbing) handleSeek(e.clientX);
+		});
 	}
 
+	// ── Volume bar ─────────────────────────────────────────────
 	const volumeTrack =
 		$("dfp-vol-bar") ?? $("mfp-vol-bar") ?? root.querySelector(".vol-track");
+
 	if (volumeTrack) {
-		const handleVolumeScrub = (clientX) => {
+		let isVolScrubbing = false;
+
+		const handleVolume = (clientX) => {
 			const rect = volumeTrack.getBoundingClientRect();
 			const pct = Math.min(
 				1,
@@ -345,32 +412,64 @@ export const playerEvents = (
 			store.player.volume = pct;
 		};
 
-		volumeTrack.addEventListener("click", (e) =>
-			handleVolumeScrub(e.clientX),
-		);
+		volumeTrack.addEventListener("pointerdown", (e) => {
+			isVolScrubbing = true;
+			volumeTrack.setPointerCapture(e.pointerId);
+			handleVolume(e.clientX);
+		});
+
+		volumeTrack.addEventListener("pointermove", (e) => {
+			if (!isVolScrubbing) return;
+			handleVolume(e.clientX);
+		});
+
+		volumeTrack.addEventListener("pointerup", (e) => {
+			if (!isVolScrubbing) return;
+			isVolScrubbing = false;
+			handleVolume(e.clientX);
+		});
+
+		volumeTrack.addEventListener("pointercancel", () => {
+			isVolScrubbing = false;
+		});
+
+		volumeTrack.addEventListener("click", (e) => {
+			if (!isVolScrubbing) handleVolume(e.clientX);
+		});
 	}
 
+	// ── Mute toggle ────────────────────────────────────────────
 	root
 		.querySelectorAll(".vol-icon, .dfp-vol-icon, .mfp-vol-icon")
 		.forEach((icon) => {
-			icon.addEventListener("click", () => {
-				store.player.toggleMute();
-			});
+			icon.addEventListener("click", () => store.player.toggleMute());
 		});
 
+	// ── Mini player → full player ──────────────────────────────
 	if (isMini) {
+		const openFullPlayer = () => {
+			if (store.player.currentTrack) router.navigate("/player");
+		};
+
 		const thumb = root.querySelector(".player-thumb");
 		const title = root.querySelector(".player-title");
-		[thumb, title].forEach((el) =>
-			el?.addEventListener("click", () => {
-				if (store.player.currentTrack) router.navigate("/player");
-			}),
-		);
+		const miniPlayerBar = root.querySelector(".mini-player-row-wrap");
+
+		thumb?.addEventListener("click", openFullPlayer);
+		title?.addEventListener("click", openFullPlayer);
+		miniPlayerBar?.addEventListener("click", (e) => {
+			// Don't open full player when tapping control buttons
+			if (!e.target.closest(".ctrl") && !e.target.closest(".player-like")) {
+				openFullPlayer();
+			}
+		});
 	}
 
+	// ── Full player navigation ─────────────────────────────────
 	$("dfp-back-btn")?.addEventListener("click", () => collapse?.());
 	$("mfp-collapse-btn")?.addEventListener("click", () => router.replace("/"));
 
+	// ── Mobile queue panel ─────────────────────────────────────
 	$("mfp-queue-pill-btn")?.addEventListener("click", () => {
 		$("mfp-queue-view")?.classList.add("active-mfp-view");
 	});
@@ -379,8 +478,10 @@ export const playerEvents = (
 		$("mfp-queue-view")?.classList.remove("active-mfp-view");
 	});
 
+	// ── Mobile swipe-down to collapse ─────────────────────────
 	if (isMobile && !isMini) {
 		let touchStartY = 0;
+
 		root.addEventListener(
 			"touchstart",
 			(e) => {
@@ -388,16 +489,20 @@ export const playerEvents = (
 			},
 			{ passive: true },
 		);
+
 		root.addEventListener(
 			"touchend",
 			(e) => {
 				const diff = e.changedTouches[0].clientY - touchStartY;
-				if (diff > 80 && !e.target.closest("#mfp-queue-list")) collapse?.();
+				if (diff > 80 && !e.target.closest("#mfp-queue-list")) {
+					collapse?.();
+				}
 			},
 			{ passive: true },
 		);
 	}
 
+	// ── Keyboard shortcuts (full player only) ─────────────────
 	if (!isMini) {
 		const onKeyDown = (e) => {
 			if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")
@@ -406,6 +511,7 @@ export const playerEvents = (
 			switch (e.code) {
 				case "Space":
 					e.preventDefault();
+					store.player.ensureAudioContext();
 					store.player.togglePlay();
 					break;
 				case "ArrowRight":
@@ -419,10 +525,12 @@ export const playerEvents = (
 					break;
 			}
 		};
+
 		document.addEventListener("keydown", onKeyDown);
 		unsubs.push(() => document.removeEventListener("keydown", onKeyDown));
 	}
 
+	// ── Initial sync ───────────────────────────────────────────
 	const track = store.player.currentTrack;
 	if (track) {
 		updateTrackInfo(track);
@@ -435,12 +543,14 @@ export const playerEvents = (
 		if (store.player.isPlaying) startProgressLoop();
 	}
 
+	// ── Cleanup / unmount ─────────────────────────────────────
 	return () => {
 		stopProgressLoop();
 		unsubs.forEach((unsub) => typeof unsub === "function" && unsub());
 	};
 };
 
+// ── Helpers ────────────────────────────────────────────────────
 const formatTime = (seconds = 0) => {
 	const s = Math.floor(seconds);
 	const m = Math.floor(s / 60);

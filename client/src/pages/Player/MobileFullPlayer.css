@@ -311,7 +311,7 @@
 	width: 58px;
 	height: 58px;
 	border-radius: 50%;
-	background: white;
+	background: var(--accent);
 	color: hsl(228, 22%, 10%);
 	font-size: 1.1rem;
 	border: none;
