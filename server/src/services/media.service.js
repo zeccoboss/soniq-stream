@@ -1,6 +1,6 @@
 const { getSignedUrl, BUCKETS } = require("./s3.service");
 
-const createStreamPayload = async ({ storageKey, expiresIn = 180000 }) => {
+const createStreamPayload = async ({ storageKey, expiresIn }) => {
 	const url = await getSignedUrl({
 		bucket: BUCKETS.tracks,
 		key: storageKey,
@@ -15,4 +15,18 @@ const createStreamPayload = async ({ storageKey, expiresIn = 180000 }) => {
 	};
 };
 
-module.exports = { createStreamPayload };
+const createTrackDownloadPayload = async ({ storageKey, expiresIn }) => {
+	const url = await getSignedUrl({
+		bucket: BUCKETS.tracks,
+		key: storageKey,
+		expiresIn,
+	});
+
+	return {
+		download: {
+			url,
+			expiresIn,
+		},
+	};
+};
+module.exports = { createStreamPayload, createTrackDownloadPayload };

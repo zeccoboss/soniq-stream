@@ -512,6 +512,8 @@ class PlayerStore extends BaseStore {
 	async prepare(track, isRetry = false, shouldPlay = false) {
 		if (!track?.uuid) return;
 
+		console.log(track);
+
 		const session = ++this.#sessionId;
 
 		this.#isLoading = true;

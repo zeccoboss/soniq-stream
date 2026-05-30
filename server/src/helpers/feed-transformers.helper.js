@@ -1,4 +1,7 @@
-const { createStreamPayload } = require("../services/media.service");
+const {
+	createStreamPayload,
+	createTrackDownloadPayload,
+} = require("../services/media.service");
 
 const getImageUrl = (image) => {
 	if (!image?.storage) return null;
@@ -44,6 +47,24 @@ const cleanTitle = (title) => {
 	return clean.replace(/\s+/g, " ").trim();
 };
 
+const processMediaPayload = async (storageKey, expiresIn = 60 * 60 * 5) => {
+	const [stream, download] = await Promise.all([
+		createStreamPayload({
+			storageKey,
+			expiresIn,
+		}),
+		createTrackDownloadPayload({
+			storageKey,
+			expiresIn,
+		}),
+	]);
+
+	return {
+		...stream,
+		...download,
+	};
+};
+
 const toTrackPayload = async (track) => ({
 	uuid: track.uuid,
 	title: cleanTitle(track.title || track.name),
@@ -57,10 +78,7 @@ const toTrackPayload = async (track) => ({
 	duration: track.duration ?? 0,
 
 	// Get the stream payload
-	media: await createStreamPayload({
-		storageKey: track.storage.key,
-		expiresIn: 300000,
-	}),
+	media: await processMediaPayload(track.storage.key),
 });
 
 const toArtistCard = (artist) => ({
