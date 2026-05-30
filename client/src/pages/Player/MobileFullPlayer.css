@@ -10,8 +10,8 @@
 	flex-direction: column;
 	/* hidden by default — shown when track is playing */
 	/* transform: translateY(100%);
-	transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1);
-	pointer-events: none; */
+   transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1);
+   pointer-events: none; */
 }
 .mobile-full-player.open {
 	transform: translateY(0);
@@ -36,41 +36,6 @@
 }
 .active-mfp-view {
 	transform: translateX(0);
-}
-
-/* ══════════════════════════════════════
-   AMBIENT BACKGROUND
-══════════════════════════════════════ */
-.mfp-bg {
-	position: absolute;
-	inset: 0;
-	z-index: 0;
-	background: linear-gradient(
-		160deg,
-		hsla(213, 80%, 18%, 0.97) 0%,
-		hsla(265, 60%, 13%, 0.97) 50%,
-		hsl(228, 22%, 7%) 100%
-	);
-}
-.mfp-bg::before {
-	content: "";
-	position: absolute;
-	inset: 0;
-	background: radial-gradient(
-		ellipse at 50% 20%,
-		hsla(213, 100%, 60%, 0.15),
-		transparent 65%
-	);
-}
-.mfp-bg::after {
-	content: "";
-	position: absolute;
-	inset: 0;
-	background: radial-gradient(
-		ellipse at 80% 80%,
-		hsla(265, 80%, 60%, 0.08),
-		transparent 55%
-	);
 }
 
 /* ══════════════════════════════════════
@@ -160,7 +125,7 @@
 	display: none;
 	place-items: center;
 	font-size: 3.5rem;
-	color: rgba(255, 255, 255, 0.6);
+	color: var(--text-3);
 	width: 100%;
 	height: 100%;
 }
@@ -212,7 +177,7 @@
 	display: grid;
 	place-items: center;
 	font-size: 0.9rem;
-	color: var(--text-2);
+	color: var(--text-3);
 	cursor: pointer;
 	flex-shrink: 0;
 	margin-left: 12px;
@@ -221,7 +186,7 @@
 .mfp-like-btn.liked {
 	background: rgba(255, 74, 74, 0.15);
 	border-color: rgba(255, 74, 74, 0.3);
-	color: var(--error);
+	color: #ff6b6b;
 }
 
 /* ══════════════════════════════════════
@@ -246,7 +211,7 @@
 	width: 0%;
 	height: 100%;
 	border-radius: 2px;
-	background: white;
+	background: var(--text-1);
 	position: relative;
 	transition: width 0.1s linear;
 }
@@ -259,7 +224,7 @@
 	width: 10px;
 	height: 10px;
 	border-radius: 50%;
-	background: white;
+	background: var(--text-1);
 	box-shadow: 0 0 6px rgba(255, 255, 255, 0.4);
 }
 .mfp-progress-times {
@@ -294,7 +259,7 @@
 	border-radius: 50%;
 	background: none;
 	border: none;
-	color: var(--text-2);
+	color: var(--text-3);
 	font-size: 0.85rem;
 	cursor: pointer;
 	display: grid;
@@ -305,7 +270,7 @@
 	color: var(--text-1);
 }
 .mfp-ctrl.active {
-	color: white;
+	color: var(--text-1);
 }
 .mfp-ctrl-play {
 	width: 58px;
@@ -354,7 +319,7 @@
 	width: 70%;
 	height: 100%;
 	border-radius: 2px;
-	background: rgba(255, 255, 255, 0.35);
+	background: var(--text-2);
 }
 
 /* ══════════════════════════════════════
@@ -388,7 +353,7 @@
 	display: grid;
 	place-items: center;
 	font-size: 0.82rem;
-	color: var(--text-2);
+	color: var(--text-3);
 	transition:
 		background 0.2s,
 		border-color 0.2s,
@@ -462,7 +427,9 @@
 	align-items: center;
 	justify-content: space-between;
 	flex-shrink: 0;
-	background: hsl(229, 26%, 10%);
+	background: rgba(0, 0, 0, 0.35);
+	backdrop-filter: blur(16px);
+	-webkit-backdrop-filter: blur(16px);
 }
 .mfp-queue-title {
 	font-family: var(--font-head);
@@ -565,7 +532,9 @@
 	flex: 1;
 	overflow-y: auto;
 	scrollbar-width: none;
-	background: hsl(229, 26%, 10%);
+	background: rgba(0, 0, 0, 0.35);
+	backdrop-filter: blur(16px);
+	-webkit-backdrop-filter: blur(16px);
 }
 .mfp-queue-list::-webkit-scrollbar {
 	display: none;
@@ -656,10 +625,3 @@
 	font-size: 1.6rem;
 	opacity: 0.4;
 }
-
-/* When the player page is active via the orchestrator route, 
-   force the mobile shell to slide up immediately */
-/* .player-page .mobile-full-player {
-	transform: translateY(0);
-	pointer-events: all;
-} */

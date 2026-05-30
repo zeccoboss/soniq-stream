@@ -152,8 +152,6 @@ export const HomePage = async (ctx) => {
 					]),
 				]);
 
-			console.log(exploreResult);
-
 			// ── Explore Feed Parsing ────────────────────────
 			if (exploreResult.status === "fulfilled") {
 				const exploreRes = exploreResult.value;

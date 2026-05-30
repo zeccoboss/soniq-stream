@@ -59,6 +59,7 @@ const toTrackPayload = async (track) => ({
 	// Get the stream payload
 	media: await createStreamPayload({
 		storageKey: track.storage.key,
+		expiresIn: 300000,
 	}),
 });
 
