@@ -614,15 +614,33 @@ class PlayerStore extends BaseStore {
 	/**
 	 * play()
 	 *
-	 * Calls ensureAudioContext() as a safety net (in case play() is called
-	 * from a non-gesture context such as network restore or autoadvance).
-	 * On iOS this won't grant a new token, but it keeps the context running.
+	 * The AudioContext can silently re-suspend between the user gesture
+	 * (where ensureAudioContext() is called) and this async call inside
+	 * prepare(). This causes the progress bar to advance while audio is
+	 * completely silent — the <audio> element plays but the Web Audio
+	 * graph is suspended so no sound reaches the speakers.
+	 *
+	 * Fix: await audioCtx.resume() right here, every time, before
+	 * audio.play(). This is the only reliable way to guarantee the graph
+	 * is running at the exact moment sound needs to come out.
 	 */
 	async play() {
 		if (!this.#audio.src) return;
 
-		// Safety net — won't work from non-gesture on iOS but doesn't hurt
-		this.ensureAudioContext();
+		// Re-resume the context every time — it may have auto-suspended
+		// between the gesture and this async call (common on iOS/Android).
+		if (this.#audioCtx) {
+			try {
+				await this.#audioCtx.resume();
+			} catch {
+				/* non-fatal */
+			}
+		} else {
+			// No context yet (called from a non-gesture path like network restore).
+			// ensureAudioContext() won't unlock on iOS here, but we still call it
+			// so the graph exists for when the user taps play manually.
+			this.ensureAudioContext();
+		}
 
 		try {
 			const p = this.#audio.play();
