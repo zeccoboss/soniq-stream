@@ -32,6 +32,11 @@ export const SettingsMobile = async ({
 
 	// ── State factories ──────────────────────────────────────
 
+	const buildView = (markup) => {
+		const fragment = buildNode(markup);
+		return fragment.firstElementChild ?? fragment;
+	};
+
 	const header = () =>
 		buildNode(`
 			<header class="settings-mob-header">
@@ -39,11 +44,11 @@ export const SettingsMobile = async ({
 				<button class="settings-mob-search-btn" id="settings-mob-search-btn" title="Search settings" disabled>
 					<i class="bi bi-search"></i>
 				</button>
-			</div>
+			</header>
 		`);
 
 	const authGate = () =>
-		buildNode(`
+		buildView(`
 			<section class="settings-mob-sub" id="settings-mob-auth" data-content="auth">
 				<div class="settings-mob-auth-icon">
 					<i class="bi bi-gear-fill"></i>
@@ -61,8 +66,8 @@ export const SettingsMobile = async ({
 
 	// Main list view — the "home" screen of mobile settings
 	const contentState = () =>
-		buildNode(`
-			<section class="settings-mob-sub active-settings-mob-sub" id="settings-mob-content" data-content="content">
+		buildView(`
+			<section class="settings-mob-sub settings-mob-panel settings-mob-panel--main is-active" id="settings-mob-content" data-content="content">
 				<div class="settings-mob-scroll">
 
 					<!-- ── Profile card ── -->
@@ -156,8 +161,8 @@ export const SettingsMobile = async ({
 	// Detail panel — slides in when a row is tapped
 	// Your events file calls showMobPanel(panelId) to swap content
 	const detailPanel = () =>
-		buildNode(`
-			<section class="settings-mob-sub" id="settings-mob-detail" data-content="detail">
+		buildView(`
+			<section class="settings-mob-sub settings-mob-panel settings-mob-panel--detail" id="settings-mob-detail" data-content="detail">
 				<div class="settings-mob-detail-header">
 					<button class="settings-mob-back-btn" id="settings-mob-back-btn">
 						<i class="bi bi-arrow-left"></i>
@@ -171,7 +176,7 @@ export const SettingsMobile = async ({
 		`);
 
 	const loadingState = () =>
-		buildNode(`
+		buildView(`
 			<section class="settings-mob-sub" id="settings-mob-loading" data-content="loading">
 				<div class="settings-mob-loading-ring">
 					<svg width="28" height="28" fill="none" viewBox="0 0 24 24" class="settings-spinner">
@@ -184,7 +189,7 @@ export const SettingsMobile = async ({
 		`);
 
 	const errorState = () =>
-		buildNode(`
+		buildView(`
 			<section class="settings-mob-sub" id="settings-mob-error" data-content="error">
 				<div class="settings-mob-error-icon">
 					<i class="bi bi-exclamation-triangle-fill"></i>
@@ -200,7 +205,7 @@ export const SettingsMobile = async ({
 		`);
 
 	const skeletonState = () =>
-		buildNode(`
+		buildView(`
 			<section class="settings-mob-sub" id="settings-mob-skeleton" data-content="skeleton">
 				<div class="settings-mob-scroll">
 
@@ -236,7 +241,7 @@ export const SettingsMobile = async ({
 				</div>
 			</section>
 		`);
-	console.log(state);
+
 	// ── Pick the right view ──────────────────────────────────
 	const getStateView = (state) => {
 		switch (state) {
@@ -250,10 +255,20 @@ export const SettingsMobile = async ({
 				return errorState();
 			case "skeleton":
 				return skeletonState();
+			default:
+				return skeletonState();
 		}
 	};
-	console.log(getStateView(state));
-	// Always append detail panel — events file controls visibility
-	root.append(header(), getStateView(state), detailPanel());
+	const stage = buildNode(`<div class="settings-mob-stage"></div>`);
+	const currentView = getStateView(state);
+	currentView.classList.add(
+		"settings-mob-panel",
+		"settings-mob-panel--main",
+		"is-active",
+	);
+	const detail = detailPanel();
+	stage.append(currentView, detail);
+
+	root.append(header(), stage);
 	return root.getElement();
 };

@@ -15,6 +15,19 @@ class AppStore extends BaseStore {
 		this.preferences = new BaseStore();
 	}
 
+	setPreferences(preferences, value = null) {
+		if (!preferences) return;
+
+		if (typeof preferences === "string") {
+			this.auth?.updateSettings?.(preferences, value);
+			return;
+		}
+
+		if (preferences && typeof preferences === "object") {
+			this.auth?.updateSettings?.(preferences);
+		}
+	}
+
 	// -----------------------------
 	// Player orchestration
 	// -----------------------------

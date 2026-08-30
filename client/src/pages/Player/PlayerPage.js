@@ -1,7 +1,7 @@
 import { mobileScreen } from "@zecco/core/screen-break-points.js";
 import { DesktopFullPlayer } from "./DesktopFullPlayer.js";
 import { MobileFullPlayer } from "./MobileFullPlayer.js";
-import { playerEvents } from "@zecco/features/player/player.events.js";
+import { playerEvents } from "@zecco/pages/Player/player.events.js";
 import { store } from "@zecco/store/store.js";
 import { router } from "@zecco/routes/router.js";
 

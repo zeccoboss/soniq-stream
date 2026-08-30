@@ -37,33 +37,46 @@ class AuthStore extends BaseStore {
 		};
 
 		this.storageSet("user", this.#user);
-		this.emit("auth_changed", this.#user);
+		this.emit("auth_store:auth_changed", this.#user);
 		// Optional: Emit a dedicated settings event so UI elements like Theme togglers don't have to listen to a massive profile block change
-		this.emit("settings_changed", this.#user.settings);
+		this.emit("auth_store:settings_changed", this.#user.settings);
+	}
+
+	get settings() {
+		return this.#user?.settings ?? null;
 	}
 
 	/**
 	 * Updates specific root user details or nested settings profiles in memory
 	 */
-	updateUser(fields) {
+	updateUser(fields, value = null) {
 		if (!this.#user) return console.error("[AuthStore]: No user to update.");
 
-		this.#user = { ...this.#user, ...fields };
+		const updates = typeof fields === "string" ? { [fields]: value } : fields;
+		if (!updates || typeof updates !== "object") return;
+
+		this.#user = { ...this.#user, ...updates };
 		this.storageSet("user", this.#user);
-		this.emit("auth_changed", this.#user);
+		this.emit("auth_store:auth_changed", this.#user);
 	}
 
 	/**
 	 * Explicit shorthand helper for updating app preferences cleanly
 	 */
-	updateSettings(settingsFields) {
+	updateSettings(settingsFields, value = null) {
 		if (!this.#user) return;
 
-		this.#user.settings = { ...this.#user.settings, ...settingsFields };
+		const updates =
+			typeof settingsFields === "string"
+				? { [settingsFields]: value }
+				: settingsFields;
+		if (!updates || typeof updates !== "object") return;
+
+		this.#user.settings = { ...this.#user.settings, ...updates };
 		this.storageSet("user", this.#user);
 
-		this.emit("auth_changed", this.#user);
-		this.emit("settings_changed", this.#user.settings);
+		this.emit("auth_store:auth_changed", this.#user);
+		this.emit("auth_store:settings_changed", this.#user.settings);
 	}
 
 	get token() {
@@ -95,8 +108,8 @@ class AuthStore extends BaseStore {
 		this.#token = null;
 		this.storageRemove("token");
 		this.storageRemove("user");
-		this.emit("auth_changed", null);
-		this.emit("settings_changed", null);
+		this.emit("auth_store:auth_changed", null);
+		this.emit("auth_store:settings_changed", null);
 	}
 
 	init() {

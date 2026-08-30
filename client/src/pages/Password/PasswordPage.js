@@ -1,11 +1,11 @@
 import { mobileScreen } from "@zecco/core/screen-break-points.js";
 import { PasswordDesktop } from "./PasswordDesktop.js";
 import { PasswordMobile } from "./PasswordMobile.js";
-import { passwordEvents } from "@zecco/features/password/password.events.js";
+import { passwordEvents } from "@zecco/pages/Password/password.events.js";
 import {
 	savePwdDraft,
 	clearPwdDraft,
-} from "@zecco/features/password/password.helpers.js";
+} from "@zecco/pages/Password/password.helpers.js";
 import { router } from "@zecco/routes/router.js";
 
 /**

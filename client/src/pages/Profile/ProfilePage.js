@@ -1,7 +1,7 @@
 import { mobileScreen } from "@zecco/core/screen-break-points.js";
 import { ProfileDesktop } from "./ProfileDesktop.js";
 import { ProfileMobile } from "./ProfileMobile.js";
-import { profileEvents } from "@zecco/features/profile/profile.events.js";
+import { profileEvents } from "@zecco/pages/Profile/profile.events.js";
 import { store } from "@zecco/store/store.js";
 
 /**

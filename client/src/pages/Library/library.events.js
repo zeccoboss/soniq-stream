@@ -1,7 +1,7 @@
 import { router } from "@zecco/routes/router";
 import { toast } from "@zecco/components/Toast/Toast";
 import { showModal } from "@zecco/components/Modal/Modal";
-import { filterLibraryContent } from "@zecco/features/library/library.helpers";
+import { filterLibraryContent } from "@zecco/pages/Library/library.helpers";
 
 const SEE_ALL_TAB_MAP = {
 	"lib-see-all-liked": "liked",
@@ -136,7 +136,10 @@ const libraryEvents = (container) => {
 				return;
 			}
 
-			toast({ message: `${artistName} profile is not linked yet`, type: "info" });
+			toast({
+				message: `${artistName} profile is not linked yet`,
+				type: "info",
+			});
 		}
 	});
 };

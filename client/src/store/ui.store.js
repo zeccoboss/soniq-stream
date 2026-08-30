@@ -15,7 +15,7 @@ export class UiStore extends BaseStore {
 
 	set playerActive(active) {
 		this.#playerActive = active;
-		this.emit("player_active_changed", active);
+		this.emit("ui_store:player_active_changed", active);
 	}
 
 	get activePage() {
@@ -24,7 +24,7 @@ export class UiStore extends BaseStore {
 	set activePage(page) {
 		if (!page || typeof page !== "string") return;
 		this.#activePage = page;
-		this.emit("page_changed", page);
+		this.emit("ui_store:page_changed", page);
 	}
 
 	// --- Sidebar ---
@@ -34,7 +34,7 @@ export class UiStore extends BaseStore {
 
 	toggleSidebar() {
 		this.#isSidebarCollapsed = !this.#isSidebarCollapsed;
-		this.emit("sidebar_toggled", this.#isSidebarCollapsed);
+		this.emit("ui_store:sidebar_toggled", this.#isSidebarCollapsed);
 	}
 
 	// --- Overlay ---
@@ -43,11 +43,11 @@ export class UiStore extends BaseStore {
 	}
 	openOverlay() {
 		this.#overlayOpen = true;
-		this.emit("overlay_changed", true);
+		this.emit("ui_store:overlay_changed", true);
 	}
 	closeOverlay() {
 		this.#overlayOpen = false;
-		this.emit("overlay_changed", false);
+		this.emit("ui_store:overlay_changed", false);
 	}
 
 	// --- Deep Link ---
@@ -72,6 +72,6 @@ export class UiStore extends BaseStore {
 		this.#overlayOpen = false;
 		this.#deepLinkTrackId = null;
 		this.#isSidebarCollapsed = false;
-		this.emit("page_changed", "home");
+		this.emit("ui_store:page_changed", "home");
 	}
 }

@@ -2,7 +2,7 @@
 import { mobileScreen } from "@zecco/core/screen-break-points";
 import { LoginDesktop } from "./LoginDesktop";
 import { LoginMobile } from "./LoginMobile";
-import { loginEvents } from "@zecco/features/login/login.events.js";
+import { loginEvents } from "@zecco/pages/Login/login.events.js";
 import { readFromSessionStorage } from "@zecco/services/storage/session-storage.js";
 
 export const LoginPage = async (ctx) => {

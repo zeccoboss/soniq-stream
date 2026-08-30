@@ -9,15 +9,32 @@ import { router } from "./routes/router";
 import { applyMiddleware } from "./middlewares";
 import { store } from "./store/store";
 import { themeManager } from "./core/theme-manager";
+import { logger } from "@zecco/core/logger.js";
 
 // ── Styles ─────────────────────────────────────────────────────────────────────────
 import "bootstrap-icons/font/bootstrap-icons.css";
 import "./styles/base.css";
 import "./styles/media.css";
 import { initGlobalPlayerTriggers } from "./events/player-events";
-// import { networkHandler } from "./core/network-handler";
 
 const bootstrap = async () => {
+	// ── Global error handling ─────────────────────────────────────────────────────────
+	window.addEventListener("error", (e) => {
+		logger.error("Unhandled error", {
+			context: "Global",
+			meta: e.error,
+			silent: false,
+		});
+	});
+
+	window.addEventListener("unhandledrejection", (e) => {
+		logger.error("Unhandled promise rejection", {
+			context: "Global",
+			meta: e.reason,
+			silent: false,
+		});
+	});
+
 	// ── Initialize the application state store ───────────────────────────────────
 	store.init();
 

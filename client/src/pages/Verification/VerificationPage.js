@@ -1,7 +1,7 @@
 import { mobileScreen } from "@zecco/core/screen-break-points";
 import { VerificationMobile } from "./VerificationMobile";
 import { VerificationDesktop } from "./VerificationDesktop";
-import { verificationEvents } from "@zecco/features/verification/verification-events";
+import { verificationEvents } from "@zecco/pages/Verification/verification-events";
 
 export const VerificationPage = async (ctx) => {
 	const root = document.createElement("section");

@@ -1,7 +1,7 @@
 import { mobileScreen } from "@zecco/core/screen-break-points";
 import { LibraryDesktop } from "./LibraryDesktop";
 import { LibraryMobile } from "./LibraryMobile";
-import { libraryEvents } from "@zecco/features/library/library.events";
+import { libraryEvents } from "@zecco/pages/Library/library.events";
 import meService from "@zecco/services/api/me.service";
 import { store } from "@zecco/store/store";
 import { formatTrackDuration } from "@zecco/utils/format-track-duration";
@@ -52,7 +52,9 @@ const renderTrackRow = (track, index) => {
 
 const renderPlaylistCard = (playlist) => {
 	const name = playlist?.name ?? "Untitled Playlist";
-	const count = Array.isArray(playlist?.trackIds) ? playlist.trackIds.length : 0;
+	const count = Array.isArray(playlist?.trackIds)
+		? playlist.trackIds.length
+		: 0;
 	return `
 		<div class="lib-playlist-card" data-playlist-id="${playlist?.uuid ?? playlist?._id ?? ""}">
 			<div class="lib-playlist-cover">
@@ -66,7 +68,9 @@ const renderPlaylistCard = (playlist) => {
 
 const renderPlaylistItemMobile = (playlist) => {
 	const name = playlist?.name ?? "Untitled Playlist";
-	const count = Array.isArray(playlist?.trackIds) ? playlist.trackIds.length : 0;
+	const count = Array.isArray(playlist?.trackIds)
+		? playlist.trackIds.length
+		: 0;
 	return `
 		<div class="lib-playlist-item-mobile" data-playlist-id="${playlist?.uuid ?? playlist?._id ?? ""}">
 			<div class="lib-playlist-item-cover">
@@ -121,18 +125,25 @@ export const LibraryPage = async (ctx) => {
 		const recent = liked.slice(0, 8);
 		const artists = getUniqueArtists([...liked, ...upload]).slice(0, 12);
 
-		const likedMeta = viewRoot.querySelector("#lib-liked-meta, #lib-liked-meta-mobile");
+		const likedMeta = viewRoot.querySelector(
+			"#lib-liked-meta, #lib-liked-meta-mobile",
+		);
 		const uploadMeta = viewRoot.querySelector(
 			"#lib-upload-meta, #lib-upload-meta-mobile",
 		);
 		const recentMeta = viewRoot.querySelector(
 			"#lib-recent-meta, #lib-recent-meta-mobile",
 		);
-		if (likedMeta) likedMeta.textContent = `${liked.length} song${liked.length === 1 ? "" : "s"}`;
-		if (uploadMeta) uploadMeta.textContent = `${upload.length} track${upload.length === 1 ? "" : "s"}`;
-		if (recentMeta) recentMeta.textContent = `${recent.length} song${recent.length === 1 ? "" : "s"}`;
+		if (likedMeta)
+			likedMeta.textContent = `${liked.length} song${liked.length === 1 ? "" : "s"}`;
+		if (uploadMeta)
+			uploadMeta.textContent = `${upload.length} track${upload.length === 1 ? "" : "s"}`;
+		if (recentMeta)
+			recentMeta.textContent = `${recent.length} song${recent.length === 1 ? "" : "s"}`;
 
-		const likedList = viewRoot.querySelector("#lib-liked-list, #lib-liked-list-mobile");
+		const likedList = viewRoot.querySelector(
+			"#lib-liked-list, #lib-liked-list-mobile",
+		);
 		if (likedList) {
 			likedList.innerHTML = liked.length
 				? liked.map((t, i) => renderTrackRow(t, i)).join("")
@@ -164,14 +175,18 @@ export const LibraryPage = async (ctx) => {
 			playlistGrid.innerHTML = `${cards}${addCard ? addCard.outerHTML : ""}`;
 		}
 
-		const playlistListMobile = viewRoot.querySelector("#lib-playlist-list-mobile");
+		const playlistListMobile = viewRoot.querySelector(
+			"#lib-playlist-list-mobile",
+		);
 		if (playlistListMobile) {
 			playlistListMobile.innerHTML = playlists.length
 				? playlists.map(renderPlaylistItemMobile).join("")
 				: `<p class="lib-empty-sub">No playlists created yet.</p>`;
 		}
 
-		const artistRow = viewRoot.querySelector("#lib-artist-row, #lib-artist-row-mobile");
+		const artistRow = viewRoot.querySelector(
+			"#lib-artist-row, #lib-artist-row-mobile",
+		);
 		if (artistRow) {
 			artistRow.innerHTML = artists.length
 				? artists.map(renderArtistChip).join("")
@@ -254,4 +269,3 @@ export const LibraryPage = async (ctx) => {
 
 	return root;
 };
-

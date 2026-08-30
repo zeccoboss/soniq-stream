@@ -236,13 +236,13 @@ const FooterDesktop = () => {
 		progressFill.style.width = `${Math.min(100, Math.max(0, progressPercent))}%`;
 	};
 
-	store.player.on("track_changed", onTrackChange);
-	store.player.on("play_state_changed", onPlayStateChange);
-	store.player.on("volume_changed", onVolumeChange);
-	store.player.on("queue_changed", onQueueChange);
-	store.player.on("repeat_changed", onRepeatChange);
-	store.player.on("track_loading", onLoadingChange);
-	store.player.on("seeked", onSeek);
+	store.player.on("player_store:track_changed", onTrackChange);
+	store.player.on("player_store:play_state_changed", onPlayStateChange);
+	store.player.on("player_store:volume_changed", onVolumeChange);
+	store.player.on("player_store:queue_changed", onQueueChange);
+	store.player.on("player_store:repeat_changed", onRepeatChange);
+	store.player.on("player_store:track_loading", onLoadingChange);
+	store.player.on("player_store:seeked", onSeek);
 
 	el.addEventListener("click", (e) => {
 		if (e.target.closest("#btn-play")) store.player.togglePlay();
@@ -265,13 +265,13 @@ const FooterDesktop = () => {
 		document.removeEventListener("mousemove", handleProgressMouseMove);
 		document.removeEventListener("mouseup", handleProgressMouseUp);
 
-		store.player.off("track_changed", onTrackChange);
-		store.player.off("play_state_changed", onPlayStateChange);
-		store.player.off("volume_changed", onVolumeChange);
-		store.player.off("queue_changed", onQueueChange);
-		store.player.off("repeat_changed", onRepeatChange);
-		store.player.off("track_loading", onLoadingChange);
-		store.player.off("seeked", onSeek);
+		store.player.off("player_store:track_changed", onTrackChange);
+		store.player.off("player_store:play_state_changed", onPlayStateChange);
+		store.player.off("player_store:volume_changed", onVolumeChange);
+		store.player.off("player_store:queue_changed", onQueueChange);
+		store.player.off("player_store:repeat_changed", onRepeatChange);
+		store.player.off("player_store:track_loading", onLoadingChange);
+		store.player.off("player_store:seeked", onSeek);
 	};
 
 	return el;

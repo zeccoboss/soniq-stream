@@ -4,6 +4,11 @@
    Import in both Desktop and Mobile files
 ══════════════════════════════════════ */
 
+:root {
+	--settings-transition: 360ms cubic-bezier(0.22, 1, 0.36, 1);
+	--settings-mob-header-height: 64px;
+}
+
 /* ── Page shell ── */
 .settings-page {
 	display: contents; /* transparent wrapper — router renders into main */
@@ -128,22 +133,37 @@
 /* ── Panels container ── */
 .settings-panels {
 	flex: 1;
-	overflow-y: auto;
-	scrollbar-width: none;
+	overflow: hidden;
 	position: relative;
+	min-height: 0;
+	isolation: isolate;
 }
 .settings-panels::-webkit-scrollbar {
 	display: none;
 }
 
 .settings-panel {
-	display: none !important;
+	display: flex;
 	flex-direction: column;
 	gap: 16px;
 	padding: 24px 28px;
+	position: absolute;
+	inset: 0;
+	opacity: 0;
+	transform: translateX(24px) scale(0.985);
+	pointer-events: none;
+	visibility: hidden;
+	transition:
+		opacity 240ms ease,
+		transform var(--settings-transition),
+		visibility 240ms ease;
+	will-change: transform, opacity;
 }
 .active-settings-panel {
-	display: flex !important;
+	opacity: 1;
+	transform: translateX(0) scale(1);
+	pointer-events: auto;
+	visibility: visible;
 }
 
 .settings-panel-title {
@@ -859,20 +879,57 @@
 /* ══════════════════════════════════════
    MOBILE — SETTINGS LIST
 ══════════════════════════════════════ */
+.settings-section-mobile {
+	display: flex;
+	flex-direction: column;
+	position: relative;
+	overflow: hidden;
+	min-height: 0;
+}
+
+.settings-mob-stage {
+	position: relative;
+	flex: 1;
+	min-height: 0;
+	overflow: hidden;
+}
+
 .settings-mob-sub {
-	display: none;
+	position: absolute;
+	inset: 0;
+	display: flex;
 	flex: 1;
 	flex-direction: column;
 	overflow: hidden;
+	min-height: 0;
+	opacity: 0;
+	transform: translateX(100%);
+	pointer-events: none;
+	visibility: hidden;
+	transition:
+		opacity 220ms ease,
+		transform var(--settings-transition),
+		visibility 220ms ease;
+	will-change: transform, opacity;
+	z-index: 0;
 }
-.settings-section-mobile > .settings-mob-sub[data-content="auth"],
-.settings-section-mobile > .settings-mob-sub[data-content="loading"],
-.settings-section-mobile > .settings-mob-sub[data-content="error"],
-.settings-section-mobile > .settings-mob-sub[data-content="skeleton"] {
-	display: flex;
+.settings-mob-panel--main {
+	transform: translateX(0);
 }
-.active-settings-mob-sub {
-	display: flex;
+.settings-mob-panel--detail {
+	transform: translateX(100%);
+}
+.settings-section-mobile.is-detail-open .settings-mob-panel--main {
+	transform: translateX(-100%);
+}
+.settings-section-mobile.is-detail-open .settings-mob-panel--detail {
+	transform: translateX(0);
+}
+.settings-mob-sub.is-active {
+	opacity: 1;
+	pointer-events: auto;
+	visibility: visible;
+	z-index: 1;
 }
 
 /* Mobile scroll wrapper */
@@ -880,7 +937,7 @@
 	flex: 1;
 	overflow-y: auto;
 	scrollbar-width: none;
-	padding: 14px 16px 24px;
+	padding: 14px 16px calc(24px + 92px + env(safe-area-inset-bottom));
 	display: flex;
 	flex-direction: column;
 	gap: 4px;
@@ -889,7 +946,6 @@
 	display: none;
 }
 
-/* Mobile profile card */
 .settings-mob-profile-card {
 	display: flex;
 	align-items: center;
@@ -899,11 +955,16 @@
 	border: 1px solid var(--glass-border);
 	border-radius: var(--radius-md);
 	cursor: pointer;
-	transition: background 0.15s;
-	margin-bottom: 8px;
+	transition:
+		background 0.15s,
+		transform 0.2s ease,
+		box-shadow 0.2s ease;
+	margin: 8px 0 16px 0;
 }
 .settings-mob-profile-card:hover {
 	background: var(--glass-hover);
+	transform: translateY(-1px);
+	box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
 }
 .settings-mob-avatar-wrap {
 	position: relative;
@@ -977,7 +1038,9 @@
 	font-family: var(--font-body);
 	cursor: pointer;
 	text-align: left;
-	transition: background 0.15s;
+	transition:
+		background 0.15s,
+		transform 0.2s ease;
 	width: 100%;
 }
 .settings-mob-row:last-child {
@@ -985,6 +1048,7 @@
 }
 .settings-mob-row:hover {
 	background: var(--glass-hover);
+	transform: translateX(2px);
 }
 .settings-mob-row--danger {
 	color: var(--error);
@@ -1017,6 +1081,28 @@
 	border-bottom: 1px solid var(--glass-border);
 	flex-shrink: 0;
 	gap: 12px;
+	position: sticky;
+	top: 0;
+	z-index: 30;
+	height: var(--settings-mob-header-height);
+	background: var(--bg, var(--glass));
+	backdrop-filter: blur(6px);
+	transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* When a detail panel is open, hide the header and remove the stage padding so
+   content can occupy the top of the viewport. The hide is animated via transform. */
+.settings-section-mobile.is-detail-open .settings-mob-header {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	transform: translateY(-100%);
+}
+
+.settings-section-mobile.is-detail-open .settings-mob-stage {
+	/* Ensure content moves up once header is removed from flow */
+	padding-top: 0;
 }
 .settings-mob-title {
 	font-family: var(--font-head);
@@ -1092,7 +1178,8 @@
 	flex: 1;
 	overflow-y: auto;
 	scrollbar-width: none;
-	padding: 16px;
+	padding: 16px calc(16px + env(safe-area-inset-right))
+		calc(24px + 92px + env(safe-area-inset-bottom));
 	display: flex;
 	flex-direction: column;
 	gap: 14px;

@@ -3,7 +3,7 @@
 import { mobileScreen } from "@zecco/core/screen-break-points.js";
 import { RegisterDesktop } from "./RegisterDesktop.js";
 import { RegisterMobile } from "./RegisterMobile.js";
-import { registerEvents } from "@zecco/features/register/register.events.js";
+import { registerEvents } from "@zecco/pages/Register/register.events.js";
 import { router } from "@zecco/routes/router.js";
 import {
 	readFromSessionStorage,

@@ -138,23 +138,23 @@ class PlayerStore extends BaseStore {
 		this.#audio.addEventListener("play", () => {
 			this.#isPlaying = true;
 			this.#audioUnlocked = true;
-			this.emit("play_state_changed", { isPlaying: true });
+			this.emit("player_store:play_state_changed", { isPlaying: true });
 			this.#broadcastChannel?.postMessage({ type: "PLAYING" });
 		});
 
 		this.#audio.addEventListener("pause", () => {
 			this.#isPlaying = false;
-			this.emit("play_state_changed", { isPlaying: false });
+			this.emit("player_store:play_state_changed", { isPlaying: false });
 		});
 
 		this.#audio.addEventListener("waiting", () => {
 			this.#isLoading = true;
-			this.emit("track_loading", true);
+			this.emit("player_store:track_loading", true);
 		});
 
 		this.#audio.addEventListener("canplay", () => {
 			this.#isLoading = false;
-			this.emit("track_loading", false);
+			this.emit("player_store:track_loading", false);
 		});
 
 		this.#audio.addEventListener("error", (e) => {
@@ -162,7 +162,7 @@ class PlayerStore extends BaseStore {
 		});
 
 		this.#audio.addEventListener("timeupdate", () => {
-			this.emit("progress", this.progress);
+			this.emit("player_store:progress", this.progress);
 		});
 	}
 
@@ -271,10 +271,10 @@ class PlayerStore extends BaseStore {
 		};
 
 		// Update whenever play/pause changes
-		this.on("play_state_changed", updatePlaybackState);
+		this.emit("player_store:play_state_changed", updatePlaybackState);
 
 		// Update position scrubber in real-time
-		this.on("progress", () => {
+		this.emit("player_store:progress", () => {
 			if (navigator.mediaSession.setPositionState) {
 				navigator.mediaSession.setPositionState({
 					duration: this.duration,
@@ -403,7 +403,7 @@ class PlayerStore extends BaseStore {
 		}
 
 		this.storageSet("volume", this.#volume);
-		this.emit("volume_changed", this.#volume);
+		this.emit("player_store:volume_changed", this.#volume);
 	}
 
 	toggleMute() {
@@ -517,12 +517,12 @@ class PlayerStore extends BaseStore {
 		const session = ++this.#sessionId;
 
 		this.#isLoading = true;
-		this.emit("track_loading", true);
+		this.emit("player_store:track_loading", true);
 
 		if (!this.#audio.paused) this.#audio.pause();
 
 		this.#currentTrack = track;
-		this.emit("track_changed", track);
+		this.emit("player_store:track_changed", track);
 		this.#updateMediaSessionMetadata(track);
 		this.#syncPlayState();
 
@@ -545,10 +545,10 @@ class PlayerStore extends BaseStore {
 
 			if (shouldPlay) {
 				await this.play();
-				this.emit("player_status_changed", true);
+				this.emit("player_store:player_status_changed", true);
 			} else {
 				this.#isLoading = false;
-				this.emit("track_loading", false);
+				this.emit("player_store:track_loading", false);
 			}
 
 			this.#prefetchNext();
@@ -563,7 +563,7 @@ class PlayerStore extends BaseStore {
 			console.error("[PlayerStore] prepare failed permanently:", err);
 
 			this.#isLoading = false;
-			this.emit("track_loading", false);
+			this.emit("player_store:track_loading", false);
 
 			if (session === this.#sessionId && this.#queue.length > 1) {
 				this.nextTrack();
@@ -634,7 +634,7 @@ class PlayerStore extends BaseStore {
 			if (p) await p;
 		} catch (err) {
 			console.warn("[PlayerStore] play() blocked:", err.name, err.message);
-			this.emit("play_blocked", err);
+			this.emit("player_store:play_blocked", err);
 		}
 	}
 
@@ -654,7 +654,7 @@ class PlayerStore extends BaseStore {
 	seekTo(seconds) {
 		if (!this.duration) return;
 		this.#audio.currentTime = Math.min(Math.max(0, seconds), this.duration);
-		this.emit("seeked", this.progress);
+		this.emit("player_store:seeked", this.progress);
 		this.#syncPlayState();
 	}
 
@@ -726,7 +726,7 @@ class PlayerStore extends BaseStore {
 			);
 		}
 
-		this.emit("queue_changed", {
+		this.emit("player_store:queue_changed", {
 			queue: this.#queue,
 			isShuffle: this.#isShuffle,
 		});
@@ -736,7 +736,7 @@ class PlayerStore extends BaseStore {
 		const modes = ["none", "one", "all"];
 		const next = (modes.indexOf(this.#repeatMode) + 1) % modes.length;
 		this.#repeatMode = modes[next];
-		this.emit("repeat_changed", this.#repeatMode);
+		this.emit("player_store:repeat_changed", this.#repeatMode);
 	}
 
 	// ═══════════════════════════════════════════════════════════
@@ -787,9 +787,9 @@ class PlayerStore extends BaseStore {
 		this.#sleepTimeRemaining = ms;
 		this.#sleepTimeoutId = setTimeout(() => {
 			this.pause();
-			this.emit("sleep_ended");
+			this.emit("player_store:sleep_ended");
 		}, ms);
-		this.emit("sleep_started", ms);
+		this.emit("player_store:sleep_started", ms);
 	}
 
 	clearSleep() {
@@ -811,8 +811,8 @@ class PlayerStore extends BaseStore {
 		this.#originalQueue = [];
 		this.#queueIndex = 0;
 		this.#sessionId++;
-		this.emit("track_changed", null);
-		this.emit("player_status_changed", false);
+		this.emit("player_store:track_changed", null);
+		this.emit("player_store:player_status_changed", false);
 		this.#syncPlayState();
 	}
 }

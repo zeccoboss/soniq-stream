@@ -1,7 +1,7 @@
 import { mobileScreen } from "@zecco/core/screen-break-points.js";
 import { DashboardDesktop } from "./DashboardDesktop.js";
 import { DashboardMobile } from "./DashboardMobile.js";
-import { dashboardEvents } from "@zecco/features/dashboard/dashboard.events.js";
+import { dashboardEvents } from "@zecco/pages/Dashboard/dashboard.events.js";
 import { store } from "@zecco/store/store.js";
 import { router } from "@zecco/routes/router.js";
 
@@ -107,21 +107,24 @@ export const DashboardPage = async (ctx) => {
 	// ── Store subscription ─────────────────────────────────────
 	let unsubscribeAuth = null;
 	const subscribeToAuth = () => {
-		unsubscribeAuth = store.auth.on("auth_changed", async (user) => {
-			if (!isMounted) return;
-			if (!user) {
-				router.replace("/auth/login");
-				return;
-			}
+		unsubscribeAuth = store.auth.on(
+			"auth_store:auth_changed",
+			async (user) => {
+				if (!isMounted) return;
+				if (!user) {
+					router.replace("/auth/login");
+					return;
+				}
 
-			// Update locally rendered user data and reload dashboard content
-			data.user = user;
-			if (state === "content") {
-				await render();
-			} else {
-				await loadData();
-			}
-		});
+				// Update locally rendered user data and reload dashboard content
+				data.user = user;
+				if (state === "content") {
+					await render();
+				} else {
+					await loadData();
+				}
+			},
+		);
 	};
 
 	// ── Boot ─────────────────────────────────────────────────

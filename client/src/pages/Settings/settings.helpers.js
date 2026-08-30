@@ -44,6 +44,7 @@ export const filterSettingsPanels = (panel) => {
 };
 
 export const showMobPanel = (panelId) => {
+	const root = document.querySelector(".settings-section-mobile");
 	const mainContent = document.getElementById("settings-mob-content");
 	const detailView = document.getElementById("settings-mob-detail");
 	const detailTitle = document.getElementById("settings-mob-detail-title");
@@ -87,19 +88,22 @@ export const showMobPanel = (panelId) => {
 		detailBody.innerHTML = panelContent;
 	}
 
-	// Swap visibility
+	// Swap visibility with a polished slide transition
 	console.log("[showMobPanel] Toggling panel visibility");
-	mainContent.classList.remove("active-settings-mob-sub");
-	detailView.classList.add("active-settings-mob-sub");
+	root?.classList.add("is-detail-open");
+	mainContent?.classList.remove("is-active");
+	detailView?.classList.add("is-active");
 };
 
 export const hideMobPanel = () => {
+	const root = document.querySelector(".settings-section-mobile");
 	const mainContent = document.getElementById("settings-mob-content");
 	const detailView = document.getElementById("settings-mob-detail");
 
 	if (mainContent && detailView) {
-		detailView.classList.remove("active-settings-mob-sub");
-		mainContent.classList.add("active-settings-mob-sub");
+		root?.classList.remove("is-detail-open");
+		mainContent?.classList.add("is-active");
+		detailView?.classList.remove("is-active");
 	}
 };
 

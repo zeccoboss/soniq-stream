@@ -1,7 +1,7 @@
 import { mobileScreen } from "@zecco/core/screen-break-points.js";
 import { AdminDesktop } from "./AdminDesktop.js";
 import { AdminMobile } from "./AdminMobile.js";
-import { adminEvents } from "@zecco/features/admin/admin.events.js";
+import { adminEvents } from "@zecco/pages/Admin/admin.events.js";
 import { store } from "@zecco/store/store.js";
 import { router } from "@zecco/routes/router.js";
 

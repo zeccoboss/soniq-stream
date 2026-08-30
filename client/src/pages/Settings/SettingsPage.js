@@ -2,7 +2,7 @@ import { mobileScreen } from "@zecco/core/screen-break-points.js";
 import { themeManager } from "@zecco/core/theme-manager.js";
 import { SettingsDesktop } from "./SettingsDesktop.js";
 import { SettingsMobile } from "./SettingsMobile.js";
-import { settingsEvents } from "@zecco/features/settings/settings.events.js";
+import { settingsEvents } from "@zecco/pages/Settings/settings.events.js";
 import { store } from "@zecco/store/store.js";
 import meService from "@zecco/services/api/me.service.js";
 
@@ -84,7 +84,8 @@ export const SettingsPage = async (ctx) => {
 					settingsErr,
 				);
 				// Use default preferences from store if fetch fails
-				settingsData = store.auth.settings;
+				settingsData =
+					store.auth.settings ?? store.auth.user?.settings ?? null;
 			}
 
 			if (!isMounted) return;

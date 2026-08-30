@@ -279,23 +279,23 @@ export const playerEvents = (
 
 	// ── Store event subscriptions ──────────────────────────────
 	const unsubs = [
-		store.player.on("play_state_changed", ({ isPlaying }) =>
+		store.player.on("player_store:play_state_changed", ({ isPlaying }) =>
 			syncPlayButton(isPlaying),
 		),
-		store.player.on("track_changed", (track) => {
+		store.player.on("player_store:track_changed", (track) => {
 			updateTrackInfo(track);
 			updateQueuePanel();
 			updateProgress();
 		}),
-		store.player.on("track_loading", (isLoading) =>
+		store.player.on("player_store:track_loading", (isLoading) =>
 			syncLoadingState(isLoading),
 		),
-		store.player.on("volume_changed", (vol) => syncVolume(vol)),
-		store.player.on("queue_changed", () => updateQueuePanel()),
-		store.player.on("seeked", () => updateProgress()),
+		store.player.on("player_store:volume_changed", (vol) => syncVolume(vol)),
+		store.player.on("player_store:queue_changed", () => updateQueuePanel()),
+		store.player.on("player_store:seeked", () => updateProgress()),
 
 		// Notify the user when autoplay was blocked (iOS only scenario)
-		store.player.on("play_blocked", () => {
+		store.player.on("player_store:play_blocked", () => {
 			toast({
 				message: "Tap play to start audio",
 				type: "info",

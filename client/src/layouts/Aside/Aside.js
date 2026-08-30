@@ -234,13 +234,13 @@ const Aside = () => {
 
 		// ── Subscribe to orchestrator events ──
 		const unsubscribeAuth = store.auth.on(
-			"auth_changed",
+			"auth_store:auth_changed",
 			updateSidebarAuthContent,
 		);
 
 		// FIX: Update both the sidebar AND the #app container when the store changes
 		const unsubscribeSidebar = store.ui.on(
-			"sidebar_toggled",
+			"ui_store:sidebar_toggled",
 			(isCollapsed) => {
 				if (isCollapsed) {
 					sidebarElement.classList.add("collapsed");

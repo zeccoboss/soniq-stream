@@ -1,36 +1,38 @@
-import { readFromLocalStorage, writeToLocalStorage, removeFromLocalStorage } from "@zecco/services/storage/local-storage";
+// biome-ignore assist/source/organizeImports: <Skip this file for import sorting>
+import {
+	readFromLocalStorage,
+	writeToLocalStorage,
+	removeFromLocalStorage,
+} from "@zecco/services/storage/local-storage";
+import { EventEmitter } from "@zecco/core/event-bus";
 
-export class BaseStore {
-   #events = {};
+/**
+ * BaseStore — Base class for all store modules.
+ *
+ * Extends EventEmitter so every store gets:
+ *   this.on(event, cb)     → subscribe, returns unsub fn
+ *   this.off(event, cb)    → unsubscribe manually
+ *   this.emit(event, data) → fire all listeners
+ *   this.once(event, cb)   → subscribe for one fire only
+ *   this.clear(event?)     → clear listeners on unmount
+ *
+ * Also exposes localStorage helpers so child stores
+ * don't need to import storage utilities directly.
+ */
+export class BaseStore extends EventEmitter {
+	// ── Storage helpers ──────────────────────────────────────
+	// Exposed so child stores call this.storageGet(key)
+	// instead of importing storage utils in every module.
 
-   /**
-    * Subscribe to a store modification event
-    * @param {string} event 
-    * @param {Function} callback 
-    * @returns {Function} Unsubscribe cleanup function
-    */
-   on(event, callback) {
-      if (!this.#events[event]) {
-         this.#events[event] = [];
-      }
-      this.#events[event].push(callback);
-      return () => this.off(event, callback);
-   }
+	storageGet(key) {
+		return readFromLocalStorage(key);
+	}
 
-   off(event, callback) {
-      if (!this.#events[event]) return;
-      this.#events[event] = this.#events[event].filter(cb => cb !== callback);
-   }
+	storageSet(key, value) {
+		writeToLocalStorage(key, value);
+	}
 
-   emit(event, data) {
-      if (!this.#events[event]) return;
-      for (let i = this.#events[event].length - 1; i >= 0; i--) {
-         this.#events[event][i](data);
-      }
-   }
-
-   // Local Storage Utilities exposed safely to modules
-   storageGet(key) { return readFromLocalStorage(key); }
-   storageSet(key, val) { writeToLocalStorage(key, val); }
-   storageRemove(key) { removeFromLocalStorage(key); }
+	storageRemove(key) {
+		removeFromLocalStorage(key);
+	}
 }
