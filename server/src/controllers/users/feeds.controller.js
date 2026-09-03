@@ -79,7 +79,7 @@ const getFollowing = async (req, res) => {
 		const { cursor } = req.query; // This is the timestamp from the frontend
 		const limit = 10;
 
-		const feed = await getFollowingFeed(req.user.id, cursor, limit);
+		const feed = await getFollowingFeed(req.user._id, cursor, limit);
 
 		res.status(200).json({
 			success: true,

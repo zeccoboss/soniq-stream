@@ -5,6 +5,12 @@ const { rolesList } = require("../../config/roles-list.config");
 const {
 	getPublicProfile,
 } = require("../../services/feeds/profile-feed.service");
+const { searchUsersByUsername } = require("../../services/user.service");
+const {
+	sanitizePublicProfile,
+	sanitizeUserSearchResult,
+	sanitizeUserData,
+} = require("../../services/dto.service");
 
 const SENSITIVE_FIELDS =
 	"-password -refreshToken -verificationToken -verificationTokenExpiry -passwordVerificationToken -passwordVerificationTokenExpiry -lastPasswordVerificationSentAt -lastUserVerificationSentAt";
@@ -42,7 +48,6 @@ const getAllUsers = async (req, res) => {
 
 		const [users, total] = await Promise.all([
 			UserModel.find(filter)
-				.select(SENSITIVE_FIELDS)
 				.sort({ [sortField]: sortOrder })
 				.skip(skip)
 				.limit(limitNum),
@@ -53,7 +58,7 @@ const getAllUsers = async (req, res) => {
 
 		return res.status(200).json({
 			success: true,
-			data: users,
+			data: sanitizeUserData(users), // Sanitize sensitive fields before sending to client
 			pagination: {
 				total,
 				totalPages,
@@ -75,11 +80,12 @@ const getAllUsers = async (req, res) => {
 // ── GET /users/:uuid ───────────────────────────────────────────────────────────
 const getUser = async (req, res) => {
 	try {
-		const { uuid } = req.params; // 👈 was destructuring {id} but using uuid
-		const isOwner = req.user.uuid === uuid;
-		const isAdmin = req.user.roles?.includes(rolesList.Admin);
+		const { uuid } = req.params;
+		// Fixed: req.user may be undefined for guests — use optional-jwt.middleware on this route
+		const isOwner = req.user?.uuid === uuid;
+		const isAdmin = req.user?.roles?.includes(rolesList.Admin);
 
-		const user = await UserModel.findOne({ uuid }).select(SENSITIVE_FIELDS);
+		const user = await UserModel.findOne({ uuid });
 
 		if (!user) {
 			return res
@@ -96,12 +102,14 @@ const getUser = async (req, res) => {
 					fullname: user.fullname,
 					bio: user.bio,
 					avatar: user.avatar,
-					cover: user.cover,
+					banner: user.banner,
 				},
 			});
 		}
 
-		return res.status(200).json({ success: true, data: user });
+		return res
+			.status(200)
+			.json({ success: true, data: sanitizeUserData(user) });
 	} catch (err) {
 		console.error("[Users] getUser:", err);
 		res.status(500).json({
@@ -111,13 +119,29 @@ const getUser = async (req, res) => {
 	}
 };
 
+// GET /users/:uuid/profile — exact lookup, single result or 404
 const getUserProfile = async (req, res) => {
 	try {
-		const { username } = req.params;
-		const profileData = await getPublicProfile(username);
-		res.json({ success: true, data: profileData });
+		const { uuid } = req.params;
+		const profileData = await getPublicProfile(uuid);
+		res.json({ success: true, data: sanitizePublicProfile(profileData) });
 	} catch (error) {
 		res.status(404).json({ success: false, message: error.message });
+	}
+};
+
+// GET /users/search?q=johnny — partial match, always an array
+const searchUsers = async (req, res) => {
+	try {
+		const { q, limit } = req.query;
+		const results = await searchUsersByUsername({ q, limit });
+		res.json({
+			success: true,
+			count: results.length,
+			data: sanitizeUserSearchResult(results),
+		});
+	} catch (error) {
+		res.status(500).json({ success: false, message: "Search failed" });
 	}
 };
 
@@ -246,6 +270,7 @@ const deleteUser = async (req, res) => {
 };
 
 module.exports = {
+	searchUsers,
 	getAllUsers,
 	getUser,
 	getUserProfile,

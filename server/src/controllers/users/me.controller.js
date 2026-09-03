@@ -2,7 +2,6 @@ const UserModel = require("../../models/user.model");
 const { getLibraryFeed } = require("../../services/feeds/library-feed.service");
 const userService = require("../../services/user.service");
 const { sanitizeUserData } = require("../../services/dto.service");
-
 const {
 	getSettingsFeed,
 	updateSettingsFeed,
@@ -12,7 +11,6 @@ const {
 // @route   GET /api/v1/me
 const getMe = async (req, res) => {
 	try {
-		// req.user comes from verifyJWT middleware (decoded.UserInfo)
 		const lookup = req.user?.uuid
 			? { uuid: req.user.uuid }
 			: req.user?._id
@@ -27,17 +25,15 @@ const getMe = async (req, res) => {
 
 		const user = await UserModel.findOne(lookup)
 			.populate("avatar banner settings")
-			.select("-password -refreshToken")
-			.lean({ virtuals: true });
+			.select("-password -refreshToken");
+		// .lean({ virtuals: true });
 
 		if (!user)
 			return res
 				.status(404)
 				.json({ success: false, message: "User session not found" });
 
-		const cleanUser = sanitizeUserData(user);
-
-		res.json({ success: true, data: cleanUser });
+		res.json({ success: true, data: sanitizeUserData(user) });
 	} catch (error) {
 		res.status(500).json({ success: false, message: error.message });
 	}
@@ -92,9 +88,8 @@ const addRecentSearch = async (req, res) => {
 			return res.status(400).json({ message: "Search term is required" });
 		}
 
-		// req.user.id comes from your Auth Middleware
 		const data = await userService.updateRecentSearches(
-			req.user.id,
+			req.user._id, // Fixed: was req.user.id
 			searchTerm.trim(),
 		);
 
@@ -111,7 +106,7 @@ const addRecentSearch = async (req, res) => {
 // @route   POST /api/v1/me/searches/sync
 const syncSearches = async (req, res) => {
 	try {
-		const { searches } = req.body; // Expecting { "searches": ["Artist 1", "Song A"] }
+		const { searches } = req.body;
 
 		if (!Array.isArray(searches)) {
 			return res
@@ -120,7 +115,7 @@ const syncSearches = async (req, res) => {
 		}
 
 		const updatedList = await userService.syncRecentSearches(
-			req.user.id,
+			req.user._id, // Fixed: was req.user.id
 			searches,
 		);
 		res.status(200).json(updatedList);
@@ -131,7 +126,6 @@ const syncSearches = async (req, res) => {
 
 // @desc    Save player state (current track, progress, isPlaying) - called on pause or heartbeat
 // @route   PATCH /api/v1/me/player
-// player.controller.js
 const savePlayerState = async (req, res) => {
 	try {
 		const updatedState = await userService.updatePlayerState(
@@ -140,7 +134,7 @@ const savePlayerState = async (req, res) => {
 		);
 		res.status(200).json(updatedState.playerState);
 	} catch (error) {
-		console.error("RAW BACKEND ERROR:", error);
+		console.error("[Me] savePlayerState:", error);
 		res.status(500).json({ message: "Failed to sync player state" });
 	}
 };
@@ -149,11 +143,10 @@ const savePlayerState = async (req, res) => {
 // @route   GET /api/v1/me/player
 const getPlayerState = async (req, res) => {
 	try {
-		// req.user.id from protect middleware
-		const state = await userService.getPlayerState(req.user.id);
+		const state = await userService.getPlayerState(req.user._id); // Fixed: was req.user.id
 
-		// If no track has ever been played, return a clean empty state
-		if (!state.currentTrack) {
+		// Fixed: guard against state itself being null/undefined, not just state.currentTrack
+		if (!state?.currentTrack) {
 			return res.status(200).json({ message: "No active player state" });
 		}
 
@@ -166,17 +159,17 @@ const getPlayerState = async (req, res) => {
 	}
 };
 
-// src/controllers/user/me.controller.js
-const User = require("../../models/user.model");
-
+// @desc    Fetch the current user's liked tracks
+// @route   GET /api/v1/me/likes
 const fetchLikes = async (req, res) => {
 	try {
-		// 1. Find the user and populate the likedTracks array directly
-		const user = await User.findById(req.user.id)
-			.select("likedTracks")
+		const user = await UserModel.findById(req.user._id) // Fixed: was req.user.id, and re-declared "User"
+			.select("likedTracksIds") // Fixed: schema field is likedTracksIds, not likedTracks
 			.populate({
-				path: "likedTracks",
-				select: "title artist coverUrl duration uuid trackUrl", // Select specific fields for the SPA
+				path: "likedTracksIds",
+				// NOTE: verify these field names against the real Track schema —
+				// storage.key/cover-as-relation is the pattern used everywhere else.
+				select: "title artist coverUrl duration uuid trackUrl",
 			});
 
 		if (!user) {
@@ -185,11 +178,10 @@ const fetchLikes = async (req, res) => {
 				.json({ success: false, message: "User not found" });
 		}
 
-		// 2. Return the array of track objects
 		res.status(200).json({
 			success: true,
-			count: user.likedTracks.length,
-			data: user.likedTracks,
+			count: user.likedTracksIds.length,
+			data: user.likedTracksIds,
 		});
 	} catch (error) {
 		res.status(500).json({

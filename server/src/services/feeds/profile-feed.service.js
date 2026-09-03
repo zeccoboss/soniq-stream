@@ -16,14 +16,14 @@ const getPublicProfile = async (identifier) => {
 
 		const profile = await User.findOne(query)
 			.select(
-				"fullname username bio followersId followingId avatar cover banner uploadsTracksId playlistIds",
+				"fullname username bio followersId followingId avatar banner uploadsTracksId playlistIds",
 			)
-			.populate("avatar cover banner")
+			.populate("avatar banner")
 			.populate({
 				path: "uploadsTracksId",
-				select: "title artist duration cover uuid",
+				select: "title artist duration avatar uuid",
 				match: { visibility: "public" }, // Only show public upload
-				populate: { path: "cover", select: "storage name" },
+				populate: { path: "avatar", select: "storage name" },
 			})
 			.populate({
 				path: "playlistIds",
@@ -34,6 +34,8 @@ const getPublicProfile = async (identifier) => {
 		if (!profile) {
 			throw new Error("Profile not found");
 		}
+
+		console.log("Profile found:", profile);
 
 		// 2. Format the data to focus on social stats and public content
 		return {
@@ -61,6 +63,19 @@ const getPublicProfile = async (identifier) => {
 	}
 };
 
+const searchUsersByUsername = async ({ q, limit = 10 }) => {
+	if (!q || q.trim().length < 2) return [];
+
+	const safeRegex = q.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+	const limitNum = Math.min(25, Math.max(1, parseInt(limit) || 10));
+
+	return User.find({ username: { $regex: safeRegex, $options: "i" } })
+		.select("uuid username displayName avatar isVerified")
+		.limit(limitNum)
+		.lean();
+};
+
 module.exports = {
 	getPublicProfile,
+	searchUsersByUsername,
 };

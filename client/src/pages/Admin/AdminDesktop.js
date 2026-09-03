@@ -32,24 +32,57 @@ export const AdminDesktop = async ({ state, ctx, data = {} }) => {
 	const root = new CreateElement("section");
 	root.addClass("admin-section", "main-sections").setId("admin-section");
 
+	// console.log(
+	// 	"[AdminDesktop] Rendering with state:",
+	// 	state,
+	// 	"and data:",
+	// 	data,
+	// );
+
 	const tab = ctx?.query?.tab ?? "overview";
 	const {
 		platformStats = {},
 		recentUsers = [],
 		recentTracks = [],
-		reports = [],
+		reports = {},
+		tracks = {},
+		users = {},
 	} = data;
+
+	// console.log(
+	// 	"[AdminDesktop] - Reports: ",
+	// 	reports.list?.length ?? reports.length,
+	// );
+
+	if (tab === "users") {
+		console.log("[AdminDesktop] - Users tab active. Recent Users: ", users);
+	} else if (tab === "tracks") {
+		console.log(
+			"[AdminDesktop] - Tracks tab active. Recent Tracks: ",
+			tracks,
+		);
+	} else if (tab === "reports") {
+		console.log(
+			"[AdminDesktop] - Reports tab active. Reports: ",
+			reports.list?.length ?? reports.length,
+		);
+	}
 
 	const fmt = (n = 0) => Number(n).toLocaleString();
 	const initials = (str = "?") => str.trim().slice(0, 2).toUpperCase();
+
+	// ── Time ago utility ───────────────────────────────────────
 	const timeAgo = (dateStr) => {
 		if (!dateStr) return "—";
-		const diff = Date.now() - new Date(dateStr).getTime();
-		const mins = Math.floor(diff / 60000);
-		if (mins < 60) return `${mins}m ago`;
-		const hrs = Math.floor(mins / 60);
-		if (hrs < 24) return `${hrs}h ago`;
-		return `${Math.floor(hrs / 24)}d ago`;
+
+		// Calculate the difference in milliseconds between now and the given date
+		const diff = Date.now() - new Date(dateStr).getTime(); // Convert to milliseconds
+		if (diff < 60000) return "just now"; // Less than a minute
+		const mins = Math.floor(diff / 60000); // Convert milliseconds to minutes
+		if (mins < 60) return `${mins}m ago`; // Less than an hour
+		const hrs = Math.floor(mins / 60); // Convert minutes to hours
+		if (hrs < 24) return `${hrs}h ago`; // Less than a day
+		return `${Math.floor(hrs / 24)}d ago`; // More than a day
 	};
 
 	// ── Header ───────────────────────────────────────────────
@@ -203,7 +236,7 @@ export const AdminDesktop = async ({ state, ctx, data = {} }) => {
 							(u) => `
 						<div class="admin-user-row" data-uuid="${u.uuid ?? ""}">
 							<div class="admin-user-avatar">
-								<img src="${u.avatar || defaultAvatar}" alt="${u.username}"
+								<img src="${u.avatar.url || defaultAvatar}" alt="${u.username}"
 									class="admin-avatar-img"
 									onerror="this.style.display='none';this.nextElementSibling.style.display='grid'" />
 								<div class="admin-avatar-fallback">${initials(u.displayName ?? u.username)}</div>
@@ -256,7 +289,7 @@ export const AdminDesktop = async ({ state, ctx, data = {} }) => {
 				<div class="admin-user-list" id="admin-users-list">
 					${recentUsers
 						.map(
-							(u) => `
+							(u) => `	
 						<div class="admin-user-row" data-uuid="${u.uuid ?? ""}">
 							<div class="admin-user-avatar">
 								<img src="${u.avatar || defaultAvatar}" alt="${u.username}"
@@ -358,11 +391,11 @@ export const AdminDesktop = async ({ state, ctx, data = {} }) => {
 				<div class="admin-panel-head">
 					<span class="admin-panel-title">
 						<i class="bi bi-flag"></i> Flagged Content
-						${reports.length ? `<span class="admin-count-badge admin-count-badge--red">${reports.length}</span>` : ""}
+						${reports.list.length ? `<span class="admin-count-badge admin-count-badge--red">${reports.list.length}</span>` : ""}
 					</span>
 				</div>
 				${
-					!reports.length
+					!reports.list.length
 						? `
 					<div class="admin-empty">
 						<i class="bi bi-check-circle admin-empty-icon"></i>
@@ -372,7 +405,7 @@ export const AdminDesktop = async ({ state, ctx, data = {} }) => {
 				`
 						: `
 					<div class="admin-report-list" id="admin-reports-list">
-						${reports
+						${reports.list
 							.map(
 								(r) => `
 							<div class="admin-report-row" data-uuid="${r.uuid ?? ""}">

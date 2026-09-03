@@ -8,17 +8,21 @@ const { rolesList } = require("../../config/roles-list.config");
 router.use(verifyJWT);
 router.use(verifyRoles(rolesList.Admin));
 
-// Dashboard Stats (Total users, total tracks, storage used)
-router.get("/stats", adminController.getDashboardStats);
+// ── Global / aggregate ──────────────────────────────────────
+router.get("/overview", adminController.getOverview);
 
-// Content Management
-router.get("/tracks", adminController.getAllTracks);
+// ── Standalone, granular routes ─────────────────────────────
+router.get("/stats", adminController.getStats);
+router.get("/users", adminController.getUsers);
+router.get("/tracks", adminController.getTracks);
+router.get("/reports", adminController.getReports);
+router.patch("/reports/:uuid", adminController.updateReportStatus);
+
+// ── Content Management ──────────────────────────────────────
 router.delete("/tracks/:uuid", adminController.deleteTrackAsAdmin);
 
-// User Management (Already partially in your users.route.js)
+// ── User Management ──────────────────────────────────────────
 router.patch("/users/:uuid/role", adminController.updateUserRole);
-
-// Toggle user status (Ban/Unban)
 router.patch("/users/:uuid/status", adminController.toggleUserStatus);
 
 module.exports = router;

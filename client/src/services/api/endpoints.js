@@ -5,8 +5,26 @@
 
 export const ENDPOINTS = {
 	// ==================================================
-	// Auth
+	// Admin
 	// ==================================================
+
+	ADMIN: {
+		BASE: "/admin",
+		OVERVIEW: "/admin/overview",
+		USERS: "/admin/users",
+		REPORTS: "/admin/reports",
+		TRACKS: "/admin/tracks",
+		STATS: "/admin/stats",
+		RESOLVE_REPORT: (report_uuid) => `/admin/reports/${report_uuid}`,
+		SETTINGS: "/admin/settings", // No specific route in the backend yet, but this is a placeholder for future admin settings endpoints
+		DELETE_TRACK: (track_uuid) => `/admin/tracks/${track_uuid}`,
+		UPDATE_USER_ROLE: (user_uuid) => `/admin/users/${user_uuid}/role`,
+		TOGGLE_USER_STATUS: (user_uuid) => `/admin/users/${user_uuid}/status`,
+	},
+
+	// ==================================================
+	// Auth
+	// ==================================================uuid
 
 	AUTH: {
 		LOGIN: "/auth/login",

@@ -52,11 +52,17 @@ app.use("/api/v1/feeds", require("./src/routes/api/feeds.route")); // Feeds rout
 app.use("/api/v1/admin", require("./src/routes/api/admin.route")); // Admin routes (Protected by Admin role middleware)
 app.use("/api/v1/search", require("./src/routes/api/search.route")); // Search routes
 app.use("/api/v1/playlists", require("./src/routes/api/playlist.route")); // Playlist routes (Create, Edit, Delete, Add/Remove Tracks)
+app.use("/api/v1/reports", require("./src/routes/api/reports.route")); // Report routes (Submit, View, Resolve)
 
 // Catch-all for undefined routes (404)
-app.use((_, res) => {
-	const filePath = path.join(__dirname, "public", "views", "no-resource.html");
-	res.status(404).sendFile(filePath);
+app.use((req, res) => {
+	// const filePath = path.join(__dirname, "public", "views", "no-resource.html");
+	// res.status(404).sendFile(filePath);
+	res.status(404).json({
+		success: false,
+		message: "Route not found",
+		path: req.originalUrl,
+	});
 });
 
 // Logs all errors

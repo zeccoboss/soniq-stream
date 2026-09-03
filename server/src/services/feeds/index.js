@@ -1,3 +1,5 @@
+// Feed Services
+
 module.exports = {
 	...require("./discover-feed.service"),
 	...require("./explore-feed.service"),

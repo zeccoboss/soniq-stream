@@ -204,7 +204,7 @@
 .admin-stats-grid {
 	display: grid;
 	grid-template-columns: repeat(4, 1fr);
-	gap: 10px;
+	gap: 1px;
 }
 .admin-mob-stats-grid {
 	display: grid;
@@ -286,6 +286,7 @@
 	border: 1px solid var(--glass-border);
 	border-radius: var(--radius-md);
 	overflow: hidden;
+	border-top: 5px;
 }
 .admin-panel-head {
 	display: flex;

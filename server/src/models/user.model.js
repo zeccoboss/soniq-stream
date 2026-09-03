@@ -17,8 +17,7 @@ const userSchema = new Schema(
 
 		username: {
 			type: String,
-			required: true, // Updated to required since frontend enforces it
-			unique: true,
+			required: true,
 			trim: true,
 			index: true,
 		},
@@ -153,6 +152,11 @@ userSchema.virtual("recentPlaysCount").get(function () {
 
 // Virtual for fullname (to support any existing backend code that relies on user.fullname)
 userSchema.virtual("fullname").get(function () {
+	return `${this.firstName} ${this.lastName}`.trim();
+});
+
+// Virtual for displayName (to support any existing backend code that relies on user.displayName)
+userSchema.virtual("displayName").get(function () {
 	return `${this.firstName} ${this.lastName}`.trim();
 });
 

@@ -4,6 +4,7 @@ import { AdminMobile } from "./AdminMobile.js";
 import { adminEvents } from "@zecco/pages/Admin/admin.events.js";
 import { store } from "@zecco/store/store.js";
 import { router } from "@zecco/routes/router.js";
+import { adminService } from "@zecco/services/api/admin.service.js";
 
 /**
  * AdminPage — Admin control panel orchestrator
@@ -22,10 +23,13 @@ import { router } from "@zecco/routes/router.js";
  *   error    → retry → skeleton → content | error
  *
  * Data contract:
- *   platformStats  { totalUsers, totalTracks, totalPlays, activeToday }
- *   recentUsers    [{ id, username, displayName, avatar, isVerified, isBanned, joinedAt }]
- *   recentTracks   [{ id, title, artist, cover, genre, plays, flagged, uploadedAt }]
- *   reports        [{ id, type, reason, targetId, targetTitle, reportedBy, createdAt }]
+ *   platformStats  { totalUsers, totalTracks, activePublicPlaylists, serverStatus, platformVersion }
+ *   recentUsers    [{ uuid, username, avatar, isVerified, isActive, createdAt }]   — overview preview slice
+ *   recentTracks   [{ uuid, title, artist, cover, genre, playCount, visibility, createdAt }] — overview preview slice
+ *   recentReports  [{ uuid, targetType, reason, status, reportedBy, createdAt }]   — overview preview slice
+ *   users          { list: [...], nextCursor, hasNextPage }  — full paginated tab
+ *   tracks         { list: [...], nextCursor, hasNextPage }  — full paginated tab
+ *   reports        { list: [...], nextCursor, hasNextPage }  — full paginated tab
  *
  * @async
  * @param {Object} ctx
@@ -43,7 +47,10 @@ const AdminPage = async (ctx) => {
 		platformStats: {},
 		recentUsers: [],
 		recentTracks: [],
-		reports: [],
+		recentReports: [],
+		users: { list: [], nextCursor: null, hasNextPage: false },
+		tracks: { list: [], nextCursor: null, hasNextPage: false },
+		reports: { list: [], nextCursor: null, hasNextPage: false },
 	};
 
 	const isMobile = mobileScreen.matches;
@@ -58,8 +65,16 @@ const AdminPage = async (ctx) => {
 			state,
 			setState,
 			ctx,
+			loadMore, // exposed so tab views can page beyond the initial cursor
 		});
 	};
+
+	// const render = async () => {
+	// 	if (!isMounted) return;
+	// 	const view = await UI({ state, ctx, data });
+	// 	root.replaceChildren(view); // ← skeleton actually gets mounted here, successfully
+	// 	adminEvents(root, { state, setState, ctx, loadMore }); // ← if this throws, everything after dies
+	// };
 
 	// ── State updater ────────────────────────────────────────
 	const setState = async (newState) => {
@@ -68,6 +83,38 @@ const AdminPage = async (ctx) => {
 			await loadData();
 		} else {
 			await render();
+		}
+	};
+
+	// ── Load more (cursor pagination within a tab) ────────────
+	const loadMore = async (tab) => {
+		const bucket = data[tab];
+		if (!bucket || !bucket.hasNextPage || !isMounted) return;
+
+		try {
+			const { signal } = controller ?? {};
+			const fetchers = {
+				users: () =>
+					adminService.getUsers({ cursor: bucket.nextCursor, signal }),
+				tracks: () =>
+					adminService.getTracks({ cursor: bucket.nextCursor, signal }),
+				reports: () =>
+					adminService.getReports({ cursor: bucket.nextCursor, signal }),
+			};
+
+			const res = await fetchers[tab]?.();
+			if (!res || !isMounted) return;
+
+			data[tab] = {
+				list: [...bucket.list, ...(res.data ?? [])],
+				nextCursor: res.nextCursor ?? null,
+				hasNextPage: res.hasNextPage ?? false,
+			};
+
+			await render();
+		} catch (err) {
+			if (err?.status !== 499)
+				console.error("[AdminPage] loadMore error:", err);
 		}
 	};
 
@@ -81,8 +128,14 @@ const AdminPage = async (ctx) => {
 
 			// Double-check admin status — router guard should catch this
 			// but a belt-and-suspenders check never hurts
-			if (!store.isLoggedIn || !store.user?.isAdmin) {
-				router.replace("/");
+			const currentUser = store?.auth?.user;
+			const isAdmin =
+				currentUser?.isAdmin === true ||
+				currentUser?.roles?.some(
+					(role) => String(role).toLowerCase() === "admin",
+				);
+			if (!store?.auth?.isLoggedIn || !currentUser || !isAdmin) {
+				router.replace("/auth/login");
 				return;
 			}
 
@@ -92,24 +145,43 @@ const AdminPage = async (ctx) => {
 
 			const tab = ctx?.query?.tab ?? "overview";
 
-			// TODO: replace with real API calls
-			// Load only what the current tab needs to keep it fast
-			//
-			// const statsRes = await adminService.getPlatformStats({ signal });
-			// data.platformStats = statsRes.data ?? {};
-			//
-			// if (tab === "overview" || tab === "users") {
-			// 	const usersRes = await adminService.getUsers({ limit: 20, signal });
-			// 	data.recentUsers = usersRes.data ?? [];
-			// }
-			// if (tab === "overview" || tab === "tracks") {
-			// 	const tracksRes = await adminService.getTracks({ limit: 20, signal });
-			// 	data.recentTracks = tracksRes.data ?? [];
-			// }
-			// if (tab === "reports") {
-			// 	const reportsRes = await adminService.getReports({ signal });
-			// 	data.reports = reportsRes.data ?? [];
-			// }
+			if (tab === "overview") {
+				// One aggregate call — cheap preview slices of everything, no per-tab pagination needed here
+				const res = await adminService.getOverview({ signal });
+				const overview = res?.data ?? {};
+
+				console.log("[AdminPage] Overview data:", res);
+
+				data.platformStats = overview.stats ?? {};
+				data.recentUsers = overview.recentUsers ?? [];
+				data.recentTracks = overview.recentTracks ?? [];
+				data.recentReports = overview.recentReports ?? [];
+				data.users = { list: [], nextCursor: null, hasNextPage: false };
+				data.tracks = { list: [], nextCursor: null, hasNextPage: false };
+				data.reports = { list: [], nextCursor: null, hasNextPage: false };
+			} else {
+				// Individual tabs fetch their own full, paginated dataset on demand
+				const fetchers = {
+					users: () => adminService.getUsers({ signal }),
+					tracks: () => adminService.getTracks({ signal }),
+					reports: () => adminService.getReports({ signal }),
+				};
+
+				const res = await fetchers[tab]?.();
+				if (res) {
+					data[tab] = {
+						list: res.data ?? [],
+						nextCursor: res.nextCursor ?? null,
+						hasNextPage: res.hasNextPage ?? false,
+					};
+				}
+
+				// Stats stay visible regardless of which tab is active (e.g. a persistent header)
+				if (!data.platformStats?.totalUsers) {
+					const statsRes = await adminService.getStats({ signal });
+					data.platformStats = statsRes?.data ?? {};
+				}
+			}
 
 			if (!isMounted) return;
 
