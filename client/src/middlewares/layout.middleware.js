@@ -1,7 +1,7 @@
 import { mobileScreen } from "@zecco/core/screen-break-points";
 import { getTag } from "@zecco/helpers/dom-helper";
 import { router } from "@zecco/routes/router";
-import { store } from "@zecco/store/store";
+import { store } from "@zecco/store";
 
 /**
  * Middleware to toggle body classes based on the route's target outlet.

@@ -1,3 +1,41 @@
+/* Hero cards, filter tabs, and "See all" are now <a> tags — reset link chrome */
+.lib-hero-card,
+.lib-hero-card-mobile,
+.lib-filter-tab,
+.lib-sec-link {
+	text-decoration: none;
+}
+.lib-hero-play {
+	pointer-events: none;
+} /* decorative now — the whole card is the link */
+
+.lib-back-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	width: fit-content;
+	font-size: 0.66rem;
+	font-weight: 600;
+	color: var(--text-2);
+	text-decoration: none;
+	transition: color 0.2s;
+}
+.lib-back-btn:hover {
+	color: var(--text-1);
+}
+
+.lib-section-detail-head {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin: 4px 0 8px;
+}
+.lib-section-detail-head .lib-hero-cover {
+	width: 44px;
+	height: 44px;
+	font-size: 1.1rem;
+}
+
 /* ══════════════════════════════════════
    LIBRARY — Shared styles
    Covers: LibraryDesktop + LibraryMobile

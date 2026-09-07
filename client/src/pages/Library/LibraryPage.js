@@ -3,106 +3,15 @@ import { LibraryDesktop } from "./LibraryDesktop";
 import { LibraryMobile } from "./LibraryMobile";
 import { libraryEvents } from "@zecco/pages/Library/library.events";
 import meService from "@zecco/services/api/me.service";
-import { store } from "@zecco/store/store";
-import { formatTrackDuration } from "@zecco/utils/format-track-duration";
+import { store } from "@zecco/store/";
+import {
+	renderTrackRow,
+	renderPlaylistCard,
+	renderPlaylistItemMobile,
+	renderArtistChip,
+	getUniqueArtists,
+} from "./library.helpers.js";
 import "./Library.styles.css";
-
-const DEFAULT_COVER = "/src/assets/images/default-profile.png";
-
-const escapeHtml = (value = "") =>
-	String(value)
-		.replaceAll("&", "&amp;")
-		.replaceAll("<", "&lt;")
-		.replaceAll(">", "&gt;")
-		.replaceAll('"', "&quot;")
-		.replaceAll("'", "&#39;");
-
-const initials = (value = "?") => value.trim().charAt(0).toUpperCase();
-
-const toCoverUrl = (cover) =>
-	cover?.url ||
-	(cover?.storage?.baseUrl && cover?.storage?.key
-		? new URL(cover.storage.key, cover.storage.baseUrl).href
-		: DEFAULT_COVER);
-
-const renderTrackRow = (track, index) => {
-	const title = track?.title ?? "Untitled";
-	const artist = track?.artist ?? "Unknown Artist";
-	const cover = toCoverUrl(track?.cover);
-	return `
-		<div class="lib-track-row" data-track-id="${track?.uuid ?? track?._id ?? ""}">
-			<span class="lib-track-num">${index + 1}</span>
-			<div class="lib-track-cover">
-				<img src="${cover}" alt="${escapeHtml(title)}"
-					onerror="this.onerror=null;this.src='${DEFAULT_COVER}'" />
-			</div>
-			<div class="lib-track-info">
-				<div class="lib-track-title">${escapeHtml(title)}</div>
-				<div class="lib-track-artist">${escapeHtml(artist)}</div>
-			</div>
-			<div class="lib-track-right">
-				<span class="lib-track-dur">${formatTrackDuration(track?.duration)}</span>
-				<button class="lib-track-more" aria-label="More options">
-					<i class="bi bi-three-dots-vertical"></i>
-				</button>
-			</div>
-		</div>
-	`;
-};
-
-const renderPlaylistCard = (playlist) => {
-	const name = playlist?.name ?? "Untitled Playlist";
-	const count = Array.isArray(playlist?.trackIds)
-		? playlist.trackIds.length
-		: 0;
-	return `
-		<div class="lib-playlist-card" data-playlist-id="${playlist?.uuid ?? playlist?._id ?? ""}">
-			<div class="lib-playlist-cover">
-				<i class="bi bi-music-note-list"></i>
-			</div>
-			<p class="lib-playlist-title">${escapeHtml(name)}</p>
-			<p class="lib-playlist-sub">${count} track${count === 1 ? "" : "s"}</p>
-		</div>
-	`;
-};
-
-const renderPlaylistItemMobile = (playlist) => {
-	const name = playlist?.name ?? "Untitled Playlist";
-	const count = Array.isArray(playlist?.trackIds)
-		? playlist.trackIds.length
-		: 0;
-	return `
-		<div class="lib-playlist-item-mobile" data-playlist-id="${playlist?.uuid ?? playlist?._id ?? ""}">
-			<div class="lib-playlist-item-cover">
-				<i class="bi bi-music-note-list"></i>
-			</div>
-			<div class="lib-playlist-item-info">
-				<div class="lib-playlist-item-title">${escapeHtml(name)}</div>
-				<div class="lib-playlist-item-sub">${count} track${count === 1 ? "" : "s"}</div>
-			</div>
-		</div>
-	`;
-};
-
-const renderArtistChip = (track) => {
-	const name = track?.artist ?? "Unknown";
-	return `
-		<div class="lib-artist-chip" data-artist-id="">
-			<div class="lib-artist-avatar">${initials(name)}</div>
-			<div class="lib-artist-name">${escapeHtml(name)}</div>
-		</div>
-	`;
-};
-
-const getUniqueArtists = (tracks = []) => {
-	const seen = new Set();
-	return tracks.filter((t) => {
-		const key = (t?.artist || "").toLowerCase().trim();
-		if (!key || seen.has(key)) return false;
-		seen.add(key);
-		return true;
-	});
-};
 
 export const LibraryPage = async (ctx) => {
 	const root = document.createElement("section");
@@ -111,107 +20,129 @@ export const LibraryPage = async (ctx) => {
 	let state = "loading";
 	let isMounted = true;
 	let controller = null;
-	let data = {
-		summary: { totalLiked: 0, totalPlaylists: 0, totalUploads: 0 },
-		sections: { likedTracks: [], playlists: [], upload: [] },
-	};
+	let data = { sections: { likedTracks: [], playlists: [], upload: [] } };
 
 	const UI = () => (mobileScreen.matches ? LibraryMobile : LibraryDesktop);
 
-	const hydrateContent = (viewRoot) => {
-		const liked = data.sections?.likedTracks || [];
-		const upload = data.sections?.upload || [];
-		const playlists = data.sections?.playlists || [];
-		const recent = liked.slice(0, 8);
-		const artists = getUniqueArtists([...liked, ...upload]).slice(0, 12);
+	const hydrateOverview = (viewRoot) => {
+		const liked = data.sections.likedTracks || [];
+		const upload = data.sections.upload || [];
+		const playlists = data.sections.playlists || [];
+		const artists = getUniqueArtists([...liked, ...upload]);
 
-		const likedMeta = viewRoot.querySelector(
+		const set = (sel, text) => {
+			const el = viewRoot.querySelector(sel);
+			if (el) el.textContent = text;
+		};
+		set(
 			"#lib-liked-meta, #lib-liked-meta-mobile",
+			`${liked.length} song${liked.length === 1 ? "" : "s"}`,
 		);
-		const uploadMeta = viewRoot.querySelector(
+		set(
 			"#lib-upload-meta, #lib-upload-meta-mobile",
+			`${upload.length} track${upload.length === 1 ? "" : "s"}`,
 		);
-		const recentMeta = viewRoot.querySelector(
+		set(
 			"#lib-recent-meta, #lib-recent-meta-mobile",
+			`${Math.min(liked.length, 8)} song${Math.min(liked.length, 8) === 1 ? "" : "s"}`,
 		);
-		if (likedMeta)
-			likedMeta.textContent = `${liked.length} song${liked.length === 1 ? "" : "s"}`;
-		if (uploadMeta)
-			uploadMeta.textContent = `${upload.length} track${upload.length === 1 ? "" : "s"}`;
-		if (recentMeta)
-			recentMeta.textContent = `${recent.length} song${recent.length === 1 ? "" : "s"}`;
+		set(
+			"#lib-following-meta, #lib-following-meta-mobile",
+			`${artists.length} artist${artists.length === 1 ? "" : "s"}`,
+		);
 
-		const likedList = viewRoot.querySelector(
-			"#lib-liked-list, #lib-liked-list-mobile",
-		);
-		if (likedList) {
-			likedList.innerHTML = liked.length
-				? liked.map((t, i) => renderTrackRow(t, i)).join("")
-				: `<p class="lib-empty-sub">No liked songs yet.</p>`;
+		const grid = viewRoot.querySelector("#lib-playlist-grid");
+		if (grid) {
+			const addCard = grid.querySelector(".lib-playlist-card--add");
+			grid.innerHTML = `${playlists.slice(0, 7).map(renderPlaylistCard).join("")}${addCard ? addCard.outerHTML : ""}`;
 		}
-
-		const uploadList = viewRoot.querySelector(
-			"#lib-upload-list, #lib-upload-list-mobile",
-		);
-		if (uploadList) {
-			uploadList.innerHTML = upload.length
-				? upload.map((t, i) => renderTrackRow(t, i)).join("")
-				: `<p class="lib-empty-sub">No uploaded tracks yet.</p>`;
-		}
-
-		const recentList = viewRoot.querySelector(
-			"#lib-recent-list, #lib-recent-list-mobile",
-		);
-		if (recentList) {
-			recentList.innerHTML = recent.length
-				? recent.map((t, i) => renderTrackRow(t, i)).join("")
-				: `<p class="lib-empty-sub">No recent plays yet.</p>`;
-		}
-
-		const playlistGrid = viewRoot.querySelector("#lib-playlist-grid");
-		if (playlistGrid) {
-			const addCard = playlistGrid.querySelector(".lib-playlist-card--add");
-			const cards = playlists.map(renderPlaylistCard).join("");
-			playlistGrid.innerHTML = `${cards}${addCard ? addCard.outerHTML : ""}`;
-		}
-
-		const playlistListMobile = viewRoot.querySelector(
-			"#lib-playlist-list-mobile",
-		);
-		if (playlistListMobile) {
-			playlistListMobile.innerHTML = playlists.length
-				? playlists.map(renderPlaylistItemMobile).join("")
+		const listMobile = viewRoot.querySelector("#lib-playlist-list-mobile");
+		if (listMobile) {
+			listMobile.innerHTML = playlists.length
+				? playlists.slice(0, 10).map(renderPlaylistItemMobile).join("")
 				: `<p class="lib-empty-sub">No playlists created yet.</p>`;
 		}
+	};
 
-		const artistRow = viewRoot.querySelector(
-			"#lib-artist-row, #lib-artist-row-mobile",
+	const hydrateSectionDetail = (viewRoot, section) => {
+		const liked = data.sections.likedTracks || [];
+		const upload = data.sections.upload || [];
+		const playlists = data.sections.playlists || [];
+		const artists = getUniqueArtists([...liked, ...upload]);
+
+		const listEl = viewRoot.querySelector(
+			"#lib-section-detail-list, #lib-section-detail-list-mobile",
 		);
-		if (artistRow) {
-			artistRow.innerHTML = artists.length
-				? artists.map(renderArtistChip).join("")
-				: `<p class="lib-empty-sub">No followed artists yet.</p>`;
+		const gridEl = viewRoot.querySelector(
+			"#lib-section-detail-grid, #lib-section-detail-list-mobile",
+		);
+		const artistsEl = viewRoot.querySelector(
+			"#lib-section-detail-artists, #lib-section-detail-artists-mobile",
+		);
+
+		if (section === "liked" && listEl) {
+			listEl.innerHTML = liked.length
+				? liked.map(renderTrackRow).join("")
+				: `<p class="lib-empty-sub">No liked songs yet.</p>`;
 		}
+		if (section === "upload" && listEl) {
+			listEl.innerHTML = upload.length
+				? upload.map(renderTrackRow).join("")
+				: `<p class="lib-empty-sub">No uploaded tracks yet.</p>`;
+		}
+		if (section === "recent" && listEl) {
+			// NOTE: not real recently-played data yet — reusing liked as a
+			// placeholder like the original code did. Your file tree has
+			// recent-plays-model.js sitting unused; wiring real history
+			// through there is a separate task, not touched here.
+			const recent = liked.slice(0, 20);
+			listEl.innerHTML = recent.length
+				? recent.map(renderTrackRow).join("")
+				: `<p class="lib-empty-sub">No recent plays yet.</p>`;
+		}
+		if (section === "playlists" && gridEl) {
+			gridEl.innerHTML = playlists.length
+				? playlists
+						.map(
+							mobileScreen.matches
+								? renderPlaylistItemMobile
+								: renderPlaylistCard,
+						)
+						.join("")
+				: `<p class="lib-empty-sub">No playlists yet.</p>`;
+		}
+		if (section === "following" && artistsEl) {
+			artistsEl.innerHTML = artists.length
+				? artists.map(renderArtistChip).join("")
+				: `<p class="lib-empty-sub">Not following anyone yet.</p>`;
+		}
+	};
+
+	const addPlaylistLocally = (playlist) => {
+		data.sections.playlists = [playlist, ...(data.sections.playlists ?? [])];
+		render();
 	};
 
 	const render = async () => {
 		if (!isMounted) return;
-		const view = await UI()({ state, ctx });
+		const section = ctx?.query?.section ?? null;
+		const view = await UI()({ state, section, ctx });
 		root.replaceChildren(view);
-		if (state === "content") hydrateContent(view);
-		libraryEvents(view);
 
-		const retryBtn =
-			view.querySelector("#lib-retry-btn") ||
-			view.querySelector("#lib-retry-btn-mobile");
-		if (retryBtn) retryBtn.addEventListener("click", () => loadData());
+		if (state === "content") {
+			section ? hydrateSectionDetail(view, section) : hydrateOverview(view);
+		}
+		libraryEvents(view, { data, onPlaylistCreated: addPlaylistLocally });
+
+		view
+			.querySelector("#lib-retry-btn, #lib-retry-btn-mobile")
+			?.addEventListener("click", loadData);
 	};
 
 	const loadData = async () => {
 		try {
 			if (!isMounted) return;
-
-			if (!store?.auth?.isLoggedIn && !store?.auth?.user) {
+			if (!store?.auth?.isLoggedIn) {
 				state = "auth";
 				await render();
 				return;
@@ -228,11 +159,6 @@ export const LibraryPage = async (ctx) => {
 			const sections = payload?.sections ?? {};
 
 			data = {
-				summary: payload?.summary || {
-					totalLiked: sections.likedTracks?.length || 0,
-					totalPlaylists: sections.playlists?.length || 0,
-					totalUploads: sections.upload?.length || 0,
-				},
 				sections: {
 					likedTracks: sections.likedTracks || [],
 					playlists: sections.playlists || [],
@@ -245,16 +171,17 @@ export const LibraryPage = async (ctx) => {
 				data.sections.playlists.length > 0 ||
 				data.sections.upload.length > 0;
 
-			state = hasAnyContent ? "content" : "empty";
+			// A direct section deep-link should render its own empty state,
+			// not bounce to the generic "library is empty" gate.
+			state = hasAnyContent || ctx?.query?.section ? "content" : "empty";
 			await render();
 		} catch (error) {
 			if (error?.name !== "AbortError" && isMounted) {
 				console.error("[LibraryPage] Load error:", error);
-				if (error?.status === 401 || error?.status === 403) {
-					state = "auth";
-				} else {
-					state = "error";
-				}
+				state =
+					error?.status === 401 || error?.status === 403
+						? "auth"
+						: "error";
 				await render();
 			}
 		}

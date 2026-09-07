@@ -1,11 +1,22 @@
 // @zecco/features/profile/profile.events.js
 import { networkHandler } from "@zecco/core/network-handler.js";
 import { toast } from "@zecco/components/Toast/Toast.js";
+import { socialService } from "@zecco/services/api/social.service";
+import showPlaylistModal from "@zecco/components/PlaylistModal/PlaylistModal";
+import { playlistService } from "@zecco/services/api/playlist.service";
+import { logger } from "@zecco/core/logger";
+import { wirePlaylistCardClicks } from "@zecco/components/PlaylistCard/PlaylistCard";
+import { wireTrackCardClicks } from "@zecco/components/TrackCard/TrackCard";
 
-export const profileEvents = (root, { state, setState, setData }) => {
-	// Prevent duplicate listeners on re-renders
+export const profileEvents = (root, { state, data, setState, setData }) => {
 	if (root.hasAttribute("data-events-bound")) return;
 	root.setAttribute("data-events-bound", "true");
+
+	wirePlaylistCardClicks(root);
+	wireTrackCardClicks(root, {
+		tracks: data.tracks ?? [],
+		onLikeToggle: (track) => trackService.toggleLike(track.uuid),
+	});
 
 	// ── Tab Switching Helper ──
 	const switchTab = (clickedTab, isMobile) => {
@@ -192,7 +203,23 @@ export const profileEvents = (root, { state, setState, setData }) => {
 			"#profile-create-playlist-btn, #profile-mob-create-playlist-btn",
 		);
 		if (createPlaylistBtn) {
-			toast({ message: "Opening playlist creator...", type: "info" });
+			showPlaylistModal({
+				onCreate: async ({ name, description, visibility }) => {
+					const res = await playlistService.create({
+						name,
+						description,
+						visibility,
+					});
+					logger.debug("Playlist created:", res);
+					const newPlaylist = res?.data;
+					if (newPlaylist) {
+						await setData({
+							playlists: [newPlaylist, ...(data.playlists ?? [])],
+						});
+					}
+					toast({ message: `"${name}" created`, type: "success" });
+				},
+			});
 			return;
 		}
 
@@ -210,6 +237,63 @@ export const profileEvents = (root, { state, setState, setData }) => {
 			}
 			toast({ message: "Retrying connection...", type: "info" });
 			setState("skeleton"); // Bubbles back to ProfilePage.js to re-fetch
+			return;
+		}
+
+		// const followBtn = e.target.closest(
+		// 	"#profile-follow-btn, #profile-mob-follow-btn",
+		// );
+		if (followBtn) {
+			if (followBtn.disabled) return;
+			if (networkHandler.getStatus() === "offline") {
+				toast({
+					message: "Internet connection required to follow users.",
+					type: "warning",
+				});
+				return;
+			}
+
+			const wasFollowing = followBtn.classList.contains("following");
+			followBtn.disabled = true;
+
+			// Optimistic UI
+			followBtn.classList.toggle("following");
+			followBtn.innerHTML = wasFollowing
+				? '<i class="bi bi-person-plus"></i> Follow'
+				: '<i class="bi bi-person-check-fill"></i> Following';
+
+			try {
+				wasFollowing
+					? await socialService.unfollow(data.user.uuid)
+					: await socialService.follow(data.user.uuid);
+
+				setData({
+					user: {
+						...data.user,
+						followersCount: Math.max(
+							0,
+							data.user.followersCount + (wasFollowing ? -1 : 1),
+						),
+					},
+				});
+
+				toast({
+					message: wasFollowing ? "Unfollowed user" : "Following user!",
+					type: wasFollowing ? "info" : "success",
+				});
+			} catch (err) {
+				// Revert on failure
+				followBtn.classList.toggle("following");
+				followBtn.innerHTML = wasFollowing
+					? '<i class="bi bi-person-check-fill"></i> Following'
+					: '<i class="bi bi-person-plus"></i> Follow';
+				toast({
+					message: err.message || "Couldn't update follow status.",
+					type: "error",
+				});
+			} finally {
+				followBtn.disabled = false;
+			}
 			return;
 		}
 	});

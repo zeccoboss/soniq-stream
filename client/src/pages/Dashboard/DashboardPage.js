@@ -2,7 +2,7 @@ import { mobileScreen } from "@zecco/core/screen-break-points.js";
 import { DashboardDesktop } from "./DashboardDesktop.js";
 import { DashboardMobile } from "./DashboardMobile.js";
 import { dashboardEvents } from "@zecco/pages/Dashboard/dashboard.events.js";
-import { store } from "@zecco/store/store.js";
+import { store } from "@zecco/store/index.js";
 import { router } from "@zecco/routes/router.js";
 
 /**

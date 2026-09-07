@@ -75,6 +75,7 @@ class AppStore extends BaseStore {
 	}
 
 	init() {
+		this.ui.init();
 		this.auth.init();
 		// this.player.init();
 		this.initDeepLink();

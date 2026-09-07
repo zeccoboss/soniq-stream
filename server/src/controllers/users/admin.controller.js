@@ -108,6 +108,15 @@ const getReports = async (req, res) => {
 const deleteTrackAsAdmin = async (req, res) => {
 	try {
 		const { uuid } = req.params;
+
+		// If the uuid is not provided, return a 501 Not Implemented response
+		// TODO: This placeholder will be replaced with actual deletion logic in the future
+		if (uuid) {
+			return res.status(501).json({
+				success: false,
+				message: "This feature is not implemented yet.",
+			});
+		}
 		const track = await Track.findOneAndDelete({ uuid });
 
 		if (!track) return res.status(404).json({ message: "Track not found" });
@@ -115,6 +124,8 @@ const deleteTrackAsAdmin = async (req, res) => {
 		await User.findByIdAndUpdate(track.user, {
 			$pull: { uploadsTracksId: track._id },
 		});
+
+		console.log(tracks);
 
 		// TODO: trigger S3/MinIO object delete for track.storage.key here
 

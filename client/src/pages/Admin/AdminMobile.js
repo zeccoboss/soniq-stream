@@ -27,15 +27,29 @@ export const AdminMobile = async ({ state, ctx, data = {} }) => {
 	const {
 		platformStats = {},
 		recentUsers = [],
-		recentTracks = [],
-		reports = [],
+		recentReports = [],
+		users = { list: [] },
+		tracks = { list: [] },
+		reports = { list: [] },
 	} = data;
+
+	// Dedicated tabs receive paginated buckets, while the overview only uses
+	// the lightweight recent-* preview slices. Keep this in sync with desktop.
+	const usersList = users.list ?? [];
+	const tracksList = tracks.list ?? [];
+	const reportsList = reports.list ?? [];
 
 	const fmt = (n = 0) => Number(n).toLocaleString();
 	const initials = (str = "?") => str.trim().slice(0, 2).toUpperCase();
+	const getMediaUrl = (media) => {
+		if (!media) return null;
+		if (typeof media === "string") return media;
+		return media.url ?? media.storage?.url ?? null;
+	};
 	const timeAgo = (dateStr) => {
 		if (!dateStr) return "—";
 		const diff = Date.now() - new Date(dateStr).getTime();
+		if (diff < 60000) return "just now";
 		const mins = Math.floor(diff / 60000);
 		if (mins < 60) return `${mins}m ago`;
 		const hrs = Math.floor(mins / 60);
@@ -44,8 +58,10 @@ export const AdminMobile = async ({ state, ctx, data = {} }) => {
 	};
 
 	// ── Header ───────────────────────────────────────────────
-	const header = () =>
-		buildNode(`
+	const header = () => {
+		const reportBadgeCount = reportsList.length || recentReports.length;
+
+		return buildNode(`
 			<header class="admin-mob-header">
 				<div class="admin-mob-header-top">
 					<div class="admin-mob-title-group">
@@ -75,11 +91,12 @@ export const AdminMobile = async ({ state, ctx, data = {} }) => {
 						class="admin-mob-tab ${tab === "reports" ? "active" : ""}"
 						data-tab="reports">
 						<i class="bi bi-flag"></i> Reports
-						${reports.length ? `<span class="admin-tab-badge">${reports.length}</span>` : ""}
+						${reportBadgeCount ? `<span class="admin-tab-badge">${reportBadgeCount}</span>` : ""}
 					</a>
 				</nav>
 			</header>
 		`);
+	};
 
 	// ── Skeleton ─────────────────────────────────────────────
 	const skeletonState = () =>
@@ -190,13 +207,15 @@ export const AdminMobile = async ({ state, ctx, data = {} }) => {
 				${recentUsers
 					.slice(0, 5)
 					.map(
-						(u) => `
+						(u) => {
+							const avatarUrl = getMediaUrl(u.avatar);
+							return `
 					<div class="admin-user-row" data-uuid="${u.uuid ?? ""}">
 						<div class="admin-user-avatar">
-							<img src="${u.avatar || defaultAvatar}" alt="${u.username}"
+							<img src="${avatarUrl || defaultAvatar}" alt="${u.username}"
 								class="admin-avatar-img"
 								onerror="this.style.display='none';this.nextElementSibling.style.display='grid'" />
-							<div class="admin-avatar-fallback">${initials(u.displayName ?? u.username)}</div>
+							<div class="admin-avatar-fallback" style="${avatarUrl ? "" : "display:grid"}">${initials(u.displayName ?? u.username)}</div>
 						</div>
 						<div class="admin-user-info">
 							<span class="admin-user-name">${u.displayName ?? u.username}</span>
@@ -216,7 +235,8 @@ export const AdminMobile = async ({ state, ctx, data = {} }) => {
 							}
 						</div>
 					</div>
-				`,
+				`;
+						},
 					)
 					.join("")}
 			</div>
@@ -233,15 +253,16 @@ export const AdminMobile = async ({ state, ctx, data = {} }) => {
 						placeholder="Search username..." />
 				</div>
 				<div id="admin-mob-users-list">
-					${recentUsers
-						.map(
-							(u) => `
+					${usersList
+						.map((u) => {
+							const avatarUrl = getMediaUrl(u.avatar);
+							return `
 						<div class="admin-user-row" data-uuid="${u.uuid ?? ""}">
 							<div class="admin-user-avatar">
-								<img src="${u.avatar || defaultAvatar}" alt="${u.username}"
+								<img src="${avatarUrl || defaultAvatar}" alt="${u.username}"
 									class="admin-avatar-img"
 									onerror="this.style.display='none';this.nextElementSibling.style.display='grid'" />
-								<div class="admin-avatar-fallback">${initials(u.displayName ?? u.username)}</div>
+								<div class="admin-avatar-fallback" style="${avatarUrl ? "" : "display:grid"}">${initials(u.displayName ?? u.username)}</div>
 							</div>
 							<div class="admin-user-info">
 								<span class="admin-user-name">
@@ -265,8 +286,8 @@ export const AdminMobile = async ({ state, ctx, data = {} }) => {
 								</button>
 							</div>
 						</div>
-					`,
-						)
+					`;
+						})
 						.join("")}
 				</div>
 			</div>
@@ -283,16 +304,17 @@ export const AdminMobile = async ({ state, ctx, data = {} }) => {
 						placeholder="Search track..." />
 				</div>
 				<div id="admin-mob-tracks-list">
-					${recentTracks
-						.map(
-							(t) => `
+					${tracksList
+						.map((t) => {
+							const coverUrl = getMediaUrl(t.cover);
+							return `
 						<div class="admin-track-row ${t.flagged ? "admin-track-row--flagged" : ""}"
 							data-uuid="${t.uuid ?? ""}">
 							<div class="admin-track-cover">
-								<img src="${t.cover || defaultAvatar}" alt="${t.title}"
+								<img src="${coverUrl || defaultAvatar}" alt="${t.title}"
 									class="admin-avatar-img"
 									onerror="this.style.display='none';this.nextElementSibling.style.display='grid'" />
-								<div class="admin-avatar-fallback">${initials(t.title)}</div>
+								<div class="admin-avatar-fallback" style="${coverUrl ? "" : "display:grid"}">${initials(t.title)}</div>
 							</div>
 							<div class="admin-track-info">
 								<span class="admin-track-title">
@@ -312,8 +334,8 @@ export const AdminMobile = async ({ state, ctx, data = {} }) => {
 								</button>
 							</div>
 						</div>
-					`,
-						)
+					`;
+						})
 						.join("")}
 				</div>
 			</div>
@@ -325,7 +347,7 @@ export const AdminMobile = async ({ state, ctx, data = {} }) => {
 		<div class="admin-tab-view" data-tab="reports">
 			<div class="admin-mob-sec">
 				${
-					!reports.length
+					!reportsList.length
 						? `
 					<div class="admin-empty">
 						<i class="bi bi-check-circle admin-empty-icon"></i>
@@ -335,12 +357,14 @@ export const AdminMobile = async ({ state, ctx, data = {} }) => {
 				`
 						: `
 					<div id="admin-mob-reports-list">
-						${reports
-							.map(
-								(r) => `
+						${reportsList
+							.map((r) => {
+								const targetType = String(r.targetType ?? r.type ?? "").toLowerCase();
+								const targetRef = r.targetUuid ?? r.targetId?.uuid ?? "";
+								return `
 							<div class="admin-report-row" data-uuid="${r.uuid ?? ""}">
 								<div class="admin-report-icon">
-									<i class="bi bi-${r.type === "track" ? "music-note" : "person"}"></i>
+									<i class="bi bi-${targetType === "track" ? "music-note" : "person"}"></i>
 								</div>
 								<div class="admin-report-info">
 									<span class="admin-report-title">${r.targetTitle ?? "—"}</span>
@@ -355,13 +379,13 @@ export const AdminMobile = async ({ state, ctx, data = {} }) => {
 										<i class="bi bi-check-lg"></i>
 									</button>
 									<button class="admin-action-btn admin-action-btn--red"
-										data-action="remove-reported" data-uuid="${r.targetId ?? ""}" title="Remove">
+										data-action="remove-reported" data-uuid="${targetRef}" data-target-type="${targetType}" title="Remove">
 										<i class="bi bi-trash"></i>
 									</button>
 								</div>
 							</div>
-						`,
-							)
+							`;
+							})
 							.join("")}
 					</div>
 				`

@@ -1,5 +1,5 @@
 /** biome-ignore-all lint/suspicious/useIterableCallbackReturn: <explanation> */
-import { store } from "@zecco/store/store.js";
+import { store } from "@zecco/store/index.js";
 import { router } from "@zecco/routes/router.js";
 import { toast } from "@zecco/components/Toast/Toast.js";
 

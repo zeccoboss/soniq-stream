@@ -49,6 +49,10 @@ class AdminService extends BaseService {
 		return this.delete(ENDPOINTS.ADMIN.DELETE_TRACK(track_uuid));
 	}
 
+	deleteUser(user_uuid) {
+		return this.delete(ENDPOINTS.USER.PROFILE(user_uuid));
+	}
+
 	// ── Admin User Management ───────────────────────────────────────
 	updateUserRole(user_uuid, newRole) {
 		return this.patch(ENDPOINTS.ADMIN.UPDATE_USER_ROLE(user_uuid), {

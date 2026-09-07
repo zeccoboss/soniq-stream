@@ -1,7 +1,7 @@
 // @zecco/features/settings/settings.events.js
 import { themeManager } from "@zecco/core/theme-manager.js";
 import { networkHandler } from "@zecco/core/network-handler.js";
-import { store } from "@zecco/store/store.js";
+import { store } from "@zecco/store/index.js";
 import meService from "@zecco/services/api/me.service.js";
 import { toast } from "@zecco/components/Toast/Toast.js";
 import { showModal } from "@zecco/components/Modal/Modal.js";

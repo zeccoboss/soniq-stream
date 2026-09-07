@@ -119,14 +119,19 @@ const getUser = async (req, res) => {
 	}
 };
 
-// GET /users/:uuid/profile — exact lookup, single result or 404
+// GET /users/:identifier/profile — exact lookup, single result or 404
 const getUserProfile = async (req, res) => {
 	try {
-		const { uuid } = req.params;
-		const profileData = await getPublicProfile(uuid);
+		const { identifier } = req.query;
+		// console.log("[UsersController] getUserProfile:", req.user);
+		const viewerId = req.user?._id ?? null; // populated only if optionalJWT ran and found a valid token
+		const profileData = await getPublicProfile(identifier, viewerId);
 		res.json({ success: true, data: sanitizePublicProfile(profileData) });
 	} catch (error) {
-		res.status(404).json({ success: false, message: error.message });
+		res.status(error.status || 404).json({
+			success: false,
+			message: error.message,
+		});
 	}
 };
 
@@ -204,8 +209,8 @@ const createUser = async (req, res) => {
 // ── PUT /users/me ──────────────────────────────────────────────────────────────
 const updateUser = async (req, res) => {
 	try {
-		const userId = req.user._id; // internal _id for DB lookup
-		const { username, fullname, bio } = req.body;
+		const userId = req.user._id;
+		const { username, firstName, lastName, bio } = req.body;
 
 		const user = await UserModel.findById(userId);
 		if (!user) {
@@ -215,7 +220,8 @@ const updateUser = async (req, res) => {
 		}
 
 		if (username) user.username = username;
-		if (fullname) user.fullname = fullname;
+		if (firstName) user.firstName = firstName;
+		if (lastName) user.lastName = lastName;
 		if (bio !== undefined) user.bio = bio;
 
 		await user.save();
@@ -226,7 +232,7 @@ const updateUser = async (req, res) => {
 			data: {
 				uuid: user.uuid,
 				username: user.username,
-				fullname: user.fullname,
+				fullname: user.fullname, // recomputes correctly now that firstName/lastName are the actual writes
 				bio: user.bio,
 			},
 		});

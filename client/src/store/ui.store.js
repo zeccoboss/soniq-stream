@@ -1,10 +1,14 @@
+import {
+	readFromLocalStorage,
+	writeToLocalStorage,
+} from "@zecco/services/storage/local-storage";
 import { BaseStore } from "./base.store";
 
 export class UiStore extends BaseStore {
 	#activePage = "home";
 	#overlayOpen = false;
 	#deepLinkTrackId = null;
-	#isSidebarCollapsed = true; // Initial state
+	#isSidebarCollapsed = readFromLocalStorage("sidebar_collapsed") ?? false; // Initial state
 	#playerActive = false;
 
 	// --- Active Page ---
@@ -73,5 +77,12 @@ export class UiStore extends BaseStore {
 		this.#deepLinkTrackId = null;
 		this.#isSidebarCollapsed = false;
 		this.emit("ui_store:page_changed", "home");
+	}
+
+	init() {
+		// Emit the initial state of the sidebar collapsed state on initialization
+		this.emit("ui_store:sidebar_toggled", this.#isSidebarCollapsed);
+		writeToLocalStorage("sidebar_collapsed", this.#isSidebarCollapsed);
+		console.debug("[UiStore]: Sidebar is initially collapsed.");
 	}
 }

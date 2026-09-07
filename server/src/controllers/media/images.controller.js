@@ -10,12 +10,12 @@ const {
 } = require("../../services/s3.service");
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
-const VALID_TYPES = ["avatar", "cover"];
+const VALID_TYPES = ["avatar", "banner"];
 
 // Map route type → user field name
 const USER_IMAGE_FIELD = {
 	avatar: "avatar",
-	cover: "cover",
+	banner: "banner",
 };
 
 /**
@@ -37,7 +37,7 @@ const cleanupOldImage = async (imageId) => {
 
 // ── PATCH /api/users/me/images ─────────────────────────────────────────────────
 // Body (multipart/form-data):
-//   type  — "avatar" | "cover"
+//   type  — "avatar" | "banner"
 //   image — the file
 async function updateImage(req, res) {
 	const { type } = req.body;
@@ -97,7 +97,7 @@ async function updateImage(req, res) {
 			uuid,
 			name: uniqueName,
 			user: userId,
-			category: type, // "avatar" or "cover" — matches your enum
+			category: type,
 			format: file.mimetype,
 			size: file.size,
 			dimensions: { width: meta.width, height: meta.height },

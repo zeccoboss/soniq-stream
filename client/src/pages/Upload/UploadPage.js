@@ -3,7 +3,7 @@ import { mobileScreen } from "@zecco/core/screen-break-points.js";
 import { UploadDesktop } from "./UploadDesktop.js";
 import { UploadMobile } from "./UploadMobile.js";
 import { uploadEvents } from "@zecco/pages/Upload/upload.events.js";
-import { store } from "@zecco/store/store.js";
+import { store } from "@zecco/store/index.js";
 import meService from "@zecco/services/api/me.service.js"; // ◄ Now imported for live backend requests
 import { toast } from "@zecco/components/Toast/Toast.js";
 import {

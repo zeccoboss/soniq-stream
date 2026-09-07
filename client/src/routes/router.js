@@ -52,7 +52,11 @@ class AppRouter {
 		const query = this.matcher.parseQuery(fullUrl.searchParams);
 
 		if (historyMode === "push") {
-			this.history.saveScroll(location.pathname, scrollY);
+			const oldContainer = this.view.getScrollContainer();
+			this.history.saveScroll(
+				location.pathname,
+				oldContainer?.scrollTop ?? 0,
+			);
 		}
 
 		let match = this.matcher.match(path);
@@ -120,11 +124,20 @@ class AppRouter {
 		}
 
 		// Internal Sync & Scroll Restore
+		// Internal Sync & Scroll Restore
 		this.history.sync(path, historyMode);
 
 		queueMicrotask(() => {
-			scrollTo(0, this.history.getScroll(path));
+			const container = this.view.getScrollContainer();
+			if (container) container.scrollTop = this.history.getScroll(path);
 		});
+
+		// ── Notify listeners (sidebar highlighting, etc.) ──
+		window.dispatchEvent(
+			new CustomEvent("router:navigate", {
+				detail: { path, query, historyMode },
+			}),
+		);
 
 		this.isNavigating = false;
 	}

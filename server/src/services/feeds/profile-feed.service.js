@@ -6,9 +6,8 @@ const Image = require("../../models/image.model");
  * @param {string} identifier - Can be the user's uuid or username.
  * @returns {Promise<Object>} The public profile data.
  */
-const getPublicProfile = async (identifier) => {
+const getPublicProfile = async (identifier, viewerId = null) => {
 	try {
-		// 1. Find user by UUID or Username (useful for custom profile URLs)
 		const query =
 			identifier.length > 30
 				? { uuid: identifier }
@@ -16,41 +15,56 @@ const getPublicProfile = async (identifier) => {
 
 		const profile = await User.findOne(query)
 			.select(
-				"fullname username bio followersId followingId avatar banner uploadsTracksId playlistIds",
+				"uuid firstName lastName username displayName bio followersId followingId avatar banner uploadsTracksId playlistIds",
 			)
 			.populate("avatar banner")
 			.populate({
 				path: "uploadsTracksId",
 				select: "title artist duration avatar uuid",
-				match: { visibility: "public" }, // Only show public upload
+				match: { visibility: "public" },
 				populate: { path: "avatar", select: "storage name" },
 			})
 			.populate({
 				path: "playlistIds",
-				select: "name trackIds public uuid",
-				match: { public: true }, // Only show public playlists
+				select: "name uuid cover trackIds visibility",
+				match: { visibility: "public" },
+				populate: { path: "cover", select: "storage name" },
 			});
 
 		if (!profile) {
-			throw new Error("Profile not found");
+			const err = new Error("Profile not found");
+			err.status = 404;
+			throw err;
 		}
 
-		console.log("Profile found:", profile);
+		const isOwnProfile = viewerId
+			? String(profile._id) === String(viewerId)
+			: false;
+		const viewerIsFollowing =
+			viewerId && !isOwnProfile
+				? profile.followersId.some(
+						(id) => id.toString() === viewerId.toString(),
+					)
+				: false;
 
-		// 2. Format the data to focus on social stats and public content
 		return {
 			identity: {
+				uuid: profile.uuid,
 				fullname: profile.fullname,
+				displayName: profile.displayName || profile.fullname,
 				username: profile.username,
 				bio: profile.bio,
 				avatar: profile.avatar?.url || null,
-				cover: profile.cover?.url || null,
 				banner: profile.banner?.url || null,
 			},
 			stats: {
 				followersCount: profile.followersId?.length || 0,
 				followingCount: profile.followingId?.length || 0,
 				totalUploads: profile.uploadsTracksId?.length || 0,
+			},
+			viewer: {
+				isOwnProfile,
+				isFollowing: viewerIsFollowing,
 			},
 			content: {
 				publicTracks: profile.uploadsTracksId || [],
@@ -62,6 +76,8 @@ const getPublicProfile = async (identifier) => {
 		throw error;
 	}
 };
+
+module.exports = { getPublicProfile };
 
 const searchUsersByUsername = async ({ q, limit = 10 }) => {
 	if (!q || q.trim().length < 2) return [];

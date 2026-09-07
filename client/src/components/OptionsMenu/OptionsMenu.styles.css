@@ -1,0 +1,77 @@
+/* Dropdown variant of the shared overlay — no dim, no centering,
+   the menu positions itself absolutely via JS. */
+.overlay--transparent {
+	background: transparent !important;
+	align-items: flex-start !important;
+	justify-content: flex-start !important;
+}
+
+.options-menu {
+	position: absolute;
+	min-width: 180px;
+	background: var(--glass);
+	backdrop-filter: var(--blur);
+	-webkit-backdrop-filter: var(--blur);
+	border: 1px solid var(--glass-border-strong);
+	border-radius: var(--radius-md);
+	box-shadow: var(--glass-shadow);
+	padding: 6px;
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+	animation: options-menu-in 0.15s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes options-menu-in {
+	from {
+		transform: scale(0.95) translateY(-4px);
+		opacity: 0;
+	}
+	to {
+		transform: scale(1) translateY(0);
+		opacity: 1;
+	}
+}
+.options-menu--out {
+	animation: options-menu-out 0.12s ease-in both;
+}
+@keyframes options-menu-out {
+	from {
+		transform: scale(1);
+		opacity: 1;
+	}
+	to {
+		transform: scale(0.95);
+		opacity: 0;
+	}
+}
+
+.options-menu-item {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 9px 12px;
+	background: none;
+	border: none;
+	border-radius: var(--radius-sm);
+	color: var(--text-1);
+	font-size: 0.68rem;
+	font-family: var(--font-body);
+	cursor: pointer;
+	text-align: left;
+	transition: background 0.15s;
+}
+.options-menu-item:hover {
+	background: var(--glass-hover);
+}
+.options-menu-item i {
+	font-size: 0.78rem;
+	color: var(--text-3);
+	width: 16px;
+	flex-shrink: 0;
+}
+.options-menu-item--danger {
+	color: var(--error);
+}
+.options-menu-item--danger i {
+	color: var(--error);
+}

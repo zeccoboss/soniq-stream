@@ -1,0 +1,95 @@
+.playlist-modal-textarea {
+	width: 100%;
+	padding: 10px 14px;
+	border-radius: var(--radius-sm);
+	background: var(--glass);
+	border: 1px solid var(--glass-border);
+	color: var(--text-1);
+	font-size: 0.68rem;
+	font-family: var(--font-body);
+	outline: none;
+	resize: none;
+	transition: border-color 0.2s;
+}
+
+.playlist-modal-field {
+	width: 100%;
+	text-align: left;
+}
+
+.playlist-modal-input,
+.playlist-modal-textarea {
+	box-sizing: border-box;
+}
+
+.playlist-modal-input {
+	width: 100%;
+	padding: 10px 14px;
+	border-radius: var(--radius-sm);
+	background: var(--glass);
+	border: 1px solid var(--glass-border);
+	color: var(--text-1);
+	font: inherit;
+	font-size: 0.68rem;
+	outline: none;
+	transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.playlist-modal-input::placeholder,
+.playlist-modal-textarea::placeholder {
+	color: var(--text-3);
+}
+
+.playlist-modal-input:focus,
+.playlist-modal-textarea:focus {
+	border-color: hsla(213, 80%, 58%, 0.5);
+	box-shadow: 0 0 0 3px hsla(213, 80%, 58%, 0.12);
+}
+
+.playlist-modal-vis-toggle {
+	display: flex;
+	gap: 6px;
+	width: 100%;
+	margin-top: 2px;
+}
+.playlist-modal-vis-btn {
+	flex: 1;
+	padding: 8px 10px;
+	border-radius: var(--radius-sm);
+	background: var(--glass);
+	border: 1px solid var(--glass-border);
+	color: var(--text-2);
+	font-size: 0.62rem;
+	font-weight: 500;
+	font-family: var(--font-body);
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 5px;
+	transition: all 0.2s;
+}
+.playlist-modal-vis-btn.active {
+	background: hsla(213, 80%, 58%, 0.08);
+	border-color: hsla(213, 80%, 58%, 0.3);
+	color: hsl(213, 80%, 70%);
+	font-weight: 600;
+}
+
+.playlist-modal-error {
+	display: block;
+	margin-top: 6px;
+	color: var(--error);
+	font-size: 0.6rem;
+	line-height: 1.35;
+}
+
+.playlist-modal-error.hidden {
+	display: none;
+}
+
+@media (max-width: 480px) {
+	.playlist-modal-vis-btn {
+		min-height: 40px;
+	}
+}

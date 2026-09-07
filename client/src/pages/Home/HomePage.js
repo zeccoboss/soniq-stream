@@ -2,7 +2,7 @@ import { mobileScreen } from "@zecco/core/screen-break-points.js";
 import { HomeDesktop } from "./HomeDesktop.js";
 import { HomeMobile } from "./HomeMobile.js";
 import { homeEvents } from "@zecco/pages/Home/home.events.js";
-import { store } from "@zecco/store/store.js";
+import { store } from "@zecco/store/index.js";
 import { trackService } from "@zecco/services/api/track.service.js";
 
 const feedCache = {

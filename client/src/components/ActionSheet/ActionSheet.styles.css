@@ -1,0 +1,100 @@
+/* Bottom-sheet variant of the shared overlay — pins content to the
+   bottom edge instead of Modal.js's centered card. */
+.overlay--bottom {
+	align-items: flex-end !important;
+	padding: 0 !important;
+}
+
+.action-sheet {
+	width: 100%;
+	max-width: 480px;
+	background: var(--glass);
+	backdrop-filter: var(--blur);
+	-webkit-backdrop-filter: var(--blur);
+	border: 1px solid var(--glass-border-strong);
+	border-bottom: none;
+	border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+	padding: 20px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	animation: action-sheet-in 0.26s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes action-sheet-in {
+	from {
+		transform: translateY(100%);
+		opacity: 0.4;
+	}
+	to {
+		transform: translateY(0);
+		opacity: 1;
+	}
+}
+.action-sheet--out {
+	animation: action-sheet-out 0.2s cubic-bezier(0.4, 0, 1, 1) both;
+}
+@keyframes action-sheet-out {
+	from {
+		transform: translateY(0);
+		opacity: 1;
+	}
+	to {
+		transform: translateY(100%);
+		opacity: 0;
+	}
+}
+
+.action-sheet-title {
+	font-size: 0.6rem;
+	color: var(--text-3);
+	text-transform: uppercase;
+	letter-spacing: 1px;
+	font-weight: 700;
+	padding: 4px 10px 8px;
+}
+.action-sheet-list {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+.action-sheet-item {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 13px 10px;
+	background: none;
+	border: none;
+	border-radius: var(--radius-sm);
+	color: var(--text-1);
+	font-size: 0.74rem;
+	font-family: var(--font-body);
+	cursor: pointer;
+	text-align: left;
+	transition: background 0.15s;
+}
+.action-sheet-item:hover {
+	background: var(--glass-hover);
+}
+.action-sheet-icon {
+	width: 32px;
+	height: 32px;
+	border-radius: 8px;
+	background: var(--glass-hover);
+	display: grid;
+	place-items: center;
+	font-size: 0.85rem;
+	color: var(--accent);
+	flex-shrink: 0;
+}
+.action-sheet-cancel {
+	margin-top: 8px;
+	padding: 13px;
+	border-radius: var(--radius-sm);
+	background: var(--glass-hover);
+	border: none;
+	color: var(--text-2);
+	font-size: 0.72rem;
+	font-weight: 600;
+	font-family: var(--font-body);
+	cursor: pointer;
+}

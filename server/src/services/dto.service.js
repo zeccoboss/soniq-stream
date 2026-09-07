@@ -168,7 +168,7 @@ function sanitizeUserData(data) {
 	delete doc.id;
 	delete doc.__v;
 
-	console.log("Sanitized user data:", doc); // Debugging log to inspect the sanitized output
+	//	console.log("Sanitized user data:", doc); // Debugging log to inspect the sanitized output
 
 	return doc;
 }
@@ -206,10 +206,34 @@ function sanitizeUserSearchResult(data) {
 	};
 }
 
+// Sanitizes playlist data for frontend consumption, removing Mongo metadata and cleaning populated track and image objects.
+function sanitizePlaylistData(data) {
+	if (Array.isArray(data)) return data.map(sanitizePlaylistData);
+	if (!data) return null;
+
+	const cleaned = stripMongoMeta(data);
+
+	delete cleaned.nameLower; // internal only, never leaves the server
+	delete cleaned.savedByIds; // heavy array — savesCount virtual covers the count
+
+	if (cleaned.trackIds && Array.isArray(cleaned.trackIds)) {
+		cleaned.trackIds = sanitizeTrackData(cleaned.trackIds);
+	}
+	if (cleaned.cover && typeof cleaned.cover === "object") {
+		cleaned.cover = stripMongoMeta(cleaned.cover);
+	}
+	if (cleaned.user && typeof cleaned.user === "object") {
+		cleaned.user = stripMongoMeta(cleaned.user); // creator attribution for saved playlists
+	}
+
+	return cleaned;
+}
+
 module.exports = {
 	sanitizeUserData,
 	sanitizeTrackData,
 	sanitizeReportData,
 	sanitizePublicProfile,
 	sanitizeUserSearchResult,
+	sanitizePlaylistData,
 };

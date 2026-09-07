@@ -7,7 +7,7 @@ import {
 import { rebuildLayout, setCurrentScreen } from "./layouts/buildLayout";
 import { router } from "./routes/router";
 import { applyMiddleware } from "./middlewares";
-import { store } from "./store/store";
+import { store } from "./store";
 import { themeManager } from "./core/theme-manager";
 import { logger } from "@zecco/core/logger.js";
 

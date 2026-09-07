@@ -2,7 +2,7 @@ import { mobileScreen } from "@zecco/core/screen-break-points.js";
 import { AdminDesktop } from "./AdminDesktop.js";
 import { AdminMobile } from "./AdminMobile.js";
 import { adminEvents } from "@zecco/pages/Admin/admin.events.js";
-import { store } from "@zecco/store/store.js";
+import { store } from "@zecco/store/index.js";
 import { router } from "@zecco/routes/router.js";
 import { adminService } from "@zecco/services/api/admin.service.js";
 
@@ -150,7 +150,7 @@ const AdminPage = async (ctx) => {
 				const res = await adminService.getOverview({ signal });
 				const overview = res?.data ?? {};
 
-				console.log("[AdminPage] Overview data:", res);
+				// console.log("[AdminPage] Overview data:", res);
 
 				data.platformStats = overview.stats ?? {};
 				data.recentUsers = overview.recentUsers ?? [];
@@ -175,6 +175,8 @@ const AdminPage = async (ctx) => {
 						hasNextPage: res.hasNextPage ?? false,
 					};
 				}
+
+				// console.log("[AdminPage] Tab data:", tab, data[tab]);
 
 				// Stats stay visible regardless of which tab is active (e.g. a persistent header)
 				if (!data.platformStats?.totalUsers) {

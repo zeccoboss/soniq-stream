@@ -2,7 +2,8 @@ import { mobileScreen } from "@zecco/core/screen-break-points.js";
 import { ProfileDesktop } from "./ProfileDesktop.js";
 import { ProfileMobile } from "./ProfileMobile.js";
 import { profileEvents } from "@zecco/pages/Profile/profile.events.js";
-import { store } from "@zecco/store/store.js";
+import { store } from "@zecco/store/index.js";
+import { profileService } from "@zecco/services/api/profile.service.js";
 
 /**
  * ProfilePage — Profile orchestrator
@@ -51,7 +52,7 @@ export const ProfilePage = async (ctx) => {
 		state = "content";
 		const view = await UI({ state, ctx, data });
 		root.replaceChildren(view);
-		profileEvents(root, { state, setState, setData });
+		profileEvents(root, { state, data, setState, setData }); // added `data`
 	};
 
 	// ── State updater ────────────────────────────────────────
@@ -72,7 +73,6 @@ export const ProfilePage = async (ctx) => {
 		await render();
 	};
 
-	// ── Data loader ──────────────────────────────────────────
 	const loadData = async () => {
 		try {
 			if (!isMounted) return;
@@ -80,8 +80,6 @@ export const ProfilePage = async (ctx) => {
 			state = "skeleton";
 			await render();
 
-			// Auth check — profile page is auth-guarded in routes
-			// but we still need the user object to determine isOwner
 			const currentUser = store?.auth.user;
 			if (!store?.auth.isLoggedIn || !currentUser) {
 				state = "auth";
@@ -89,29 +87,45 @@ export const ProfilePage = async (ctx) => {
 				return;
 			}
 
-			// Determine if viewing own profile or someone else's
-			const targetUsername = ctx?.params?.username ?? currentUser.username;
-			const isOwner = targetUsername === currentUser.username;
+			const targetIdentifier = ctx?.query?.identifier ?? currentUser.uuid;
+			const isViewMode = ctx?.query?.view === true; // router auto-coerces "true"/"false" to real booleans
 
-			// Cancel previous in-flight request
 			controller?.abort();
 			controller = new AbortController();
 
-			// TODO: replace with real API calls
-			// const [profileData, tracksData, playlistsData] = await Promise.all([
-			//   userService.getProfile(targetUsername, { signal: controller.signal }),
-			//   trackService.getUserTracks(targetUsername, { signal: controller.signal }),
-			//   userService.getUserPlaylists(targetUsername, { signal: controller.signal }),
-			// ]);
-
+			const res = await profileService.getProfile(targetIdentifier, {
+				signal: controller.signal,
+			});
 			if (!isMounted) return;
 
-			// Temporary: use current user from store as profile data
+			const profile = res?.data;
+			if (!profile) {
+				state = "error";
+				await render();
+				return;
+			}
+
 			data = {
-				user: currentUser,
-				isOwner,
-				tracks: [],
-				playlists: [],
+				user: {
+					uuid: profile.identity.uuid,
+					username: profile.identity.username,
+					bio: profile.identity.bio,
+					avatar: profile.identity.avatar
+						? { url: profile.identity.avatar }
+						: null,
+					banner: profile.identity.banner
+						? { url: profile.identity.banner }
+						: null,
+					followingCount: profile.stats.followingCount,
+					followersCount: profile.stats.followersCount,
+					uploadsCount: profile.stats.totalUploads,
+					createdAt: profile.identity.createdAt ?? null,
+				},
+				isOwner: profile.viewer.isOwnProfile,
+				isFollowingViewer: profile.viewer.isFollowing,
+				isViewMode, // NEW — drives back button, tells the sidebar (once patched) to leave nav alone
+				tracks: profile.content.publicTracks ?? [],
+				playlists: profile.content.publicPlaylists ?? [],
 			};
 
 			state = "content";

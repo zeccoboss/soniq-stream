@@ -2,6 +2,8 @@ import CreateElement from "@zecco/utils/dom/create-element";
 import { buildNode } from "@zecco/utils/dom/build-node.js";
 import defaultAvatar from "@zecco/assets/images/default-profile.png";
 import "./Profile.styles.css";
+import { renderPlaylistCards } from "@zecco/components/PlaylistCard/PlaylistCard";
+import { renderTrackCards } from "@zecco/components/TrackCard/TrackCard";
 
 /**
  * ProfileDesktop — Desktop profile view component
@@ -23,12 +25,22 @@ export const ProfileDesktop = async ({ state, ctx, data = {} }) => {
 	const root = new CreateElement("section");
 	root.addClass("profile-section", "main-sections").setId("profile-section");
 
-	const { user = {}, isOwner = false, tracks = [], playlists = [] } = data;
+	// destructure at top — add isViewMode
+	const {
+		user = {},
+		isOwner = false,
+		isFollowingViewer = false,
+		isViewMode = false,
+		tracks = [],
+		playlists = [],
+	} = data;
+
+	console.log(data);
 
 	// ── State factories ──────────────────────────────────────
 
-	const skeletonState = () =>
-		buildNode(`
+	function skeletonState() {
+		return buildNode(`
 			<section class="profile-state" id="profile-skeleton" data-content="skeleton">
 				<!-- Cover skeleton -->
 				<div class="profile-sk profile-sk--cover"></div>
@@ -90,6 +102,7 @@ export const ProfileDesktop = async ({ state, ctx, data = {} }) => {
 				</div>
 			</section>
 		`);
+	}
 
 	const authGate = () =>
 		buildNode(`
@@ -112,6 +125,13 @@ export const ProfileDesktop = async ({ state, ctx, data = {} }) => {
 		buildNode(`
 			<section class="profile-state" id="profile-content" data-content="content">
 				<div class="profile-scroll">
+					${
+						isViewMode
+							? `<a href="#" class="profile-back-btn" data-back data-fallback="/">
+								<i class="bi bi-arrow-left"></i> Back
+							</a>`
+							: ""
+					}
 
 					<!-- ── Cover ── -->
 					<div class="profile-cover" id="profile-cover">
@@ -167,8 +187,9 @@ export const ProfileDesktop = async ({ state, ctx, data = {} }) => {
 										? `<button class="profile-edit-btn" id="profile-edit-btn">
 											<i class="bi bi-pencil"></i> Edit Profile
 										</button>`
-										: `<button class="profile-follow-btn" id="profile-follow-btn">
-											<i class="bi bi-person-plus"></i> Follow
+										: `<button class="profile-follow-btn ${isFollowingViewer ? "following" : ""}" id="profile-follow-btn">
+											<i class="bi ${isFollowingViewer ? "bi-person-check-fill" : "bi-person-plus"}"></i>
+											${isFollowingViewer ? "Following" : "Follow"}
 										</button>`
 								}
 							</div>
@@ -255,7 +276,7 @@ export const ProfileDesktop = async ({ state, ctx, data = {} }) => {
 								}
 							</div>
 							<div class="profile-track-list" id="profile-upload-list">
-								<!-- injected by profile.events.js -->
+								${renderTrackCards(tracks)}
 							</div>
 						</div>
 
@@ -278,7 +299,7 @@ export const ProfileDesktop = async ({ state, ctx, data = {} }) => {
 								}
 							</div>
 							<div class="profile-playlist-grid" id="profile-playlist-grid">
-								<!-- injected by profile.events.js -->
+								${renderPlaylistCards(playlists)}
 							</div>
 						</div>
 

@@ -1,5 +1,5 @@
 import { router } from "@zecco/routes/router.js";
-import { store } from "@zecco/store/store.js";
+import { store } from "@zecco/store/index.js";
 
 export const initGlobalPlayerTriggers = () => {
 	if (router.currentPath === "/player") return;

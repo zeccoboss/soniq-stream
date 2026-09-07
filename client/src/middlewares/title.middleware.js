@@ -1,5 +1,5 @@
 import { appConfig } from "@zecco/config/app.config";
-import { store } from "@zecco/store/store";
+import { store } from "@zecco/store";
 
 const appName = appConfig.APP_NAME;
 

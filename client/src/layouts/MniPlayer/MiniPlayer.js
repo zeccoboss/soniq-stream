@@ -1,4 +1,4 @@
-import { store } from "@zecco/store/store";
+import { store } from "@zecco/store";
 import CreateElement from "@zecco/utils/dom/create-element.js";
 import defaultCover from "@zecco/assets/images/track-cover.png";
 

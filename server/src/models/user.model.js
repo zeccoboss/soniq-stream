@@ -86,20 +86,20 @@ const userSchema = new Schema(
 			ref: "Settings",
 			default: null,
 		},
-
-		// Fixed syntax: flat array of ObjectIds
-		followingId: [{ type: Schema.Types.ObjectId, ref: "User" }],
-		followersId: [{ type: Schema.Types.ObjectId, ref: "User" }],
 		authProviders: {
 			type: [String],
 			enum: ["local", "google", "github"],
 			default: ["local"],
 		},
-		uploadsTracksId: [{ type: Schema.Types.ObjectId, ref: "Track" }],
-		likedTracksIds: [{ type: Schema.Types.ObjectId, ref: "Track" }],
-		// Fixed syntax: flat array of ObjectIds
-		playlistIds: [{ type: Schema.Types.ObjectId, ref: "Playlist" }],
-		recentPlaysIds: [{ type: Schema.Types.ObjectId, ref: "RecentPlay" }],
+
+		// Relationships
+		followingId: [{ type: Schema.Types.ObjectId, ref: "User" }], // Users this user is following
+		followersId: [{ type: Schema.Types.ObjectId, ref: "User" }], // Users following this user
+		uploadsTracksId: [{ type: Schema.Types.ObjectId, ref: "Track" }], // Tracks uploaded by this user
+		likedTracksIds: [{ type: Schema.Types.ObjectId, ref: "Track" }], // Tracks liked by this user
+		playlistIds: [{ type: Schema.Types.ObjectId, ref: "Playlist" }], // Playlists created by this user
+		savedPlaylistIds: [{ type: Schema.Types.ObjectId, ref: "Playlist" }], // Playlists saved by this user
+		recentPlaysIds: [{ type: Schema.Types.ObjectId, ref: "RecentPlay" }], // Tracks recently played by this user
 
 		// Verifying email
 		verificationToken: { type: String, default: null },

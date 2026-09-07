@@ -13,7 +13,7 @@ class AppConfig {
 		return [
 			"/upload",
 			"/dashboard",
-			"/profile",
+			// "/profile",
 			"/settings",
 			"/admin",
 			"/library",

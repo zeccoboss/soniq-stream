@@ -1,7 +1,7 @@
 import { appConfig } from "@zecco/config/app.config";
 import { router } from "@zecco/routes/router";
 import { readFromLocalStorage } from "@zecco/services/storage/local-storage";
-import { store } from "@zecco/store/store.js";
+import { store } from "@zecco/store/index.js";
 import axios from "axios";
 
 const apiClient = axios.create({

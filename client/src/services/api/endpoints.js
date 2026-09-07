@@ -75,12 +75,18 @@ export const ENDPOINTS = {
 	USER: {
 		BASE: "/users",
 		PROFILE: (userId) => `/users/${userId}`,
+		PUBLIC_PROFILE: (identifier) => `/users/profile?identifier=${identifier}`,
+		UPDATE_ME: "/users/me",
 		FEATURED_ARTISTS: "/users/featured-artists",
 		RECENT_PLAYS: "/users/recent-plays",
 		LIKED_CONTENT: "/users/liked",
 		FOR_YOU: "/users/for-you",
 	},
 
+	SOCIAL: {
+		FOLLOW: (uuid) => `/social/${uuid}/follow`,
+		UNFOLLOW: (uuid) => `/social/${uuid}/follow`,
+	},
 	// ==================================================
 	// Playlists
 	// ==================================================
@@ -137,5 +143,17 @@ export const ENDPOINTS = {
 	UPLOAD: {
 		TRACK: "/tracks/upload", // Maps perfectly to /api/v1/tracks/upload based on your backend base router
 		IMAGE: "/upload/image",
+	},
+
+	// ==================================================
+	// Notifications
+	// ==================================================
+
+	NOTIFICATIONS: {
+		BASE: "/notifications",
+		UNREAD_COUNT: "/notifications/unread-count",
+		MARK_READ: (notification_uuid) =>
+			`/notifications/${notification_uuid}/read`,
+		MARK_ALL_READ: "/notifications/read-all",
 	},
 };

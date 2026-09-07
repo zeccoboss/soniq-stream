@@ -1,7 +1,7 @@
 import { appConfig } from "@zecco/config/app.config";
 import { router } from "@zecco/routes/router";
 import meService from "@zecco/services/api/me.service";
-import { store } from "@zecco/store/store";
+import { store } from "@zecco/store";
 
 export const authRedirect = async (ctx, next) => {
 	// 1. Extract the parsed token directly from the router context query object[cite: 5]

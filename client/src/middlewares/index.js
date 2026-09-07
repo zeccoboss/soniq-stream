@@ -9,10 +9,10 @@ import { analyticsLogger } from "./analytics.middleware";
 import { layoutSwitcher } from "./layout.middleware";
 import { router } from "@zecco/routes/router.js";
 import { buildLayout, getCurrentScreen } from "@zecco/layouts/buildLayout";
-import { activeLinkSwitcher } from "./navigation.middleware";
+// import { activeLinkSwitcher } from "./navigation.middleware";
 import { rejectMiddleware } from "./reject.middleware";
 import { notFound } from "./not-found.middleware";
-import { store } from "@zecco/store/store";
+import { store } from "@zecco/store";
 
 // This function sets up all the middleware and configurations for the router. It should be called once during the app initialization to apply all the middleware globally.
 export const applyMiddleware = () => {
@@ -26,7 +26,7 @@ export const applyMiddleware = () => {
 		.setAuthChecker(() => store.auth.user) // Simple auth check for protected routes
 		.use(authRedirect)
 		.setLayoutBuilder(() => buildLayout(getCurrentScreen()))
-		.use(activeLinkSwitcher) // Middleware to switch active link in navigation based on current route
+		// .use(activeLinkSwitcher) // Middleware to switch active link in navigation based on current route
 		// .use(authRedirect) // Middleware to redirect unauthenticated users trying to access protected routes to the login page
 		.use(loadingIndicator) // Middleware to show a loading indicator during route changes
 		.use(scrollRestoration) // Middleware to restore scroll position on navigation

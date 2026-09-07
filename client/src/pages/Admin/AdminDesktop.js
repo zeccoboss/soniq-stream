@@ -2,6 +2,7 @@ import CreateElement from "@zecco/utils/dom/create-element";
 import { buildNode } from "@zecco/utils/dom/build-node.js";
 import defaultAvatar from "@zecco/assets/images/default-profile.png";
 import "./Admin.styles.css";
+import { fmt, initials, getMediaUrl, timeAgo } from "./admin.helpers.js";
 
 /**
  * AdminDesktop — Desktop admin view
@@ -9,17 +10,34 @@ import "./Admin.styles.css";
  * States: skeleton | content | error
  *
  * Tabs (URL driven via ?tab=overview|users|tracks|reports):
- *   overview → platform-wide stats + recent activity
- *   users    → user list, search, ban/unban
- *   tracks   → track moderation, remove, flag
- *   reports  → flagged content queue
+ *   overview → platform-wide stats + recent activity (PREVIEW slices)
+ *   users    → full paginated user list, search, ban/unban
+ *   tracks   → full paginated track list, moderation, remove, flag
+ *   reports  → full paginated flagged content queue
+ *
+ * IMPORTANT — data source per tab:
+ *   overview tab  → recentUsers / recentTracks / recentReports (preview slices)
+ *   users tab     → users.list   (full paginated bucket from AdminPage)
+ *   tracks tab    → tracks.list  (full paginated bucket from AdminPage)
+ *   reports tab   → reports.list (full paginated bucket from AdminPage)
+ * These are NOT interchangeable — using the preview slices on the
+ * dedicated tabs is what was causing "empty tab after fetch" bugs.
+ *
+ * Public/private ID convention: every row/action uses `.uuid`
+ * (never internal `_id`) for hrefs, data-uuid attrs, and API calls.
  *
  * Data shape:
- *   tab             string
  *   platformStats   { totalUsers, totalTracks, totalPlays, activeToday }
  *   recentUsers     [{ uuid, username, displayName, avatar, isVerified, isBanned, joinedAt }]
  *   recentTracks    [{ uuid, title, artist, cover, genre, plays, flagged, uploadedAt }]
- *   reports         [{ uuid, type, reason, targetId, targetTitle, reportedBy, createdAt }]
+ *   recentReports   [{ uuid, ... }]
+ *   users           { list: [...], nextCursor, hasNextPage }
+ *   tracks          { list: [...], nextCursor, hasNextPage }
+ *   reports         { list: [...], nextCursor, hasNextPage }
+ *
+ * `avatar` / `cover` may arrive either as a plain URL string or as a
+ * populated object (`{ storage, name, uuid, url }`) depending on the
+ * populate chain used server-side — getMediaUrl() normalizes both.
  *
  * @async
  * @param {Object} props
@@ -32,62 +50,29 @@ export const AdminDesktop = async ({ state, ctx, data = {} }) => {
 	const root = new CreateElement("section");
 	root.addClass("admin-section", "main-sections").setId("admin-section");
 
-	// console.log(
-	// 	"[AdminDesktop] Rendering with state:",
-	// 	state,
-	// 	"and data:",
-	// 	data,
-	// );
-
 	const tab = ctx?.query?.tab ?? "overview";
 	const {
 		platformStats = {},
 		recentUsers = [],
 		recentTracks = [],
-		reports = {},
-		tracks = {},
-		users = {},
+		recentReports = [],
+		reports = { list: [] },
+		tracks = { list: [] },
+		users = { list: [] },
 	} = data;
 
-	// console.log(
-	// 	"[AdminDesktop] - Reports: ",
-	// 	reports.list?.length ?? reports.length,
-	// );
-
-	if (tab === "users") {
-		console.log("[AdminDesktop] - Users tab active. Recent Users: ", users);
-	} else if (tab === "tracks") {
-		console.log(
-			"[AdminDesktop] - Tracks tab active. Recent Tracks: ",
-			tracks,
-		);
-	} else if (tab === "reports") {
-		console.log(
-			"[AdminDesktop] - Reports tab active. Reports: ",
-			reports.list?.length ?? reports.length,
-		);
-	}
-
-	const fmt = (n = 0) => Number(n).toLocaleString();
-	const initials = (str = "?") => str.trim().slice(0, 2).toUpperCase();
-
-	// ── Time ago utility ───────────────────────────────────────
-	const timeAgo = (dateStr) => {
-		if (!dateStr) return "—";
-
-		// Calculate the difference in milliseconds between now and the given date
-		const diff = Date.now() - new Date(dateStr).getTime(); // Convert to milliseconds
-		if (diff < 60000) return "just now"; // Less than a minute
-		const mins = Math.floor(diff / 60000); // Convert milliseconds to minutes
-		if (mins < 60) return `${mins}m ago`; // Less than an hour
-		const hrs = Math.floor(mins / 60); // Convert minutes to hours
-		if (hrs < 24) return `${hrs}h ago`; // Less than a day
-		return `${Math.floor(hrs / 24)}d ago`; // More than a day
-	};
+	const usersList = users.list ?? [];
+	const tracksList = tracks.list ?? [];
+	const reportsList = reports.list ?? [];
 
 	// ── Header ───────────────────────────────────────────────
-	const header = () =>
-		buildNode(`
+	const header = () => {
+		// On the reports tab we have the real paginated count; everywhere
+		// else fall back to the overview preview count. Use `||`, not `??`,
+		// since a fetched-but-empty list (0) should still fall back.
+		const reportBadgeCount = reportsList.length || recentReports.length;
+
+		return buildNode(`
 			<header class="admin-header">
 				<div class="admin-header-left">
 					<div class="admin-badge">
@@ -115,11 +100,12 @@ export const AdminDesktop = async ({ state, ctx, data = {} }) => {
 						class="admin-tab ${tab === "reports" ? "active" : ""}"
 						data-tab="reports">
 						<i class="bi bi-flag"></i> Reports
-						${reports.length ? `<span class="admin-tab-badge">${reports.length}</span>` : ""}
+						${reportBadgeCount ? `<span class="admin-tab-badge">${reportBadgeCount}</span>` : ""}
 					</a>
 				</nav>
 			</header>
 		`);
+	};
 
 	// ── Skeleton ─────────────────────────────────────────────
 	const skeletonState = () =>
@@ -177,7 +163,7 @@ export const AdminDesktop = async ({ state, ctx, data = {} }) => {
 
 	// ── Overview tab ─────────────────────────────────────────
 	const overviewTab = () => `
-		<div class="admin-tab-view" data-tab="overview">
+		<div class="admin-tab-view admin-desktop-overview" data-tab="overview">
 
 			<!-- Platform stats -->
 			<div class="admin-stats-grid">
@@ -219,7 +205,7 @@ export const AdminDesktop = async ({ state, ctx, data = {} }) => {
 				</div>
 			</div>
 
-			<!-- Recent users -->
+			<!-- Recent users (preview slice — NOT the full users.list) -->
 			<div class="admin-panel">
 				<div class="admin-panel-head">
 					<span class="admin-panel-title">
@@ -232,14 +218,15 @@ export const AdminDesktop = async ({ state, ctx, data = {} }) => {
 				<div class="admin-user-list">
 					${recentUsers
 						.slice(0, 5)
-						.map(
-							(u) => `
+						.map((u) => {
+							const avatarUrl = getMediaUrl(u.avatar);
+							return `
 						<div class="admin-user-row" data-uuid="${u.uuid ?? ""}">
 							<div class="admin-user-avatar">
-								<img src="${u.avatar.url || defaultAvatar}" alt="${u.username}"
+								<img src="${avatarUrl || defaultAvatar}" alt="${u.username}"
 									class="admin-avatar-img"
 									onerror="this.style.display='none';this.nextElementSibling.style.display='grid'" />
-								<div class="admin-avatar-fallback">${initials(u.displayName ?? u.username)}</div>
+								<div class="admin-avatar-fallback" style="${avatarUrl ? "" : "display:grid"}">${initials(u.displayName ?? u.username)}</div>
 							</div>
 							<div class="admin-user-info">
 								<span class="admin-user-name">${u.displayName ?? u.username}</span>
@@ -262,8 +249,8 @@ export const AdminDesktop = async ({ state, ctx, data = {} }) => {
 								</button>
 							</div>
 						</div>
-					`,
-						)
+					`;
+						})
 						.join("")}
 				</div>
 			</div>
@@ -272,13 +259,14 @@ export const AdminDesktop = async ({ state, ctx, data = {} }) => {
 	`;
 
 	// ── Users tab ────────────────────────────────────────────
+	// Uses the full paginated `usersList` (users.list), not recentUsers.
 	const usersTab = () => `
 		<div class="admin-tab-view" data-tab="users">
 			<div class="admin-panel">
 				<div class="admin-panel-head">
 					<span class="admin-panel-title">
 						<i class="bi bi-people"></i> All Users
-						<span class="admin-count-badge">${recentUsers.length}</span>
+						<span class="admin-count-badge">${usersList.length}</span>
 					</span>
 					<div class="admin-search-wrap">
 						<i class="bi bi-search admin-search-icon"></i>
@@ -287,15 +275,16 @@ export const AdminDesktop = async ({ state, ctx, data = {} }) => {
 					</div>
 				</div>
 				<div class="admin-user-list" id="admin-users-list">
-					${recentUsers
-						.map(
-							(u) => `	
+					${usersList
+						.map((u) => {
+							const avatarUrl = getMediaUrl(u.avatar);
+							return `
 						<div class="admin-user-row" data-uuid="${u.uuid ?? ""}">
 							<div class="admin-user-avatar">
-								<img src="${u.avatar || defaultAvatar}" alt="${u.username}"
+								<img src="${avatarUrl || defaultAvatar}" alt="${u.username}"
 									class="admin-avatar-img"
 									onerror="this.style.display='none';this.nextElementSibling.style.display='grid'" />
-								<div class="admin-avatar-fallback">${initials(u.displayName ?? u.username)}</div>
+								<div class="admin-avatar-fallback" style="${avatarUrl ? "" : "display:grid"}">${initials(u.displayName ?? u.username)}</div>
 							</div>
 							<div class="admin-user-info">
 								<span class="admin-user-name">${u.displayName ?? u.username}</span>
@@ -321,8 +310,8 @@ export const AdminDesktop = async ({ state, ctx, data = {} }) => {
 								</button>
 							</div>
 						</div>
-					`,
-						)
+					`;
+						})
 						.join("")}
 				</div>
 			</div>
@@ -330,13 +319,14 @@ export const AdminDesktop = async ({ state, ctx, data = {} }) => {
 	`;
 
 	// ── Tracks tab ───────────────────────────────────────────
+	// Uses the full paginated `tracksList` (tracks.list), not recentTracks.
 	const tracksTab = () => `
 		<div class="admin-tab-view" data-tab="tracks">
 			<div class="admin-panel">
 				<div class="admin-panel-head">
 					<span class="admin-panel-title">
 						<i class="bi bi-music-note-list"></i> All Tracks
-						<span class="admin-count-badge">${recentTracks.length}</span>
+						<span class="admin-count-badge">${tracksList.length}</span>
 					</span>
 					<div class="admin-search-wrap">
 						<i class="bi bi-search admin-search-icon"></i>
@@ -345,16 +335,17 @@ export const AdminDesktop = async ({ state, ctx, data = {} }) => {
 					</div>
 				</div>
 				<div class="admin-track-list" id="admin-tracks-list">
-					${recentTracks
-						.map(
-							(t) => `
+					${tracksList
+						.map((t) => {
+							const coverUrl = getMediaUrl(t.cover);
+							return `
 						<div class="admin-track-row ${t.flagged ? "admin-track-row--flagged" : ""}"
 							data-uuid="${t.uuid ?? ""}">
 							<div class="admin-track-cover">
-								<img src="${t.cover || defaultAvatar}" alt="${t.title}"
+								<img src="${coverUrl || defaultAvatar}" alt="${t.title}"
 									class="admin-avatar-img"
 									onerror="this.style.display='none';this.nextElementSibling.style.display='grid'" />
-								<div class="admin-avatar-fallback">${initials(t.title)}</div>
+								<div class="admin-avatar-fallback" style="${coverUrl ? "" : "display:grid"}">${initials(t.title)}</div>
 							</div>
 							<div class="admin-track-info">
 								<span class="admin-track-title">${t.title}</span>
@@ -376,8 +367,8 @@ export const AdminDesktop = async ({ state, ctx, data = {} }) => {
 								</button>
 							</div>
 						</div>
-					`,
-						)
+					`;
+						})
 						.join("")}
 				</div>
 			</div>
@@ -391,11 +382,11 @@ export const AdminDesktop = async ({ state, ctx, data = {} }) => {
 				<div class="admin-panel-head">
 					<span class="admin-panel-title">
 						<i class="bi bi-flag"></i> Flagged Content
-						${reports.list.length ? `<span class="admin-count-badge admin-count-badge--red">${reports.list.length}</span>` : ""}
+						${reportsList.length ? `<span class="admin-count-badge admin-count-badge--red">${reportsList.length}</span>` : ""}
 					</span>
 				</div>
 				${
-					!reports.list.length
+					!reportsList.length
 						? `
 					<div class="admin-empty">
 						<i class="bi bi-check-circle admin-empty-icon"></i>
@@ -405,12 +396,20 @@ export const AdminDesktop = async ({ state, ctx, data = {} }) => {
 				`
 						: `
 					<div class="admin-report-list" id="admin-reports-list">
-						${reports.list
-							.map(
-								(r) => `
+						${reportsList
+							.map((r) => {
+								// Prefer the public-facing uuid for the reported target.
+								// r.targetId (internal _id) is kept only as a fallback until
+								// the report DTO is confirmed to always populate targetUuid.
+								const targetType = String(
+									r.targetType ?? r.type ?? "",
+								).toLowerCase();
+								const targetRef =
+									r.targetUuid ?? r.targetId?.uuid ?? "";
+								return `
 							<div class="admin-report-row" data-uuid="${r.uuid ?? ""}">
 								<div class="admin-report-icon">
-									<i class="bi bi-${r.type === "track" ? "music-note" : "person"}"></i>
+									<i class="bi bi-${targetType === "track" ? "music-note" : "person"}"></i>
 								</div>
 								<div class="admin-report-info">
 									<span class="admin-report-title">${r.targetTitle ?? "—"}</span>
@@ -428,13 +427,13 @@ export const AdminDesktop = async ({ state, ctx, data = {} }) => {
 										<i class="bi bi-check-lg"></i>
 									</button>
 									<button class="admin-action-btn admin-action-btn--red"
-										data-action="remove-reported" data-uuid="${r.targetId ?? ""}" title="Remove content">
+										data-action="remove-reported" data-uuid="${targetRef}" data-target-type="${targetType}" title="Remove content">
 										<i class="bi bi-trash"></i>
 									</button>
 								</div>
 							</div>
-						`,
-							)
+						`;
+							})
 							.join("")}
 					</div>
 				`

@@ -1,235 +1,169 @@
-import { router } from "@zecco/routes/router.js";
+import { showModal, hideModal } from "@zecco/components/Modal/Modal.js";
+import { toast } from "@zecco/components/Toast/Toast.js";
+import { adminService } from "@zecco/services/api/admin.service.js";
+import { bindAdminSearch } from "./admin.helpers.js";
 
-/**
- * adminEvents — Event handlers for admin page (both desktop and mobile)
- *
- * Handles:
- *   - Tab navigation (links are handled by router naturally)
- *   - Action buttons: view-user, ban, unban, delete-user, play-track, remove-track, view-report, dismiss-report, remove-reported
- *   - Retry button for error state recovery
- *
- * @param {Element} root - Admin section root element
- * @param {Object} context
- * @param {string} context.state - Current state (skeleton | content | error)
- * @param {Function} context.setState - State updater function
- * @param {Object} context.ctx - Route context
- * @returns {void}
- */
-export const adminEvents = (root, { state, setState, ctx }) => {
-	// ── Action handlers ──────────────────────────────────────
-	const handlers = {
-		/**
-		 * View user profile/details
-		 */
-		"view-user": async (userId) => {
-			if (!userId) return;
-			console.log("[Admin] Viewing user:", userId);
-			// TODO: Navigate to user detail view or open modal
-			// router.navigate(`/user/${userId}`);
-		},
+/** Shared interaction layer for desktop and mobile admin views. */
+export const adminEvents = (root, { state, setState }) => {
+	// AdminPage replaces children in the same root on each render.
+	root?.__adminEventCleanup?.();
+	if (!root) return;
 
-		/**
-		 * Ban a user
-		 */
-		ban: async (userId) => {
-			if (!userId) return;
-			if (!confirm("Ban this user? They will not be able to log in."))
-				return;
-
-			console.log("[Admin] Banning user:", userId);
-			try {
-				// TODO: Call admin API service
-				// await adminService.banUser(userId);
-				// Then refresh data
-				// await setState("skeleton");
-				console.log("[Admin] User banned successfully");
-			} catch (err) {
-				console.error("[Admin] Ban failed:", err);
-				alert("Failed to ban user");
-			}
-		},
-
-		/**
-		 * Unban a user
-		 */
-		unban: async (userId) => {
-			if (!userId) return;
-			if (!confirm("Unban this user?")) return;
-
-			console.log("[Admin] Unbanning user:", userId);
-			try {
-				// TODO: Call admin API service
-				// await adminService.unbanUser(userId);
-				// Then refresh data
-				// await setState("skeleton");
-				console.log("[Admin] User unbanned successfully");
-			} catch (err) {
-				console.error("[Admin] Unban failed:", err);
-				alert("Failed to unban user");
-			}
-		},
-
-		/**
-		 * Permanently delete a user account
-		 */
-		"delete-user": async (userId) => {
-			if (!userId) return;
-			if (
-				!confirm(
-					"Permanently delete this user account? This action cannot be undone.",
-				)
-			)
-				return;
-
-			console.log("[Admin] Deleting user:", userId);
-			try {
-				// TODO: Call admin API service
-				// await adminService.deleteUser(userId);
-				// Then refresh data
-				// await setState("skeleton");
-				console.log("[Admin] User deleted successfully");
-			} catch (err) {
-				console.error("[Admin] Delete failed:", err);
-				alert("Failed to delete user");
-			}
-		},
-
-		/**
-		 * Play a track (desktop only)
-		 */
-		"play-track": async (trackId) => {
-			if (!trackId) return;
-			console.log("[Admin] Playing track:", trackId);
-			// TODO: Trigger player to play this track
-			// const { player } = store;
-			// player.setQueue([trackId]);
-			// player.play();
-		},
-
-		/**
-		 * Remove/delete a track
-		 */
-		"remove-track": async (trackId) => {
-			if (!trackId) return;
-			if (!confirm("Remove this track from the platform?")) return;
-
-			console.log("[Admin] Removing track:", trackId);
-			try {
-				// TODO: Call admin API service
-				// await adminService.removeTrack(trackId);
-				// Then refresh data
-				// await setState("skeleton");
-				console.log("[Admin] Track removed successfully");
-			} catch (err) {
-				console.error("[Admin] Remove track failed:", err);
-				alert("Failed to remove track");
-			}
-		},
-
-		/**
-		 * View report details (desktop only)
-		 */
-		"view-report": async (reportId) => {
-			if (!reportId) return;
-			console.log("[Admin] Viewing report:", reportId);
-			// TODO: Open report detail modal or navigate to detail page
-		},
-
-		/**
-		 * Dismiss/resolve a report without action
-		 */
-		"dismiss-report": async (reportId) => {
-			if (!reportId) return;
-			if (!confirm("Dismiss this report?")) return;
-
-			console.log("[Admin] Dismissing report:", reportId);
-			try {
-				// TODO: Call admin API service
-				// await adminService.dismissReport(reportId);
-				// Then refresh data
-				// await setState("skeleton");
-				console.log("[Admin] Report dismissed successfully");
-			} catch (err) {
-				console.error("[Admin] Dismiss report failed:", err);
-				alert("Failed to dismiss report");
-			}
-		},
-
-		/**
-		 * Remove reported content (track or user)
-		 */
-		"remove-reported": async (targetId) => {
-			if (!targetId) return;
-			if (!confirm("Remove this content?")) return;
-
-			console.log("[Admin] Removing reported content:", targetId);
-			try {
-				// TODO: Call admin API service
-				// await adminService.removeContent(targetId);
-				// Then refresh data
-				// await setState("skeleton");
-				console.log("[Admin] Content removed successfully");
-			} catch (err) {
-				console.error("[Admin] Remove content failed:", err);
-				alert("Failed to remove content");
-			}
-		},
-	};
-
-	// ── Event delegation ─────────────────────────────────────
-	const handleActionClick = async (e) => {
-		const btn = e.target.closest("[data-action]");
-		if (!btn) return;
-
-		const action = btn.dataset.action;
-		const id = btn.dataset.id;
-
-		if (handlers[action]) {
-			btn.disabled = true;
-			try {
-				await handlers[action](id);
-			} finally {
-				btn.disabled = false;
-			}
-		}
-	};
-
-	// ── Retry button ─────────────────────────────────────────
-	const handleRetryClick = async () => {
+	const searchCleanups = [];
+	const refresh = async () => {
+		hideModal();
 		await setState("skeleton");
 	};
+	const runConfirmedAction = ({
+		title,
+		message,
+		confirmLabel,
+		type = "warning",
+		successMessage,
+		action,
+	}) => {
+		showModal({
+			title,
+			message,
+			type,
+			confirmLabel,
+			onConfirm: async () => {
+				try {
+					await action();
+					toast({ message: successMessage, type: "success" });
+					await refresh();
+				} catch (error) {
+					toast({
+						message: error?.message ?? "That action could not be completed.",
+						type: "error",
+					});
+					hideModal();
+				}
+			},
+		});
+	};
 
-	// ── Attach listeners ─────────────────────────────────────
-	if (root && state === "content") {
-		// Event delegation for action buttons
+	const handlers = {
+		"view-user": (userId) => {
+			if (userId) toast({ message: "User details are not available yet.", type: "info" });
+		},
+		ban: (userId) => {
+			if (!userId) return;
+			runConfirmedAction({
+				title: "Ban this user?",
+				message: "They will not be able to sign in until they are unbanned.",
+				confirmLabel: "Ban user",
+				type: "danger",
+				successMessage: "User banned.",
+				action: () => adminService.toggleUserStatus(userId),
+			});
+		},
+		unban: (userId) => {
+			if (!userId) return;
+			runConfirmedAction({
+				title: "Unban this user?",
+				message: "They will be able to sign in again.",
+				confirmLabel: "Unban user",
+				type: "success",
+				successMessage: "User unbanned.",
+				action: () => adminService.toggleUserStatus(userId),
+			});
+		},
+		"delete-user": (userId) => {
+			if (!userId) return;
+			runConfirmedAction({
+				title: "Delete this user?",
+				message: "This permanently deletes the account and cannot be undone.",
+				confirmLabel: "Delete user",
+				type: "danger",
+				successMessage: "User deleted.",
+				action: () => adminService.deleteUser(userId),
+			});
+		},
+		"play-track": (trackId) => {
+			if (trackId) toast({ message: "Track playback from Admin is not available yet.", type: "info" });
+		},
+		"remove-track": (trackId) => {
+			if (!trackId) return;
+			runConfirmedAction({
+				title: "Remove this track?",
+				message: "The track will be permanently removed from the platform.",
+				confirmLabel: "Remove track",
+				type: "danger",
+				successMessage: "Track removed.",
+				action: () => adminService.deleteTrack(trackId),
+			});
+		},
+		"view-report": (reportId) => {
+			if (reportId) toast({ message: "Report details are not available yet.", type: "info" });
+		},
+		"dismiss-report": (reportId) => {
+			if (!reportId) return;
+			runConfirmedAction({
+				title: "Dismiss this report?",
+				message: "This marks the report as dismissed without removing content.",
+				confirmLabel: "Dismiss report",
+				successMessage: "Report dismissed.",
+				action: () => adminService.updateReportStatus(reportId, "dismissed"),
+			});
+		},
+		"remove-reported": (targetId, targetType) => {
+			if (!targetId) return;
+			const remove =
+				targetType === "track"
+					? () => adminService.deleteTrack(targetId)
+					: targetType === "user"
+						? () => adminService.deleteUser(targetId)
+						: null;
+			if (!remove) {
+				toast({ message: "This report has no removable target.", type: "warning" });
+				return;
+			}
+			runConfirmedAction({
+				title: "Remove reported content?",
+				message: "This permanently removes the reported content.",
+				confirmLabel: "Remove content",
+				type: "danger",
+				successMessage: "Reported content removed.",
+				action: remove,
+			});
+		},
+	};
+
+	const handleActionClick = (event) => {
+		const button = event.target.closest("[data-action]");
+		if (!button || !root.contains(button)) return;
+		event.preventDefault();
+		handlers[button.dataset.action]?.(
+			button.dataset.uuid,
+			button.dataset.targetType,
+		);
+	};
+	const handleRetryClick = () => setState("skeleton");
+
+	if (state === "content") {
 		root.addEventListener("click", handleActionClick);
-
-		// Retry buttons (different IDs for desktop/mobile)
-		const retryBtn =
-			root.querySelector("#admin-retry-btn") ||
-			root.querySelector("#admin-mob-retry-btn");
-		if (retryBtn && state === "error") {
-			retryBtn.addEventListener("click", handleRetryClick);
-		}
-	} else if (root && state === "error") {
-		// Ensure retry button is attached in error state
-		const retryBtn =
-			root.querySelector("#admin-retry-btn") ||
-			root.querySelector("#admin-mob-retry-btn");
-		if (retryBtn) {
-			retryBtn.addEventListener("click", handleRetryClick);
-		}
+		[
+			["#admin-user-search, #admin-mob-user-search", "#admin-users-list, #admin-mob-users-list", ".admin-user-row", "users"],
+			["#admin-track-search, #admin-mob-track-search", "#admin-tracks-list, #admin-mob-tracks-list", ".admin-track-row", "tracks"],
+		].forEach(([inputSelector, listSelector, rowSelector, label]) => {
+			searchCleanups.push(
+				bindAdminSearch({
+					input: root.querySelector(inputSelector),
+					list: root.querySelector(listSelector),
+					rowSelector,
+					label,
+				}),
+			);
+		});
 	}
 
-	// ── Cleanup ──────────────────────────────────────────────
-	// Note: cleanup should happen in AdminPage's __onUnmount hook
+	const retryButton = root.querySelector("#admin-retry-btn, #admin-mob-retry-btn");
+	if (state === "error" && retryButton) retryButton.addEventListener("click", handleRetryClick);
+
 	root.__adminEventCleanup = () => {
 		root.removeEventListener("click", handleActionClick);
-		const retryBtn =
-			root.querySelector("#admin-retry-btn") ||
-			root.querySelector("#admin-mob-retry-btn");
-		if (retryBtn) {
-			retryBtn.removeEventListener("click", handleRetryClick);
-		}
+		retryButton?.removeEventListener("click", handleRetryClick);
+		searchCleanups.forEach((cleanup) => cleanup());
 	};
 };

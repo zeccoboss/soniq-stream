@@ -26,8 +26,7 @@ const getTracksFeed = async ({ limit = 20, cursor, order = "desc" } = {}) => {
 			select: "username email uuid avatar",
 			populate: { path: "avatar", select: "storage name uuid" },
 		})
-		.populate("cover", "storage name uuid dimensions")
-		.lean();
+		.populate("cover", "storage name uuid dimensions");
 
 	const hasNextPage = tracks.length > limitNum;
 	if (hasNextPage) tracks.pop();

@@ -2,7 +2,7 @@
 import { authService } from "@zecco/services/api/auth.service.js";
 import { toast } from "@zecco/components/Toast/Toast.js";
 import { router } from "@zecco/routes/router.js";
-import { store } from "@zecco/store/store.js";
+import { store } from "@zecco/store/index.js";
 import {
 	saveLoginDraft,
 	clearLoginDraft,

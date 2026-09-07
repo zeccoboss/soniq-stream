@@ -2,6 +2,8 @@ import CreateElement from "@zecco/utils/dom/create-element";
 import { buildNode } from "@zecco/utils/dom/build-node.js";
 import defaultAvatar from "@zecco/assets/images/default-profile.png";
 import "./Profile.styles.css";
+import { renderPlaylistCards } from "@zecco/components/PlaylistCard/PlaylistCard";
+import { renderTrackCards } from "@zecco/components/TrackCard/TrackCard";
 
 /**
  * ProfileMobile — Mobile profile view component
@@ -25,7 +27,15 @@ export const ProfileMobile = async ({ state, ctx, data = {} }) => {
 		.addClass("profile-section-mobile", "main-sections")
 		.setId("profile-section-mobile");
 
-	const { user = {}, isOwner = false, tracks = [], playlists = [] } = data;
+	// destructure at top — add isViewMode
+	const {
+		user = {},
+		isOwner = false,
+		isFollowingViewer = false,
+		isViewMode = false,
+		tracks = [],
+		playlists = [],
+	} = data;
 
 	// ── State factories ──────────────────────────────────────
 
@@ -120,6 +130,13 @@ export const ProfileMobile = async ({ state, ctx, data = {} }) => {
 		buildNode(`
 			<section class="profile-mob-state" id="profile-mob-content" data-content="content">
 				<div class="profile-mob-scroll">
+					${
+						isViewMode
+							? `<a href="#" class="profile-back-btn" data-back data-fallback="/">
+								<i class="bi bi-arrow-left"></i> Back
+							</a>`
+							: ""
+					}
 
 					<!-- ── Cover ── -->
 					<div class="profile-mob-cover" id="profile-mob-cover">
@@ -175,8 +192,9 @@ export const ProfileMobile = async ({ state, ctx, data = {} }) => {
 										? `<button class="profile-edit-btn" id="profile-mob-edit-btn">
 											<i class="bi bi-pencil"></i> Edit
 										</button>`
-										: `<button class="profile-follow-btn" id="profile-mob-follow-btn">
-											<i class="bi bi-person-plus"></i> Follow
+										: `<button class="profile-follow-btn ${isFollowingViewer ? "following" : ""}" id="profile-follow-btn">
+											<i class="bi ${isFollowingViewer ? "bi-person-check-fill" : "bi-person-plus"}"></i>
+											${isFollowingViewer ? "Following" : "Follow"}
 										</button>`
 								}
 							</div>
@@ -262,8 +280,8 @@ export const ProfileMobile = async ({ state, ctx, data = {} }) => {
 										: ""
 								}
 							</div>
-							<div class="profile-track-list" id="profile-mob-upload-list">
-								<!-- injected by profile.events.js -->
+							<div class="profile-track-list" id="profile-upload-list">
+								${renderTrackCards(tracks)}
 							</div>
 						</div>
 
@@ -285,8 +303,8 @@ export const ProfileMobile = async ({ state, ctx, data = {} }) => {
 										: ""
 								}
 							</div>
-							<div class="profile-playlist-grid" id="profile-mob-playlist-grid">
-								<!-- injected by profile.events.js -->
+							<div class="profile-playlist-grid" id="profile-playlist-grid">
+								${renderPlaylistCards(playlists)}
 							</div>
 						</div>
 

@@ -101,4 +101,22 @@ export class ViewRenderer {
 		outlet.replaceChildren(node);
 		this.#mounted.set(outletName, node);
 	}
+
+	/**
+	 * Finds the actual scrollable element for a mounted outlet.
+	 * Pages mark their real scroll container with [data-scroll-container] —
+	 * the outer page wrapper itself never scrolls (overflow: hidden by design).
+	 * Falls back to the mounted node itself if a page hasn't been tagged yet.
+	 *
+	 * @param {string} [outletName] - checks "main" then "root" if omitted
+	 */
+	getScrollContainer(outletName) {
+		const tryOutlet = (name) => {
+			const node = this.#mounted.get(name);
+			if (!node) return null;
+			return node.querySelector?.("[data-scroll-container]") ?? node;
+		};
+		if (outletName) return tryOutlet(outletName);
+		return tryOutlet("main") ?? tryOutlet("root");
+	}
 }

@@ -53,6 +53,13 @@ app.use("/api/v1/admin", require("./src/routes/api/admin.route")); // Admin rout
 app.use("/api/v1/search", require("./src/routes/api/search.route")); // Search routes
 app.use("/api/v1/playlists", require("./src/routes/api/playlist.route")); // Playlist routes (Create, Edit, Delete, Add/Remove Tracks)
 app.use("/api/v1/reports", require("./src/routes/api/reports.route")); // Report routes (Submit, View, Resolve)
+app.use("/api/v1/social", require("./src/routes/api/social.route")); // Social routes (Follow, Unfollow, etc.)
+
+// Notifications routes (Create, Read, Mark as Read, Unread Count)
+app.use(
+	"/api/v1/notifications",
+	require("./src/routes/api/notifications.route"),
+);
 
 // Catch-all for undefined routes (404)
 app.use((req, res) => {

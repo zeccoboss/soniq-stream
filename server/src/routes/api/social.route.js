@@ -1,11 +1,12 @@
 const router = require("express").Router();
-const socialController = require("../../controllers/social.controller");
 const verifyJWT = require("../../middlewares/verify-jwt.middleware");
+const {
+	followUser,
+	unfollowUser,
+} = require("../../controllers/users/social.controller");
 
 router.use(verifyJWT);
-
-// Use UUIDs in the URL for security/consistency
-router.post("/follow/:targetUuid", socialController.followUser);
-router.post("/unfollow/:targetUuid", socialController.unfollowUser);
+router.post("/:targetUuid/follow", followUser);
+router.delete("/:targetUuid/follow", unfollowUser);
 
 module.exports = router;

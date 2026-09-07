@@ -190,9 +190,12 @@
 .admin-mob-scroll {
 	flex: 1;
 	overflow-y: auto;
+	overflow-x: hidden;
 	scrollbar-width: none;
 	display: flex;
 	flex-direction: column;
+	min-height: 0;
+	padding-bottom: 24px;
 }
 .admin-mob-scroll::-webkit-scrollbar {
 	display: none;
@@ -204,14 +207,13 @@
 .admin-stats-grid {
 	display: grid;
 	grid-template-columns: repeat(4, 1fr);
-	gap: 1px;
+	gap: 12px;
 }
 .admin-mob-stats-grid {
 	display: grid;
 	grid-template-columns: repeat(2, 1fr);
 	gap: 8px;
 	padding: 12px 16px;
-	border-bottom: 1px solid var(--glass-border);
 }
 
 .admin-stat-card {
@@ -228,8 +230,7 @@
 	background: var(--glass-hover);
 }
 .admin-mob-stats-grid .admin-stat-card {
-	flex-direction: column;
-	align-items: flex-start;
+	min-width: 0;
 	gap: 8px;
 	padding: 12px;
 }
@@ -264,6 +265,7 @@
 	display: flex;
 	flex-direction: column;
 	gap: 3px;
+	min-width: 0;
 }
 .admin-stat-label {
 	font-size: 0.56rem;
@@ -286,7 +288,26 @@
 	border: 1px solid var(--glass-border);
 	border-radius: var(--radius-md);
 	overflow: hidden;
-	border-top: 5px;
+}
+
+/* Desktop overview: keep the summary and activity panel aligned and prevent
+   unusually long labels or values from forcing the grid wider than its pane. */
+.admin-desktop-overview {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+	width: min(100%, 1180px);
+	margin: 0 auto;
+}
+.admin-desktop-overview .admin-stats-grid {
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.admin-desktop-overview .admin-stat-card {
+	min-width: 0;
+	min-height: 76px;
+}
+.admin-desktop-overview .admin-panel {
+	width: 100%;
 }
 .admin-panel-head {
 	display: flex;
@@ -385,6 +406,12 @@
 .admin-search-input:focus {
 	border-color: var(--glass-border-strong);
 	background: var(--glass-hover);
+}
+.admin-search-empty {
+	padding: 20px 12px 8px;
+	text-align: center;
+	color: var(--text-3);
+	font-size: 0.62rem;
 }
 
 /* ══════════════════════════════════════
@@ -725,6 +752,15 @@
 	flex-direction: column;
 	border-bottom: 1px solid var(--glass-border);
 }
+.admin-tab-view[data-tab="overview"] .admin-mob-stats-grid {
+	padding-top: 16px;
+	padding-bottom: 16px;
+	border-bottom: 1px solid var(--glass-border);
+}
+.admin-tab-view[data-tab="overview"] .admin-mob-sec {
+	padding-top: 16px;
+	padding-bottom: 16px;
+}
 .admin-mob-sec:last-child {
 	border-bottom: none;
 }
@@ -922,6 +958,9 @@
 	.admin-stats-grid {
 		grid-template-columns: repeat(2, 1fr);
 	}
+	.admin-desktop-overview .admin-stats-grid {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
 }
 @media (max-width: 680px) {
 	.admin-header {
@@ -934,5 +973,19 @@
 	}
 	.admin-scroll-inner {
 		padding: 14px 16px 24px;
+	}
+}
+@media (max-width: 360px) {
+	.admin-mob-tabs {
+		padding-left: 12px;
+		padding-right: 12px;
+	}
+	.admin-mob-stats-grid,
+	.admin-mob-sec {
+		padding-left: 12px;
+		padding-right: 12px;
+	}
+	.admin-mob-stats-grid .admin-stat-card {
+		padding: 10px;
 	}
 }

@@ -1,145 +1,92 @@
-import { router } from "@zecco/routes/router";
 import { toast } from "@zecco/components/Toast/Toast";
-import { showModal } from "@zecco/components/Modal/Modal";
-import { filterLibraryContent } from "@zecco/pages/Library/library.helpers";
+import showPlaylistModal from "@zecco/components/PlaylistModal/PlaylistModal";
+import { showOptionsMenu } from "@zecco/components/OptionsMenu/OptionsMenu";
+import { playlistService } from "@zecco/services/api/playlist.service";
+import { viewNavigate } from "@zecco/utils/view-navigate";
 
-const SEE_ALL_TAB_MAP = {
-	"lib-see-all-liked": "liked",
-	"lib-see-all-liked-mobile": "liked",
-	"lib-see-all-upload": "upload",
-	"lib-see-all-upload-mobile": "upload",
-	"lib-see-all-playlists": "playlists",
-	"lib-see-all-playlists-mobile": "playlists",
-	"lib-see-all-recent": "recent",
-	"lib-see-all-recent-mobile": "recent",
-	"lib-see-all-artists": "following",
-	"lib-see-all-artists-mobile": "following",
-};
-
-const setActiveTab = (container, tab = "all") => {
-	const tabs = container.querySelectorAll(".lib-filter-tab");
-	tabs.forEach((btn) => {
-		btn.classList.toggle("active", btn.dataset.tab === tab);
-	});
-	filterLibraryContent(tab);
-};
-
-const getRequestedTab = () => {
-	const params = new URLSearchParams(window.location.search);
-	return params.get("tab") || "all";
-};
-
-const syncTabUrl = (tab = "all") => {
-	const params = new URLSearchParams(window.location.search);
-	params.set("tab", tab);
-	const nextUrl = `${window.location.pathname}?${params.toString()}`;
-	window.history.replaceState(window.history.state, "", nextUrl);
-};
-
-const libraryEvents = (container) => {
+/**
+ * libraryEvents — Filter tabs, hero cards, and "See all" links are now
+ * plain <a href="/library?section=..."> anchors, handled automatically by
+ * the router's global click interceptor. This file only wires what ISN'T
+ * plain navigation: playlist creation, track options, drill-in clicks.
+ */
+const libraryEvents = (container, { data, onPlaylistCreated } = {}) => {
 	if (!container) return;
 
-	setActiveTab(container, getRequestedTab());
-
 	container.addEventListener("click", (e) => {
-		const heroCard = e.target.closest(
-			"#lib-hero-liked, #lib-hero-upload, #lib-hero-recent, #lib-hero-liked-mobile, #lib-hero-upload-mobile, #lib-hero-recent-mobile",
-		);
-		if (heroCard) {
-			const heroTabMap = {
-				"lib-hero-liked": "liked",
-				"lib-hero-liked-mobile": "liked",
-				"lib-hero-upload": "upload",
-				"lib-hero-upload-mobile": "upload",
-				"lib-hero-recent": "recent",
-				"lib-hero-recent-mobile": "recent",
-			};
-
-			const tab = heroTabMap[heroCard.id] || "all";
-			setActiveTab(container, tab);
-			syncTabUrl(tab);
-			return;
-		}
-
-		const tabBtn = e.target.closest(".lib-filter-tab");
-		if (tabBtn) {
-			const tab = tabBtn.dataset.tab || "all";
-			setActiveTab(container, tab);
-			syncTabUrl(tab);
-			return;
-		}
-
-		const seeAllBtn = e.target.closest(".lib-sec-link");
-		if (seeAllBtn?.id && SEE_ALL_TAB_MAP[seeAllBtn.id]) {
-			const tab = SEE_ALL_TAB_MAP[seeAllBtn.id];
-			setActiveTab(container, tab);
-			syncTabUrl(tab);
-			return;
-		}
-
 		const createBtn = e.target.closest(
 			"#lib-new-playlist-btn, #lib-create-playlist-btn",
 		);
 		if (createBtn) {
-			showModal({
-				title: "Create Playlist",
-				message: "Playlist creation flow will be connected next.",
-				type: "info",
-				confirmLabel: "Okay",
+			showPlaylistModal({
+				onCreate: async ({ name, description, visibility }) => {
+					const res = await playlistService.create({
+						name,
+						description,
+						visibility,
+					});
+					toast({ message: `"${name}" created`, type: "success" });
+					if (res?.data) onPlaylistCreated?.(res.data);
+				},
 			});
 			return;
 		}
 
-		const moreHeaderBtn = e.target.closest("#lib-more-btn");
-		if (moreHeaderBtn) {
+		if (e.target.closest("#lib-more-btn")) {
 			toast({ message: "More library options coming soon", type: "info" });
 			return;
 		}
 
-		const playlistCard = e.target.closest(
-			".lib-playlist-card, .lib-playlist-item-mobile",
-		);
-		if (playlistCard) {
-			const playlistId = playlistCard.dataset.playlistId;
-			if (!playlistId) {
+		const playlistEl = e.target.closest("[data-playlist-uuid]");
+		if (playlistEl) {
+			const uuid = playlistEl.dataset.playlistUuid;
+			if (!uuid) {
 				toast({ message: "Playlist is missing an id", type: "warning" });
 				return;
 			}
-			router.navigate(`/library/playlist/${playlistId}`);
+			viewNavigate("/playlist", { identifier: uuid }); // leaving Library — real "view" navigation
 			return;
 		}
 
-		const trackMoreBtn = e.target.closest(".lib-track-more");
-		if (trackMoreBtn) {
-			toast({ message: "Track actions are coming soon", type: "info" });
+		const optionsBtn = e.target.closest("[data-track-options]");
+		if (optionsBtn) {
+			const row = optionsBtn.closest("[data-track-uuid]");
+			const title =
+				row?.querySelector(".lib-track-title")?.textContent?.trim() ??
+				"Track";
+			const artistUuid = row?.dataset.artistUuid;
+			showOptionsMenu(optionsBtn, {
+				title,
+				actions: [
+					{
+						label: "Go to Artist",
+						icon: "bi-person-circle",
+						onClick: () =>
+							artistUuid &&
+							viewNavigate("/profile", { identifier: artistUuid }),
+					},
+				],
+			});
 			return;
 		}
 
-		const trackRow = e.target.closest(".lib-track-row");
+		const trackRow = e.target.closest("[data-track-uuid]");
 		if (trackRow) {
 			const title =
-				trackRow.querySelector(".lib-track-title")?.textContent?.trim() ||
+				trackRow.querySelector(".lib-track-title")?.textContent?.trim() ??
 				"Track";
-			toast({ message: `${title} selected`, type: "info" });
+			toast({ message: `Playing ${title}`, type: "info" });
+			// TODO: real queue playback needs the full list this row belongs
+			// to (liked vs. uploads vs. recent), not just the row itself —
+			// wire once store.player's expected track shape is confirmed.
 			return;
 		}
 
-		const artistChip = e.target.closest(".lib-artist-chip");
+		const artistChip = e.target.closest("[data-artist-uuid]");
 		if (artistChip) {
-			const artistId = artistChip.dataset.artistId;
-			const artistName =
-				artistChip.querySelector(".lib-artist-name")?.textContent?.trim() ||
-				"Artist";
-
-			if (artistId) {
-				router.navigate(`/artist/${artistId}`);
-				return;
-			}
-
-			toast({
-				message: `${artistName} profile is not linked yet`,
-				type: "info",
-			});
+			const uuid = artistChip.dataset.artistUuid;
+			if (uuid) viewNavigate("/profile", { identifier: uuid });
+			return;
 		}
 	});
 };

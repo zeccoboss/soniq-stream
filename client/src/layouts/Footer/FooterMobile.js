@@ -1,10 +1,9 @@
 import CreateElement from "@zecco/utils/dom/create-element";
+import { footerMobileEvents } from "./FooterMobile.events.js";
 
 const FooterMobile = () => {
-	// Create element
 	const footer = new CreateElement("footer");
 
-	// Set attributes and add html content
 	footer.addClass("footer").setId("mob-footer").innerHTML = `
 		<nav class="mob-footer-nav">
 			<ul class="mob-footer-list">
@@ -14,28 +13,24 @@ const FooterMobile = () => {
 						<span class="mob-nav-label">Home</span>
 					</a>
 				</li>
-
 				<li class="mob-nav-item">
 					<a href="/search" id="search-nav-link" data-nav-link="/search" class="mob-nav-link">
 						<i class="bi bi-search mob-nav-icon"></i>
 						<span class="mob-nav-label">Search</span>
 					</a>
 				</li>
-
 				<li class="mob-nav-item mob-nav-item--center">
-					<a href="/upload" id="upload-nav-link" data-nav-link="/upload" class="mob-nav-link mob-nav-link--primary">
+					<a href="#" id="mob-new-btn" class="mob-nav-link mob-nav-link--primary">
 						<i class="bi bi-plus-circle-fill mob-nav-icon-lg"></i>
 						<span class="mob-nav-label-sm">New</span>
 					</a>
 				</li>
-
 				<li class="mob-nav-item">
 					<a href="/library" id="lib-nav-link" data-nav-link="/library" class="mob-nav-link">
 						<i class="bi bi-collection mob-nav-icon"></i>
 						<span class="mob-nav-label">Library</span>
 					</a>
 				</li>
-
 				<li class="mob-nav-item">
 					<a href="/profile" id="profile-nav-link" data-nav-link="/profile" class="mob-nav-link">
 						<i class="bi bi-person-circle mob-nav-icon"></i>
@@ -46,7 +41,9 @@ const FooterMobile = () => {
 		</nav>
 	`;
 
-	return footer.getElement();
+	const footerElement = footer.getElement();
+	requestAnimationFrame(() => footerMobileEvents(footerElement));
+	return footerElement;
 };
 
 export default FooterMobile;

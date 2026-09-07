@@ -11,7 +11,7 @@ const optionalJWT = require("../../middlewares/optional-jwt.middleware");
 // /search must come before any bare "/:uuid" — otherwise Express
 // would try to treat "search" as a uuid param value.
 router.route("/search").get(usersControllers.searchUsers);
-router.route("/:uuid/profile").get(usersControllers.getUserProfile); // was :identifier
+router.route("/profile").get(optionalJWT, usersControllers.getUserProfile); // was :identifier
 router.route("/:uuid").get(optionalJWT, usersControllers.getUser); // optional auth — guests get the public subset, owner/admin get full data
 
 // ── SELF-SERVICE ROUTES (any logged-in user) ───────────────────
